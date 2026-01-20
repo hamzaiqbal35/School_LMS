@@ -32,7 +32,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         try {
             const { data } = await api.get('/auth/me');
             set({ user: data, isAuthenticated: true, isCheckingAuth: false });
-        } catch (error) {
+        } catch {
             set({ user: null, isAuthenticated: false, isCheckingAuth: false });
         }
     },

@@ -5,9 +5,13 @@ const studentController = require('../controllers/admin/student.controller');
 const assignmentController = require('../controllers/admin/assignment.controller');
 const masterDataController = require('../controllers/admin/masterData.controller');
 const teacherController = require('../controllers/admin/teacher.controller');
+const dashboardController = require('../controllers/admin/dashboard.controller');
 
 // All routes here are protected and Admin only
 router.use(protect, adminOnly);
+
+// Dashboard
+router.get('/dashboard/stats', dashboardController.getDashboardStats);
 
 // Teachers
 router.get('/teachers', teacherController.getTeachers);

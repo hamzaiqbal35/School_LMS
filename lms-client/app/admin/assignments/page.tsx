@@ -3,10 +3,36 @@ import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { AlertCircle, CheckCircle, Loader2, Trash2 } from 'lucide-react';
 
+interface TimeSlot {
+    _id: string;
+    day: string;
+    startTime: string;
+    endTime: string;
+    name?: string; // Optional if backend sends it, or we construct it
+}
+
+interface MasterData {
+    classes: { _id: string; name: string }[];
+    sections: { _id: string; name: string }[];
+    subjects: { _id: string; name: string }[];
+    teachers: { _id: string; fullName: string }[];
+    timeslots: TimeSlot[];
+}
+
+interface Assignment {
+    _id: string;
+    classId: { _id: string; name: string };
+    sectionId: { _id: string; name: string };
+    subjectId: { _id: string; name: string };
+    teacherId: { _id: string; fullName: string };
+    timeSlotId: TimeSlot;
+}
+
 export default function AssignmentsPage() {
     const [loading, setLoading] = useState(true);
-    const [data, setData] = useState<any>({ classes: [], sections: [], subjects: [], teachers: [], timeslots: [] });
-    const [assignments, setAssignments] = useState<any[]>([]);
+    const [data, setData] = useState<MasterData>({ classes: [], sections: [], subjects: [], teachers: [], timeslots: [] });
+    const [assignments, setAssignments] = useState<Assignment[]>([]);
+
 
     // Form State
     const [formData, setFormData] = useState({

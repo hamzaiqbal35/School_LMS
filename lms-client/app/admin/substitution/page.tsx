@@ -1,35 +1,68 @@
 "use client"
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
-import { Loader2, Calendar, AlertTriangle, UserCheck, CheckCircle, X } from 'lucide-react';
+import { Loader2, Calendar, AlertTriangle, CheckCircle } from 'lucide-react';
+
+interface TimeSlot {
+    _id: string;
+    startTime: string;
+    endTime: string;
+    day: string;
+}
+
+interface ClassEntity {
+    _id: string;
+    name: string;
+}
+
+interface Teacher {
+    _id: string;
+    fullName: string;
+    qualification?: string;
+    isFree?: boolean;
+    reason?: string;
+}
+
+interface NeedSubstitution {
+    class: ClassEntity;
+    section: ClassEntity;
+    subject: ClassEntity;
+    timeSlot: TimeSlot;
+    originalTeacher: Teacher;
+    status: 'Pending' | 'Covered';
+    substitution?: {
+        _id: string;
+        substituteTeacherId: Teacher;
+    };
+}
 
 export default function AdminSubstitutionPage() {
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-    const [neededSubs, setNeededSubs] = useState<any[]>([]);
+    const [neededSubs, setNeededSubs] = useState<NeedSubstitution[]>([]);
     const [loading, setLoading] = useState(false);
 
     // Selection state for assigning
-    const [selectedSlot, setSelectedSlot] = useState<any>(null);
-    const [availableTeachers, setAvailableTeachers] = useState<any[]>([]);
+    const [selectedSlot, setSelectedSlot] = useState<NeedSubstitution | null>(null);
+    const [availableTeachers, setAvailableTeachers] = useState<Teacher[]>([]);
     const [searchingTeachers, setSearchingTeachers] = useState(false);
 
-    useEffect(() => {
-        fetchNeededSubstitutions();
-    }, [date]);
-
-    const fetchNeededSubstitutions = async () => {
+    const fetchNeededSubstitutions = useCallback(async () => {
         setLoading(true);
         try {
             const res = await api.get(`/substitution/needed?date=${date}`);
             setNeededSubs(res.data);
         } catch (error) {
-            console.error(error);
+            console.error("Failed to fetch substitutions", error);
         } finally {
             setLoading(false);
         }
-    };
+    }, [date]);
 
-    const handleSelectSlot = async (item: any) => {
+    useEffect(() => {
+        fetchNeededSubstitutions();
+    }, [fetchNeededSubstitutions]);
+
+    const handleSelectSlot = async (item: NeedSubstitution) => {
         if (item.status === 'Covered') return; // Already handled
         setSelectedSlot(item);
         setSearchingTeachers(true);
@@ -60,6 +93,7 @@ export default function AdminSubstitutionPage() {
             setSelectedSlot(null);
             fetchNeededSubstitutions();
         } catch (error) {
+            console.error("Assignment failed", error);
             alert('Failed to assign substitute');
         }
     };
@@ -70,6 +104,7 @@ export default function AdminSubstitutionPage() {
             await api.delete(`/substitution/${subId}`);
             fetchNeededSubstitutions();
         } catch (error) {
+            console.error("Delete failed", error);
             alert('Failed to delete substitution');
         }
     };
@@ -102,7 +137,7 @@ export default function AdminSubstitutionPage() {
                             </div>
                         ) : (
                             <div className="grid gap-4">
-                                {neededSubs.map((item: any, idx: number) => (
+                                {neededSubs.map((item, idx) => (
                                     <div
                                         key={idx}
                                         className={`p-4 rounded-xl border transition-all cursor-pointer ${item.status === 'Covered'
@@ -140,7 +175,7 @@ export default function AdminSubstitutionPage() {
                                                         Sub: <b>{item.substitution?.substituteTeacherId?.fullName || "Assigned"}</b>
                                                     </div>
                                                     <button
-                                                        onClick={(e) => { e.stopPropagation(); deleteSubstitution(item.substitution._id); }}
+                                                        onClick={(e) => { e.stopPropagation(); if (item.substitution?._id) deleteSubstitution(item.substitution._id); }}
                                                         className="text-xs text-red-500 hover:underline mt-1"
                                                     >
                                                         Cancel
@@ -166,7 +201,7 @@ export default function AdminSubstitutionPage() {
 
                         {!selectedSlot ? (
                             <p className="text-gray-500 text-sm italic">
-                                Select a "Pending" class from the list to find available teachers.
+                                Select a &quot;Pending&quot; class from the list to find available teachers.
                             </p>
                         ) : (
                             <div className="space-y-4">
@@ -192,8 +227,8 @@ export default function AdminSubstitutionPage() {
                                                         assignSubstitute(teacher._id);
                                                     }}
                                                     className={`w-full flex items-center justify-between p-2 rounded-lg group transition-colors text-left border ${teacher.isFree
-                                                            ? 'bg-white border-gray-200 hover:border-blue-300 hover:bg-blue-50'
-                                                            : 'bg-gray-50 border-gray-100 opacity-75 hover:opacity-100'
+                                                        ? 'bg-white border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                                                        : 'bg-gray-50 border-gray-100 opacity-75 hover:opacity-100'
                                                         }`}
                                                 >
                                                     <div>

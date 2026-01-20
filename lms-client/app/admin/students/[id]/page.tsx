@@ -1,25 +1,43 @@
 "use client"
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import { Loader2, ArrowLeft, Mail, Phone, BookOpen, Calendar, Clock, MapPin, User as UserIcon, DollarSign, Edit } from 'lucide-react';
+import { Loader2, ArrowLeft, Phone, BookOpen, Calendar, Clock, User as UserIcon, DollarSign, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { use } from 'react';
+
+interface Student {
+    _id: string;
+    fullName: string;
+    registrationNumber: string;
+    status: string;
+    admissionDate?: string;
+    fatherName: string;
+    gender: string;
+    classId?: { name: string };
+    sectionId?: { name: string };
+    dob?: string;
+    phoneNumber?: string;
+    monthlyFee: number;
+    discountAmount?: number;
+}
+
+interface Fee {
+    _id: string;
+    month: string;
+    totalAmount: number;
+    status: string;
+    paymentDate?: string;
+}
 
 export default function StudentDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
     const router = useRouter();
-    const [student, setStudent] = useState<any>(null);
-    const [fees, setFees] = useState<any[]>([]);
+    const [student, setStudent] = useState<Student | null>(null);
+    const [fees, setFees] = useState<Fee[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        if (resolvedParams.id) {
-            fetchData();
-        }
-    }, [resolvedParams.id]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const [studentRes, feesRes] = await Promise.all([
                 api.get(`/admin/students/${resolvedParams.id}`),
@@ -32,12 +50,18 @@ export default function StudentDetailsPage({ params }: { params: Promise<{ id: s
         } finally {
             setLoading(false);
         }
-    };
+    }, [resolvedParams.id]);
+
+    useEffect(() => {
+        if (resolvedParams.id) {
+            fetchData();
+        }
+    }, [resolvedParams.id, fetchData]);
 
     if (loading) return <div className="flex justify-center p-20"><Loader2 className="w-10 h-10 animate-spin text-blue-600" /></div>;
     if (!student) return <div className="p-10 text-center">Student not found</div>;
 
-    const LabelValue = ({ label, value, icon: Icon }: any) => (
+    const LabelValue = ({ label, value, icon: Icon }: { label: string, value: string | undefined, icon?: React.ElementType }) => (
         <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
             {Icon && <Icon className="w-5 h-5 text-gray-400 mt-0.5" />}
             <div>
@@ -152,8 +176,8 @@ export default function StudentDetailsPage({ params }: { params: Promise<{ id: s
                                                 <td className="px-4 py-3">Rs {fee.totalAmount?.toLocaleString()}</td>
                                                 <td className="px-4 py-3">
                                                     <span className={`px-2 py-1 rounded-full text-xs font-bold ${fee.status === 'Paid' ? 'bg-green-100 text-green-700' :
-                                                            fee.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
-                                                                'bg-red-100 text-red-700'
+                                                        fee.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
+                                                            'bg-red-100 text-red-700'
                                                         }`}>
                                                         {fee.status}
                                                     </span>

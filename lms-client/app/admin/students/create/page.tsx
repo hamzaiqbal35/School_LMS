@@ -1,13 +1,22 @@
 "use client"
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import Link from 'next/link';
 import { use } from 'react';
 
 // Reusable Input Component (internal)
-const InputGroup = ({ label, name, type = "text", value, onChange, required = false }: any) => (
+interface InputGroupProps {
+    label: string;
+    name: string;
+    type?: string;
+    value: string | number;
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    required?: boolean;
+}
+
+const InputGroup = ({ label, name, type = "text", value, onChange, required = false }: InputGroupProps) => (
     <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
         <input
@@ -21,7 +30,16 @@ const InputGroup = ({ label, name, type = "text", value, onChange, required = fa
     </div>
 );
 
-const SelectGroup = ({ label, name, value, onChange, options, required = false }: any) => (
+interface SelectGroupProps {
+    label: string;
+    name: string;
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+    options: { label: string; value: string }[];
+    required?: boolean;
+}
+
+const SelectGroup = ({ label, name, value, onChange, options, required = false }: SelectGroupProps) => (
     <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
         <select
@@ -32,20 +50,34 @@ const SelectGroup = ({ label, name, value, onChange, options, required = false }
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
         >
             <option value="">Select...</option>
-            {options.map((opt: any) => (
+            {options.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
         </select>
     </div>
 );
 
+interface ReferenceData {
+    _id: string;
+    name: string;
+}
+
 export default function StudentForm({ params }: { params: Promise<{ id?: string }> }) {
     const router = useRouter();
+
+    interface AxiosErrorLike {
+        response?: {
+            data?: {
+                message?: string;
+            };
+        };
+    }
+
     const resolvedParams = use(params);
     const isEdit = !!resolvedParams?.id;
 
     const [loading, setLoading] = useState(false);
-    const [masterData, setMasterData] = useState<any>({ classes: [], sections: [] });
+    const [masterData, setMasterData] = useState<{ classes: ReferenceData[]; sections: ReferenceData[] }>({ classes: [], sections: [] });
 
     const [formData, setFormData] = useState({
         registrationNumber: '',
@@ -62,13 +94,6 @@ export default function StudentForm({ params }: { params: Promise<{ id?: string 
         status: 'Active'
     });
 
-    useEffect(() => {
-        fetchMasterData();
-        if (isEdit) {
-            fetchStudent();
-        }
-    }, []);
-
     const fetchMasterData = async () => {
         try {
             const res = await api.get('/admin/master-data');
@@ -78,7 +103,7 @@ export default function StudentForm({ params }: { params: Promise<{ id?: string 
         }
     };
 
-    const fetchStudent = async () => {
+    const fetchStudent = useCallback(async () => {
         try {
             const res = await api.get(`/admin/students/${resolvedParams?.id}`);
             const s = res.data;
@@ -100,9 +125,16 @@ export default function StudentForm({ params }: { params: Promise<{ id?: string 
             console.error(error);
             alert('Failed to load student');
         }
-    };
+    }, [resolvedParams?.id]);
 
-    const handleChange = (e: any) => {
+    useEffect(() => {
+        fetchMasterData();
+        if (isEdit) {
+            fetchStudent();
+        }
+    }, [isEdit, fetchStudent]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
@@ -116,8 +148,9 @@ export default function StudentForm({ params }: { params: Promise<{ id?: string 
                 await api.post('/admin/students', formData);
             }
             router.push('/admin/students');
-        } catch (error: any) {
-            alert(error.response?.data?.message || 'Operation failed');
+        } catch (error) {
+            const err = error as AxiosErrorLike;
+            alert(err.response?.data?.message || 'Operation failed');
         } finally {
             setLoading(false);
         }
@@ -150,7 +183,7 @@ export default function StudentForm({ params }: { params: Promise<{ id?: string 
                                 name="classId"
                                 value={formData.classId}
                                 onChange={handleChange}
-                                options={masterData.classes.map((c: any) => ({ label: c.name, value: c._id }))}
+                                options={masterData.classes.map((c: ReferenceData) => ({ label: c.name, value: c._id }))}
                                 required
                             />
 
@@ -159,7 +192,7 @@ export default function StudentForm({ params }: { params: Promise<{ id?: string 
                                 name="sectionId"
                                 value={formData.sectionId}
                                 onChange={handleChange}
-                                options={masterData.sections.map((s: any) => ({ label: s.name, value: s._id }))}
+                                options={masterData.sections.map((s: ReferenceData) => ({ label: s.name, value: s._id }))}
                                 required
                             />
                         </div>

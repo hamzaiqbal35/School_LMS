@@ -1,6 +1,15 @@
 "use client"
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+
+interface AxiosErrorLike {
+    response?: {
+        data?: {
+            message?: string;
+        };
+    };
+}
+
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/api';
 import { AlertCircle } from 'lucide-react';
@@ -25,10 +34,9 @@ export default function LoginPage() {
 
             login({
                 _id: userData._id,
-                name: userData.fullName,
+                fullName: userData.fullName,
                 email: userData.email || '',
-                role: userData.role,
-                token: userData.token
+                role: userData.role
             });
 
             if (userData.role === 'ADMIN') {
@@ -36,8 +44,11 @@ export default function LoginPage() {
             } else {
                 router.push('/teacher');
             }
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Login failed');
+
+
+        } catch (err) {
+            const error = err as AxiosErrorLike;
+            setError(error.response?.data?.message || 'Login failed');
         } finally {
             setLoading(false);
         }

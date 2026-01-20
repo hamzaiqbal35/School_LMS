@@ -3,9 +3,34 @@ import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { Loader2, Save, Calendar, CheckCircle, AlertCircle } from 'lucide-react';
 
+interface Assignment {
+    _id: string;
+    classId: { _id: string; name: string };
+    sectionId: { _id: string; name: string };
+    subjectId: { _id: string; name: string };
+    timeSlot: string;
+}
+
+interface Student {
+    _id: string;
+    registrationNumber: string;
+    fullName: string;
+}
+
+interface AxiosErrorLike {
+    response?: {
+        data?: {
+            message?: string;
+        };
+    };
+}
+
+
+
+
 export default function MarkAttendancePage() {
-    const [assignments, setAssignments] = useState<any[]>([]);
-    const [students, setStudents] = useState<any[]>([]);
+    const [assignments, setAssignments] = useState<Assignment[]>([]);
+    const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingStudents, setLoadingStudents] = useState(false);
 
@@ -47,12 +72,12 @@ export default function MarkAttendancePage() {
         try {
             // Fetch Students for this class/section
             const res = await api.get(`/teacher/students?classId=${assignment.classId._id}&sectionId=${assignment.sectionId._id}`);
-            const studList = res.data;
+            const studList: Student[] = res.data;
             setStudents(studList);
 
             // Initialize marks (default Present)
-            const initialMarks: any = {};
-            studList.forEach((s: any) => initialMarks[s._id] = 'Present');
+            const initialMarks: Record<string, string> = {};
+            studList.forEach((s: Student) => initialMarks[s._id] = 'Present');
             setMarks(initialMarks);
 
             // Fetch existing attendance if any?
@@ -69,6 +94,7 @@ export default function MarkAttendancePage() {
         if (!selectedAssignment || students.length === 0) return;
 
         const assignment = assignments.find(a => a._id === selectedAssignment);
+        if (!assignment) return;
 
         const payload = {
             date: attendanceDate,
@@ -84,8 +110,11 @@ export default function MarkAttendancePage() {
         try {
             await api.post('/attendance', payload);
             setMsg({ type: 'success', text: 'Attendance marked successfully' });
-        } catch (error: any) {
-            setMsg({ type: 'error', text: error.response?.data?.message || 'Failed to mark' });
+
+
+        } catch (error) {
+            const err = error as AxiosErrorLike;
+            setMsg({ type: 'error', text: err.response?.data?.message || 'Failed to mark' });
         }
     };
 

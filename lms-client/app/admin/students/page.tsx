@@ -1,12 +1,27 @@
 "use client"
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { Loader2, Plus, Search, MoreVertical, Pencil, Eye } from 'lucide-react';
 
+interface Student {
+    _id: string;
+    registrationNumber: string;
+    fullName: string;
+    fatherName: string;
+    status: string;
+    classId?: { name: string };
+    sectionId?: { name: string };
+}
+
+interface ReferenceData {
+    _id: string;
+    name: string;
+}
+
 export default function StudentsPage() {
-    const [students, setStudents] = useState<any[]>([]);
-    const [masterData, setMasterData] = useState<any>({ classes: [], sections: [] });
+    const [students, setStudents] = useState<Student[]>([]);
+    const [masterData, setMasterData] = useState<{ classes: ReferenceData[]; sections: ReferenceData[] }>({ classes: [], sections: [] });
     const [loading, setLoading] = useState(true);
 
     // Filters
@@ -15,16 +30,6 @@ export default function StudentsPage() {
     const [selectedSection, setSelectedSection] = useState('');
 
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-
-    useEffect(() => {
-        fetchInitialData();
-    }, []);
-
-    // Debounce search? Or just button? Button is fine per current UI pattern.
-    useEffect(() => {
-        // Auto-fetch when filters change (optional, but good UX)
-        fetchStudents();
-    }, [selectedClass, selectedSection]);
 
     const fetchInitialData = async () => {
         try {
@@ -41,7 +46,11 @@ export default function StudentsPage() {
         }
     };
 
-    const fetchStudents = async () => {
+    useEffect(() => {
+        fetchInitialData();
+    }, []);
+
+    const fetchStudents = useCallback(async () => {
         setLoading(true);
         try {
             const params = new URLSearchParams();
@@ -56,7 +65,13 @@ export default function StudentsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [keyword, selectedClass, selectedSection]);
+
+    // Debounce search? Or just button? Button is fine per current UI pattern.
+    useEffect(() => {
+        // Auto-fetch when filters change (optional, but good UX)
+        fetchStudents();
+    }, [fetchStudents]);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -92,7 +107,7 @@ export default function StudentsPage() {
                         onChange={(e) => setSelectedClass(e.target.value)}
                     >
                         <option value="">All Classes</option>
-                        {masterData.classes.map((c: any) => (
+                        {masterData.classes.map((c: ReferenceData) => (
                             <option key={c._id} value={c._id}>{c.name}</option>
                         ))}
                     </select>
@@ -103,7 +118,7 @@ export default function StudentsPage() {
                         onChange={(e) => setSelectedSection(e.target.value)}
                     >
                         <option value="">All Sections</option>
-                        {masterData.sections.map((s: any) => (
+                        {masterData.sections.map((s: ReferenceData) => (
                             <option key={s._id} value={s._id}>{s.name}</option>
                         ))}
                     </select>

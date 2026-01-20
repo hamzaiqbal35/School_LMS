@@ -3,7 +3,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
 import {
     Calendar,
     BookOpen,
@@ -12,7 +13,6 @@ import {
     Menu,
     X
 } from "lucide-react";
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 export default function TeacherLayout({
@@ -40,8 +40,11 @@ export default function TeacherLayout({
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     // Close sidebar on route change (mobile)
+    // Close sidebar on route change (mobile)
     useEffect(() => {
-        setIsSidebarOpen(false);
+        // Defer update to avoid synchronous set-state-in-effect warning
+        const timer = setTimeout(() => setIsSidebarOpen(false), 0);
+        return () => clearTimeout(timer);
     }, [pathname]);
 
     if (!isHydrated || isCheckingAuth) return <div className="flex items-center justify-center h-screen">Loading...</div>;
@@ -70,7 +73,7 @@ export default function TeacherLayout({
             )}>
                 <div className="p-6 flex justify-between items-start md:block border-b">
                     <div className="flex flex-col items-center text-center w-full">
-                        <img src="/Logo2.png" alt="School Logo" className="h-16 w-auto mb-3" />
+                        <Image src="/Logo2.png" alt="School Logo" width={64} height={64} className="h-16 w-auto mb-3" priority />
                         <span className="font-bold text-gray-800 text-sm leading-tight">
                             Oxford Grammar & <br /> Cambridge EdTech School
                         </span>
@@ -140,7 +143,7 @@ export default function TeacherLayout({
                 {/* Mobile Header */}
                 <div className="md:hidden bg-white border-b p-4 flex items-center justify-between sticky top-0 z-30">
                     <div className="flex items-center">
-                        <img src="/Logo2.png" alt="School Logo" className="h-8 w-auto mr-2" />
+                        <Image src="/Logo2.png" alt="School Logo" width={32} height={32} className="h-8 w-auto mr-2" />
                         <span className="font-bold text-gray-800 text-sm">Oxford Grammar & Cambridge EdTech School</span>
                     </div>
                     <button

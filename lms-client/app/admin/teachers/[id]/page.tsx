@@ -1,25 +1,48 @@
 "use client"
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import { Loader2, ArrowLeft, Mail, Phone, BookOpen, Calendar, MapPin, User as UserIcon, GraduationCap, Clock, Award, Trash2, Edit } from 'lucide-react';
-import Link from 'next/link';
+import { Loader2, ArrowLeft, Mail, Phone, BookOpen, Calendar, User as UserIcon, Award } from 'lucide-react';
 import { use } from 'react';
+
+interface Teacher {
+    fullName: string;
+    email: string;
+    isActive: boolean;
+    phoneNumber?: string;
+    qualifications?: string[];
+    qualifiedSubjects?: Array<{ _id: string; name: string }>;
+}
+
+interface Assignment {
+    _id: string;
+    active: boolean;
+    timeSlotId: {
+        startTime: string;
+        endTime: string;
+        day: string;
+        label: string;
+    };
+    subjectId: {
+        name: string;
+        code: string;
+    };
+    classId: {
+        name: string;
+    };
+    sectionId: {
+        name: string;
+    };
+}
 
 export default function TeacherDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
     const router = useRouter();
-    const [teacher, setTeacher] = useState<any>(null);
-    const [assignments, setAssignments] = useState<any[]>([]);
+    const [teacher, setTeacher] = useState<Teacher | null>(null);
+    const [assignments, setAssignments] = useState<Assignment[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        if (resolvedParams.id) {
-            fetchData();
-        }
-    }, [resolvedParams.id]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const [teacherRes, assignRes] = await Promise.all([
                 api.get(`/admin/teachers/${resolvedParams.id}`),
@@ -32,20 +55,16 @@ export default function TeacherDetailsPage({ params }: { params: Promise<{ id: s
         } finally {
             setLoading(false);
         }
-    };
+    }, [resolvedParams.id]);
+
+    useEffect(() => {
+        if (resolvedParams.id) {
+            fetchData();
+        }
+    }, [resolvedParams.id, fetchData]);
 
     if (loading) return <div className="flex justify-center p-20"><Loader2 className="w-10 h-10 animate-spin text-blue-600" /></div>;
     if (!teacher) return <div className="p-10 text-center">Teacher not found</div>;
-
-    const LabelValue = ({ label, value, icon: Icon }: any) => (
-        <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-            {Icon && <Icon className="w-5 h-5 text-gray-400 mt-0.5" />}
-            <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</p>
-                <p className="text-gray-900 font-medium">{value || 'N/A'}</p>
-            </div>
-        </div>
-    );
 
     return (
         <div className="max-w-5xl mx-auto space-y-6">
@@ -97,7 +116,7 @@ export default function TeacherDetailsPage({ params }: { params: Promise<{ id: s
                             <div>
                                 <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Degrees</p>
                                 <div className="flex flex-wrap gap-2">
-                                    {teacher.qualifications?.length > 0 ? (
+                                    {(teacher.qualifications && teacher.qualifications.length > 0) ? (
                                         teacher.qualifications.map((q: string, i: number) => (
                                             <span key={i} className="bg-gray-100 text-gray-700 px-3 py-1 rounded text-sm">{q}</span>
                                         ))
@@ -107,8 +126,8 @@ export default function TeacherDetailsPage({ params }: { params: Promise<{ id: s
                             <div>
                                 <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Qualified Subjects</p>
                                 <div className="flex flex-wrap gap-2">
-                                    {teacher.qualifiedSubjects?.length > 0 ? (
-                                        teacher.qualifiedSubjects.map((s: any) => (
+                                    {(teacher.qualifiedSubjects && teacher.qualifiedSubjects.length > 0) ? (
+                                        teacher.qualifiedSubjects.map((s) => (
                                             <span key={s._id} className="bg-green-50 text-green-700 border border-green-100 px-3 py-1 rounded-full text-sm font-medium">
                                                 {s.name}
                                             </span>

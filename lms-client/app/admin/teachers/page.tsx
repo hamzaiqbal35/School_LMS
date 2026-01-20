@@ -4,9 +4,33 @@ import Link from 'next/link';
 import api from '@/lib/api';
 import { Loader2, Plus, Pencil, Trash2, X, Check, Search, MoreVertical, Eye } from 'lucide-react';
 
+interface AxiosErrorLike {
+    response?: {
+        data?: {
+            message?: string;
+        };
+    };
+}
+
+interface Subject {
+    _id: string;
+    name: string;
+}
+
+interface Teacher {
+    _id: string;
+    fullName: string;
+    email: string;
+    phoneNumber?: string;
+    qualifications?: string[];
+    qualifiedSubjects?: Subject[];
+}
+
+
+
 export default function TeachersPage() {
-    const [teachers, setTeachers] = useState<any[]>([]);
-    const [subjects, setSubjects] = useState<any[]>([]);
+    const [teachers, setTeachers] = useState<Teacher[]>([]);
+    const [subjects, setSubjects] = useState<Subject[]>([]);
     const [loading, setLoading] = useState(true);
     const [keyword, setKeyword] = useState('');
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -18,7 +42,7 @@ export default function TeachersPage() {
             t.email.toLowerCase().includes(keyword.toLowerCase());
 
         const matchesSubject = selectedSubject === '' ||
-            t.qualifiedSubjects?.some((qs: any) => qs._id === selectedSubject);
+            t.qualifiedSubjects?.some((qs) => qs._id === selectedSubject);
 
         return matchesKeyword && matchesSubject;
     });
@@ -32,8 +56,7 @@ export default function TeachersPage() {
         password: '',
         phoneNumber: '',
         qualifiedSubjects: [] as string[],
-        qualifications: [] as string[] // Simplifed as array of strings for now? No, let's keep it simple string input for UI maybe?
-        // Actually model expects array of strings. We can use a comma separated input.
+        qualifications: [] as string[]
     });
     const [submitting, setSubmitting] = useState(false);
 
@@ -70,21 +93,22 @@ export default function TeachersPage() {
             // Reset form
             setFormData({ fullName: '', email: '', password: '', phoneNumber: '', qualifiedSubjects: [], qualifications: [] });
             setEditingId(null);
-        } catch (error: any) {
-            alert(error.response?.data?.message || 'Operation failed');
+        } catch (error) {
+            const err = error as AxiosErrorLike;
+            alert(err.response?.data?.message || 'Operation failed');
         } finally {
             setSubmitting(false);
         }
     };
 
-    const handleEdit = (teacher: any) => {
+    const handleEdit = (teacher: Teacher) => {
         setEditingId(teacher._id);
         setFormData({
             fullName: teacher.fullName,
             email: teacher.email,
             password: '', // Don't fill password
             phoneNumber: teacher.phoneNumber || '',
-            qualifiedSubjects: teacher.qualifiedSubjects.map((s: any) => s._id),
+            qualifiedSubjects: teacher.qualifiedSubjects?.map((s) => s._id) || [],
             qualifications: teacher.qualifications || []
         });
         setShowModal(true);
@@ -95,7 +119,7 @@ export default function TeachersPage() {
         try {
             await api.delete(`/admin/teachers/${id}`);
             fetchData();
-        } catch (error) {
+        } catch {
             alert('Failed to delete');
         }
     };
@@ -205,14 +229,14 @@ export default function TeachersPage() {
                                 <div>
                                     <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Qualified Subjects</p>
                                     <div className="flex flex-wrap gap-1">
-                                        {teacher.qualifiedSubjects?.slice(0, 3).map((s: any) => (
+                                        {teacher.qualifiedSubjects?.slice(0, 3).map((s) => (
                                             <span key={s._id} className="bg-green-50 text-green-700 text-xs px-2 py-1 rounded-full border border-green-100">
                                                 {s.name}
                                             </span>
                                         ))}
                                         {(teacher.qualifiedSubjects?.length || 0) > 3 && (
                                             <span className="bg-gray-50 text-gray-500 text-xs px-2 py-1 rounded-full border border-gray-100">
-                                                +{teacher.qualifiedSubjects.length - 3}
+                                                +{teacher.qualifiedSubjects && teacher.qualifiedSubjects.length - 3}
                                             </span>
                                         )}
                                         {(!teacher.qualifiedSubjects || teacher.qualifiedSubjects.length === 0) && <span className="text-gray-400 text-xs">None</span>}
@@ -295,7 +319,7 @@ export default function TeachersPage() {
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2 border p-3 rounded-lg max-h-40 overflow-y-auto">
                                     {subjects.length === 0 && (
                                         <div className="col-span-3 text-center text-sm text-gray-500 py-4">
-                                            No subjects found. <a href="/admin/classes" className="text-blue-600 hover:underline">Add subjects here</a> first.
+                                            No subjects found. <Link href="/admin/classes" className="text-blue-600 hover:underline">Add subjects here</Link> first.
                                         </div>
                                     )}
                                     {subjects.map(subject => (
