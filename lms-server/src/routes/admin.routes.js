@@ -21,6 +21,7 @@ router.put('/teachers/:id', teacherController.updateTeacher);
 router.delete('/teachers/:id', teacherController.deleteTeacher);
 
 // Master Data
+router.get('/classes', masterDataController.getClasses);
 router.get('/master-data', masterDataController.getAllMasterData);
 router.post('/master-data/init', masterDataController.initDefaults);
 router.post('/master-data/:type', masterDataController.createItem);

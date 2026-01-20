@@ -17,6 +17,7 @@ interface Challan {
     month: string;
     totalAmount: number;
     status: string;
+    pdfUrl?: string;
 }
 
 export default function FeesPage() {
@@ -30,6 +31,9 @@ export default function FeesPage() {
     const [allStudents, setAllStudents] = useState<Student[]>([]);
     const [generating, setGenerating] = useState(false);
 
+    const [classes, setClasses] = useState<any[]>([]);
+    const [filters, setFilters] = useState({ search: '', classId: '', month: '' });
+
     // Verify Modal State
     const [verifyId, setVerifyId] = useState('');
     const [verifyData, setVerifyData] = useState({ paymentReference: '', paymentDate: new Date().toISOString().split('T')[0], note: '' });
@@ -37,19 +41,29 @@ export default function FeesPage() {
     const fetchChallans = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await api.get(`/fees${filterStatus ? `?status=${filterStatus}` : ''}`);
+            const params = new URLSearchParams();
+            if (filterStatus) params.append('status', filterStatus);
+            if (filters.search) params.append('search', filters.search);
+            if (filters.classId) params.append('classId', filters.classId);
+            if (filters.month) params.append('month', filters.month);
+
+            const res = await api.get(`/fees?${params.toString()}`);
             setChallans(res.data);
         } catch (error) {
             console.error(error);
         } finally {
             setLoading(false);
         }
-    }, [filterStatus]);
+    }, [filterStatus, filters]);
 
-    const fetchStudents = useCallback(async () => {
+    const fetchDropdowns = useCallback(async () => {
         try {
-            const res = await api.get('/admin/students?status=Active');
-            setAllStudents(res.data);
+            const [studentsRes, classesRes] = await Promise.all([
+                api.get('/admin/students?status=Active'),
+                api.get('/admin/classes')
+            ]);
+            setAllStudents(studentsRes.data);
+            setClasses(classesRes.data);
         } catch (error) {
             console.error(error);
         }
@@ -57,8 +71,8 @@ export default function FeesPage() {
 
     useEffect(() => {
         fetchChallans();
-        fetchStudents();
-    }, [fetchChallans, fetchStudents]); // Correct dependencies
+        fetchDropdowns();
+    }, [fetchChallans, fetchDropdowns]);
 
     const handleGenerate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -85,7 +99,7 @@ export default function FeesPage() {
     const handleVerify = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await api.post(`/fees/verify/${verifyId}`, verifyData);
+            await api.post(`/fees/verify/${verifyId}`, { ...verifyData, status: 'Paid' });
             setVerifyId('');
             fetchChallans();
         } catch {
@@ -106,20 +120,53 @@ export default function FeesPage() {
                 </button>
             </div>
 
-            {/* Filter */}
-            <div className="flex gap-2 mb-4">
-                {['', 'Pending', 'Paid', 'Overdue'].map(status => (
-                    <button
-                        key={status}
-                        onClick={() => setFilterStatus(status)}
-                        className={`px-4 py-1 rounded-full text-sm font-medium ${filterStatus === status
-                            ? 'bg-gray-800 text-white'
-                            : 'bg-white border text-gray-600 hover:bg-gray-50'
-                            }`}
+            {/* Filters Bar */}
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 space-y-4 md:space-y-0 md:flex md:items-center md:gap-4">
+                <div className="flex-1">
+                    <input
+                        type="text"
+                        placeholder="Search Student..."
+                        className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none"
+                        value={filters.search}
+                        onChange={e => setFilters({ ...filters, search: e.target.value })}
+                    />
+                </div>
+                <div>
+                    <select
+                        className="border rounded-lg px-3 py-2 text-sm outline-none bg-white min-w-[150px]"
+                        value={filters.classId}
+                        onChange={e => setFilters({ ...filters, classId: e.target.value })}
                     >
-                        {status || 'All'}
-                    </button>
-                ))}
+                        <option value="">All Classes</option>
+                        {classes.map(c => (
+                            <option key={c._id} value={c._id}>{c.name}</option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <input
+                        type="text"
+                        placeholder="Month (e.g 2025-01)"
+                        className="border rounded-lg px-3 py-2 text-sm outline-none"
+                        value={filters.month}
+                        onChange={e => setFilters({ ...filters, month: e.target.value })}
+                    />
+                </div>
+                {/* Status Filter (Integrated) */}
+                <div className="flex bg-gray-100 p-1 rounded-lg">
+                    {['', 'Pending', 'Paid', 'Overdue'].map(status => (
+                        <button
+                            key={status}
+                            onClick={() => setFilterStatus(status)}
+                            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${filterStatus === status
+                                ? 'bg-white text-gray-900 shadow-sm'
+                                : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            {status || 'All'}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -158,6 +205,16 @@ export default function FeesPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
+                                            {c.pdfUrl && (
+                                                <a
+                                                    href={`http://localhost:5000${c.pdfUrl}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-purple-600 hover:text-purple-800 text-sm font-medium mr-4"
+                                                >
+                                                    Download PDF
+                                                </a>
+                                            )}
                                             {c.status === 'Pending' && (
                                                 <button
                                                     onClick={() => setVerifyId(c._id)}
@@ -183,11 +240,34 @@ export default function FeesPage() {
                         <h3 className="text-lg font-bold mb-4">Generate Monthly Challans</h3>
                         <form onSubmit={handleGenerate} className="space-y-4">
                             <div>
+                                <label htmlFor="genStudent" className="block text-sm font-medium text-gray-700">Student</label>
+                                <select
+                                    id="genStudent"
+                                    className="w-full border rounded p-2"
+                                    value={genData.studentIds[0] || ''}
+                                    onChange={e => {
+                                        const val = e.target.value;
+                                        setGenData({
+                                            ...genData,
+                                            studentIds: val ? [val] : [] // If empty, means 'All' in our logic below? No, let's make it explicit.
+                                        });
+                                    }}
+                                >
+                                    <option value="">All Active Students</option>
+                                    {allStudents.map(s => (
+                                        <option key={s._id} value={s._id}>
+                                            {s.fullName} ({s.registrationNumber})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
                                 <label htmlFor="genMonth" className="block text-sm font-medium text-gray-700">Month (e.g. Jan-2025)</label>
                                 <input
                                     id="genMonth"
                                     name="genMonth"
                                     type="text" required
+                                    placeholder="Jan-2025"
                                     className="w-full border rounded p-2"
                                     value={genData.month}
                                     onChange={e => setGenData({ ...genData, month: e.target.value })}
@@ -205,12 +285,14 @@ export default function FeesPage() {
                                 />
                             </div>
                             <div className="text-xs text-gray-500">
-                                Will generate for all {allStudents.length} active students.
+                                {genData.studentIds.length > 0
+                                    ? `Will generate for selected student.`
+                                    : `Will generate for all ${allStudents.length} active students.`}
                             </div>
                             <div className="flex justify-end gap-2 pt-4">
                                 <button type="button" onClick={() => setShowGen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
                                 <button type="submit" disabled={generating} className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50">
-                                    {generating ? 'Processing...' : 'Generate All'}
+                                    {generating ? 'Processing...' : 'Generate'}
                                 </button>
                             </div>
                         </form>

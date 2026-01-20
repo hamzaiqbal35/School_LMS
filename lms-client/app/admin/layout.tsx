@@ -61,7 +61,7 @@ export default function AdminLayout({
         { href: "/admin/assignments", label: "Teacher Assignments", icon: Calendar },
         { href: "/admin/attendance", label: "Attendance", icon: Calendar },
         { href: "/admin/substitution", label: "Substitutions", icon: Users },
-        { href: "/admin/fees", label: "Fees Verification", icon: CreditCard },
+        { href: "/admin/fees", label: "Finance", icon: CreditCard },
     ];
 
     return (

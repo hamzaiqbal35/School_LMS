@@ -28,6 +28,20 @@ exports.getAllMasterData = async (req, res) => {
     }
 };
 
+// @desc    Get all classes
+// @route   GET /api/admin/classes
+// @access  Admin
+exports.getClasses = async (req, res) => {
+    try {
+        const classes = await Class.find().sort({ order: 1 });
+        res.json(classes);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+
 // @desc    Initialize Defaults (Helper for quick setup)
 // @route   POST /api/admin/master-data/init
 exports.initDefaults = async (req, res) => {

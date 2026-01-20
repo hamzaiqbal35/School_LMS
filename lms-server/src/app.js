@@ -5,6 +5,8 @@ const connectDB = require('./config/db');
 
 dotenv.config();
 
+const path = require('path');
+
 // Connect to database
 connectDB();
 
@@ -18,6 +20,9 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
+
+// Serve Static Files (PDFs)
+app.use('/challans', express.static(path.join(__dirname, '../public/challans')));
 
 // Routes
 app.use('/api/auth', require('./routes/auth.routes'));

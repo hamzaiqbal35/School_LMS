@@ -50,4 +50,7 @@ const FeeChallanSchema = new Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
+// Enforce one challan per student per month
+FeeChallanSchema.index({ studentId: 1, month: 1 }, { unique: true });
+
 module.exports = mongoose.model('FeeChallan', FeeChallanSchema);
