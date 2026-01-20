@@ -1,29 +1,40 @@
 "use client"
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
-import { Loader2, Plus, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
+
+interface Student {
+    _id: string;
+    fullName: string;
+    registrationNumber: string;
+    status: string;
+}
+
+interface Challan {
+    _id: string;
+    challanNumber: string;
+    studentId: Student;
+    month: string;
+    totalAmount: number;
+    status: string;
+}
 
 export default function FeesPage() {
-    const [challans, setChallans] = useState<any[]>([]);
+    const [challans, setChallans] = useState<Challan[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState('');
 
     // Generation Modal State
     const [showGen, setShowGen] = useState(false);
     const [genData, setGenData] = useState({ month: '', dueDate: '', studentIds: [] as string[] });
-    const [allStudents, setAllStudents] = useState<any[]>([]);
+    const [allStudents, setAllStudents] = useState<Student[]>([]);
     const [generating, setGenerating] = useState(false);
 
     // Verify Modal State
     const [verifyId, setVerifyId] = useState('');
     const [verifyData, setVerifyData] = useState({ paymentReference: '', paymentDate: new Date().toISOString().split('T')[0], note: '' });
 
-    useEffect(() => {
-        fetchChallans();
-        fetchStudents();
-    }, [filterStatus]);
-
-    const fetchChallans = async () => {
+    const fetchChallans = useCallback(async () => {
         setLoading(true);
         try {
             const res = await api.get(`/fees${filterStatus ? `?status=${filterStatus}` : ''}`);
@@ -33,12 +44,21 @@ export default function FeesPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [filterStatus]);
 
-    const fetchStudents = async () => {
-        const res = await api.get('/admin/students?status=Active');
-        setAllStudents(res.data);
-    };
+    const fetchStudents = useCallback(async () => {
+        try {
+            const res = await api.get('/admin/students?status=Active');
+            setAllStudents(res.data);
+        } catch (error) {
+            console.error(error);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchChallans();
+        fetchStudents();
+    }, [fetchChallans, fetchStudents]); // Correct dependencies
 
     const handleGenerate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -55,7 +75,7 @@ export default function FeesPage() {
             setShowGen(false);
             fetchChallans();
             alert('Challans Generated Successfully');
-        } catch (error) {
+        } catch {
             alert('Failed to generate');
         } finally {
             setGenerating(false);
@@ -68,7 +88,7 @@ export default function FeesPage() {
             await api.post(`/fees/verify/${verifyId}`, verifyData);
             setVerifyId('');
             fetchChallans();
-        } catch (error) {
+        } catch {
             alert('Verification failed');
         }
     };

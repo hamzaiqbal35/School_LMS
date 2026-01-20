@@ -7,7 +7,7 @@ export default function TeacherDashboard() {
     return (
         <div className="space-y-6">
             <div className="mb-8">
-                <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.name}!</h1>
+                <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.fullName}!</h1>
                 <p className="text-gray-500">Here is your schedule for today.</p>
             </div>
 

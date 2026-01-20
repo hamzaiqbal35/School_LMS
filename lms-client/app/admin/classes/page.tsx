@@ -3,13 +3,47 @@ import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { Loader2, Trash2, Plus } from 'lucide-react';
 
+interface BaseItem {
+    _id: string;
+    name: string;
+}
+
+interface ClassItem extends BaseItem {
+    order?: number;
+}
+
+type SectionItem = BaseItem;
+
+interface SubjectItem extends BaseItem {
+    code?: string;
+    classes?: (ClassItem | string)[]; // IDs or Populated objects
+}
+
+interface TimeSlotItem extends BaseItem {
+    day: string;
+    startTime: string;
+    endTime: string;
+    order?: number;
+}
+
+interface MasterData {
+    classes: ClassItem[];
+    sections: SectionItem[];
+    subjects: SubjectItem[];
+    timeslots: TimeSlotItem[];
+}
+
+// Union type for mapped items in the list
+type MasterDataItem = ClassItem & SubjectItem & TimeSlotItem;
+// Note: This is a loose intersection to handle the dynamic map. A discriminated union or separate lists would be stricter but this fits the current structure.
+
 export default function MasterDataPage() {
-    const [activeTab, setActiveTab] = useState('classes');
-    const [data, setData] = useState<any>({ classes: [], sections: [], subjects: [], timeslots: [] });
+    const [activeTab, setActiveTab] = useState<'classes' | 'sections' | 'subjects' | 'timeslots'>('classes');
+    const [data, setData] = useState<MasterData>({ classes: [], sections: [], subjects: [], timeslots: [] });
     const [loading, setLoading] = useState(true);
 
     // Create Forms state
-    const [newItem, setNewItem] = useState<any>({});
+    const [newItem, setNewItem] = useState<Partial<MasterDataItem>>({});
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
@@ -42,7 +76,7 @@ export default function MasterDataPage() {
             await api.post(`/admin/master-data/${activeTab}`, newItem);
             setNewItem({});
             fetchData();
-        } catch (error) {
+        } catch {
             alert('Failed to create item');
         } finally {
             setSubmitting(false);
@@ -54,7 +88,7 @@ export default function MasterDataPage() {
         try {
             await api.delete(`/admin/master-data/${type}/${id}`);
             fetchData();
-        } catch (error) {
+        } catch {
             alert('Failed to delete');
         }
     };
@@ -65,7 +99,7 @@ export default function MasterDataPage() {
 
             {/* Tabs */}
             <div className="flex border-b border-gray-200 space-x-4">
-                {['classes', 'sections', 'subjects', 'timeslots'].map(tab => (
+                {(['classes', 'sections', 'subjects', 'timeslots'] as const).map(tab => (
                     <button
                         key={tab}
                         onClick={() => { setActiveTab(tab); setNewItem({}); }}
@@ -86,7 +120,7 @@ export default function MasterDataPage() {
                         <h3 className="font-semibold mb-4 capitalize text-lg">{activeTab} List</h3>
                         <div className="space-y-2 max-h-[500px] overflow-y-auto">
                             {data[activeTab]?.length === 0 && <p className="text-gray-500 italic">No items found.</p>}
-                            {data[activeTab]?.map((item: any) => (
+                            {(data[activeTab] as MasterDataItem[]).map((item) => (
                                 <div key={item._id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg group">
                                     <div>
                                         <p className="font-medium text-gray-900">{item.name}</p>
@@ -94,9 +128,9 @@ export default function MasterDataPage() {
                                             <div className="text-xs text-gray-500 mt-1">
                                                 Code: {item.code} <br />
                                                 <div className="flex flex-wrap gap-1 mt-1">
-                                                    {item.classes?.map((c: any) => (
-                                                        <span key={c._id || c} className="bg-blue-50 text-blue-700 px-1 rounded">
-                                                            {c.name || 'Unknown'}
+                                                    {item.classes?.map((c: ClassItem | string) => (
+                                                        <span key={(typeof c === 'string' ? c : c._id) || "unknown"} className="bg-blue-50 text-blue-700 px-1 rounded">
+                                                            {(typeof c === 'string' ? 'Unknown' : c.name) || 'Unknown'}
                                                         </span>
                                                     ))}
                                                 </div>
@@ -165,7 +199,7 @@ export default function MasterDataPage() {
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Applicable Classes</label>
                                         <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border p-2 rounded">
-                                            {data.classes.map((cls: any) => (
+                                            {data.classes.map((cls: ClassItem) => (
                                                 <label key={cls._id} className="flex items-center space-x-2 text-sm">
                                                     <input
                                                         type="checkbox"
@@ -178,7 +212,7 @@ export default function MasterDataPage() {
                                                                 ...newItem,
                                                                 classes: checked
                                                                     ? [...current, cls._id]
-                                                                    : current.filter((id: string) => id !== cls._id)
+                                                                    : current.filter((c) => (typeof c === 'string' ? c : c._id) !== cls._id)
                                                             });
                                                         }}
                                                         className="rounded text-blue-600 focus:ring-blue-500"

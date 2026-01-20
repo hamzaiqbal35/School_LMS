@@ -1,7 +1,33 @@
 "use client"
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
-import { Loader2, Calendar, Lock, Unlock, History, UserCheck, AlertCircle } from 'lucide-react';
+import { Loader2, Lock, Unlock, History } from 'lucide-react';
+
+interface AttendanceRecord {
+    _id: string;
+    studentId: {
+        _id: string;
+        fullName: string;
+        registrationNumber: string;
+    };
+    status: string;
+    markedBy?: { fullName: string };
+    markedAt: string;
+    isFrozen: boolean;
+    history?: { status: string; timestamp: string; reason?: string }[];
+}
+
+interface TeacherRecord {
+    teacherId: { _id: string; fullName: string };
+    status: string;
+    markedAt?: string;
+    markedBy?: { fullName: string };
+}
+interface MasterData {
+    classes: { _id: string; name: string }[];
+    sections: { _id: string; name: string }[];
+}
+
 
 export default function AdminAttendancePage() {
     const [activeTab, setActiveTab] = useState<'STUDENT' | 'TEACHER'>('STUDENT');
@@ -13,27 +39,19 @@ export default function AdminAttendancePage() {
     // Student State
     const [classId, setClassId] = useState('');
     const [sectionId, setSectionId] = useState('');
-    const [studentRecords, setStudentRecords] = useState<any[]>([]);
-    const [masterData, setMasterData] = useState<any>({ classes: [], sections: [] });
+    const [studentRecords, setStudentRecords] = useState<AttendanceRecord[]>([]);
+    const [masterData, setMasterData] = useState<MasterData>({ classes: [], sections: [] });
     const [isFrozen, setIsFrozen] = useState(false);
 
     // Teacher State
-    const [teachers, setTeachers] = useState<any[]>([]);
-    const [teacherRecords, setTeacherRecords] = useState<any[]>([]);
+    const [teachers, setTeachers] = useState<{ _id: string; fullName: string; email: string }[]>([]);
+    const [teacherRecords, setTeacherRecords] = useState<TeacherRecord[]>([]);
 
     useEffect(() => {
         api.get('/admin/master-data').then(res => setMasterData(res.data));
     }, []);
 
-    useEffect(() => {
-        if (activeTab === 'STUDENT' && classId && sectionId) {
-            fetchStudentAttendance();
-        } else if (activeTab === 'TEACHER') {
-            fetchTeacherAttendance();
-        }
-    }, [activeTab, date, classId, sectionId]);
-
-    const fetchStudentAttendance = async () => {
+    const fetchStudentAttendance = useCallback(async () => {
         setLoading(true);
         try {
             const res = await api.get(`/attendance?date=${date}&classId=${classId}&sectionId=${sectionId}`);
@@ -45,9 +63,9 @@ export default function AdminAttendancePage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [date, classId, sectionId]);
 
-    const fetchTeacherAttendance = async () => {
+    const fetchTeacherAttendance = useCallback(async () => {
         setLoading(true);
         try {
             const [teachersRes, attendanceRes] = await Promise.all([
@@ -62,14 +80,23 @@ export default function AdminAttendancePage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [date]);
+
+    useEffect(() => {
+        if (activeTab === 'STUDENT' && classId && sectionId) {
+            fetchStudentAttendance();
+        } else if (activeTab === 'TEACHER') {
+            fetchTeacherAttendance();
+        }
+    }, [activeTab, date, classId, sectionId, fetchStudentAttendance, fetchTeacherAttendance]);
+
 
     const markTeacherStatus = async (teacherId: string, status: string) => {
         try {
             // Optimistic Update
             const updatedRecords = teacherRecords.some(r => r.teacherId._id === teacherId)
                 ? teacherRecords.map(r => r.teacherId._id === teacherId ? { ...r, status } : r)
-                : [...teacherRecords, { teacherId: { _id: teacherId }, status, markedAt: new Date(), markedBy: { fullName: 'Admin' } }]; // Simplified optimistic
+                : [...teacherRecords, { teacherId: { _id: teacherId, fullName: '' }, status, markedAt: new Date().toISOString(), markedBy: { fullName: 'Admin' } }]; // Simplified optimistic
 
             setTeacherRecords(updatedRecords);
 
@@ -81,7 +108,7 @@ export default function AdminAttendancePage() {
             // Background refresh to ensure consistency
             const res = await api.get(`/teacher-attendance?date=${date}`);
             setTeacherRecords(res.data);
-        } catch (error) {
+        } catch {
             alert('Failed to mark attendance');
             fetchTeacherAttendance(); // Revert
         }
@@ -98,7 +125,7 @@ export default function AdminAttendancePage() {
             });
             setIsFrozen(!isFrozen);
             fetchStudentAttendance(); // Refresh
-        } catch (error) {
+        } catch {
             alert('Failed to update freeze status');
         }
     };
@@ -148,7 +175,7 @@ export default function AdminAttendancePage() {
                                     onChange={(e) => setClassId(e.target.value)}
                                 >
                                     <option value="">Select Class</option>
-                                    {masterData.classes.map((c: any) => (
+                                    {masterData.classes.map((c: { _id: string; name: string }) => (
                                         <option key={c._id} value={c._id}>{c.name}</option>
                                     ))}
                                 </select>
@@ -161,7 +188,7 @@ export default function AdminAttendancePage() {
                                     onChange={(e) => setSectionId(e.target.value)}
                                 >
                                     <option value="">Select Section</option>
-                                    {masterData.sections.map((s: any) => (
+                                    {masterData.sections.map((s: { _id: string; name: string }) => (
                                         <option key={s._id} value={s._id}>{s.name}</option>
                                     ))}
                                 </select>
@@ -229,13 +256,13 @@ export default function AdminAttendancePage() {
                                                     <div className="absolute right-0 bottom-full mb-2 w-64 bg-white rounded-lg shadow-xl border border-gray-100 p-3 hidden group-hover:block z-50">
                                                         <h4 className="text-xs font-bold text-gray-700 mb-2 border-b pb-1">Modification Log</h4>
                                                         <div className="space-y-2 max-h-40 overflow-y-auto">
-                                                            {record.history.map((h: any, i: number) => (
+                                                            {record.history.map((h: { status: string; timestamp: string; reason?: string }, i: number) => (
                                                                 <div key={i} className="text-xs text-gray-600 border-b border-gray-50 pb-1 last:border-0">
                                                                     <div className="flex justify-between">
                                                                         <span className={`font-semibold ${h.status === 'Present' ? 'text-green-600' : 'text-red-600'}`}>{h.status}</span>
                                                                         <span className="text-gray-400 text-[10px]">{new Date(h.timestamp).toLocaleTimeString()}</span>
                                                                     </div>
-                                                                    {h.reason && <div className="text-gray-500 italic mt-0.5">"{h.reason}"</div>}
+                                                                    {h.reason && <div className="text-gray-500 italic mt-0.5">&quot;{h.reason}&quot;</div>}
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -273,7 +300,7 @@ export default function AdminAttendancePage() {
                                             <td className="px-6 py-4">
                                                 {status ? (
                                                     <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${status === 'Present' ? 'bg-green-100 text-green-700' :
-                                                            status === 'Absent' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+                                                        status === 'Absent' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
                                                         }`}>
                                                         {status}
                                                     </span>
@@ -288,8 +315,8 @@ export default function AdminAttendancePage() {
                                                     <button
                                                         onClick={() => markTeacherStatus(teacher._id, 'Present')}
                                                         className={`px-3 py-1 text-xs font-semibold rounded ${status === 'Present'
-                                                                ? 'bg-green-600 text-white'
-                                                                : 'bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-600'
+                                                            ? 'bg-green-600 text-white'
+                                                            : 'bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-600'
                                                             }`}
                                                     >
                                                         Present
@@ -297,8 +324,8 @@ export default function AdminAttendancePage() {
                                                     <button
                                                         onClick={() => markTeacherStatus(teacher._id, 'Absent')}
                                                         className={`px-3 py-1 text-xs font-semibold rounded ${status === 'Absent'
-                                                                ? 'bg-red-600 text-white'
-                                                                : 'bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600'
+                                                            ? 'bg-red-600 text-white'
+                                                            : 'bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600'
                                                             }`}
                                                     >
                                                         Absent
@@ -306,8 +333,8 @@ export default function AdminAttendancePage() {
                                                     <button
                                                         onClick={() => markTeacherStatus(teacher._id, 'Leave')}
                                                         className={`px-3 py-1 text-xs font-semibold rounded ${status === 'Leave'
-                                                                ? 'bg-yellow-500 text-white'
-                                                                : 'bg-gray-100 text-gray-600 hover:bg-yellow-50 hover:text-yellow-600'
+                                                            ? 'bg-yellow-500 text-white'
+                                                            : 'bg-gray-100 text-gray-600 hover:bg-yellow-50 hover:text-yellow-600'
                                                             }`}
                                                     >
                                                         Leave

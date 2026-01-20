@@ -73,7 +73,7 @@ export default function TeacherLayout({
             )}>
                 <div className="p-6 flex justify-between items-start md:block border-b">
                     <div className="flex flex-col items-center text-center w-full">
-                        <Image src="/Logo2.png" alt="School Logo" width={64} height={64} className="h-16 w-auto mb-3" priority />
+                        <Image src="/Logo2.png" alt="School Logo" width={0} height={0} sizes="100vw" className="mb-3" priority style={{ width: 'auto', height: '4rem' }} />
                         <span className="font-bold text-gray-800 text-sm leading-tight">
                             Oxford Grammar & <br /> Cambridge EdTech School
                         </span>
@@ -143,7 +143,7 @@ export default function TeacherLayout({
                 {/* Mobile Header */}
                 <div className="md:hidden bg-white border-b p-4 flex items-center justify-between sticky top-0 z-30">
                     <div className="flex items-center">
-                        <Image src="/Logo2.png" alt="School Logo" width={32} height={32} className="h-8 w-auto mr-2" />
+                        <Image src="/Logo2.png" alt="School Logo" width={0} height={0} sizes="100vw" className="mr-2" priority style={{ width: 'auto', height: '2rem' }} />
                         <span className="font-bold text-gray-800 text-sm">Oxford Grammar & Cambridge EdTech School</span>
                     </div>
                     <button

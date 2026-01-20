@@ -148,6 +148,7 @@ export default function Home() {
                     src="/images/hero-dashboard.png"
                     alt="Dashboard Background"
                     fill
+                    sizes="(max-width: 768px) 100vw, 67vw"
                     className="object-cover opacity-0 group-hover:opacity-20 transition-opacity duration-700 blur-sm scale-110 group-hover:scale-100"
                   />
                   <div className="absolute inset-0 bg-gradient-to-br from-white/90 via-white/80 to-purple-50/50"></div>
@@ -184,6 +185,7 @@ export default function Home() {
                     src="/images/hero-students.png"
                     alt="Students"
                     fill
+                    sizes="(max-width: 768px) 100vw, 33vw"
                     className="object-cover mix-blend-overlay opacity-10 group-hover:opacity-20 transition-opacity duration-700 grayscale"
                   />
                   <div className="absolute inset-0 bg-gradient-to-br from-purple-600/90 to-indigo-700/90 mix-blend-multiply"></div>
@@ -208,6 +210,7 @@ export default function Home() {
                     src="/images/hero-dashboard.png"
                     alt="Analytics"
                     fill
+                    sizes="(max-width: 768px) 100vw, 33vw"
                     className="object-cover opacity-0 group-hover:opacity-10 transition-opacity duration-700 sepia"
                   />
                   <div className="absolute inset-0 bg-gradient-to-b from-orange-50/80 to-white/90"></div>
@@ -237,6 +240,7 @@ export default function Home() {
                     src="/images/hero-students.png"
                     alt="Security"
                     fill
+                    sizes="(max-width: 768px) 100vw, 67vw"
                     className="object-cover opacity-0 group-hover:opacity-5 transition-opacity duration-700"
                     style={{ objectPosition: 'top center' }}
                   />

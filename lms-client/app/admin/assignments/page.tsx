@@ -73,7 +73,8 @@ export default function AssignmentsPage() {
             setMsg({ type: 'success', text: 'Teacher assigned successfully' });
             // Fetch again to be sure of populated fields
             fetchData();
-        } catch (error: any) {
+        } catch (err) {
+            const error = err as { response?: { data?: { message?: string } } };
             setMsg({ type: 'error', text: error.response?.data?.message || 'Assignment failed' });
         }
     };
@@ -83,7 +84,7 @@ export default function AssignmentsPage() {
         try {
             await api.delete(`/admin/assignments/${id}`);
             setAssignments(assignments.filter(a => a._id !== id));
-        } catch (error) {
+        } catch {
             alert('Failed to delete');
         }
     };
@@ -115,7 +116,7 @@ export default function AssignmentsPage() {
                             required
                         >
                             <option value="">Select Teacher</option>
-                            {data.teachers.map((t: any) => (
+                            {data.teachers.map((t: { _id: string; fullName: string }) => (
                                 <option key={t._id} value={t._id}>{t.fullName}</option>
                             ))}
                         </select>
@@ -130,7 +131,7 @@ export default function AssignmentsPage() {
                             required
                         >
                             <option value="">Select Class</option>
-                            {data.classes.map((c: any) => (
+                            {data.classes.map((c: { _id: string; name: string }) => (
                                 <option key={c._id} value={c._id}>{c.name}</option>
                             ))}
                         </select>
@@ -145,7 +146,7 @@ export default function AssignmentsPage() {
                             required
                         >
                             <option value="">Select Section</option>
-                            {data.sections.map((s: any) => (
+                            {data.sections.map((s: { _id: string; name: string }) => (
                                 <option key={s._id} value={s._id}>{s.name}</option>
                             ))}
                         </select>
@@ -160,7 +161,7 @@ export default function AssignmentsPage() {
                             required
                         >
                             <option value="">Select Subject</option>
-                            {data.subjects.map((s: any) => (
+                            {data.subjects.map((s: { _id: string; name: string }) => (
                                 <option key={s._id} value={s._id}>{s.name}</option>
                             ))}
                         </select>
@@ -175,7 +176,7 @@ export default function AssignmentsPage() {
                             required
                         >
                             <option value="">Select Slot</option>
-                            {data.timeslots.map((slot: any) => (
+                            {data.timeslots.map((slot: TimeSlot) => (
                                 <option key={slot._id} value={slot._id}>
                                     {slot.name} ({slot.day})
                                 </option>
