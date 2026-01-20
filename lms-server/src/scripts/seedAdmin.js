@@ -1,35 +1,35 @@
-require('dotenv').config();
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const dotenv = require('dotenv');
 const User = require('../models/User');
+const connectDB = require('../config/db');
+
+dotenv.config();
 
 const seedAdmin = async () => {
     try {
-        await mongoose.connect(process.env.MONGO_URI);
-        console.log('MongoDB Connected for Seeding');
+        await connectDB();
 
-        const existingAdmin = await User.findOne({ email: 'admin@school.com' });
-        if (existingAdmin) {
+        // Check by Email
+        const email = 'admin@school.com';
+        const adminExists = await User.findOne({ email });
+
+        if (adminExists) {
             console.log('Admin user already exists');
-            process.exit(0);
+            process.exit();
         }
 
-        const hashedPassword = await bcrypt.hash('admin123', 10);
-
-        const adminUser = new User({
-            name: 'Super Admin',
-            email: 'admin@school.com',
-            password: hashedPassword,
-            role: 'admin',
+        const admin = await User.create({
+            username: 'admin',
+            email: email,
+            password: 'password123',
+            fullName: 'System Administrator',
+            role: 'ADMIN'
         });
 
-        await adminUser.save();
-        console.log('Admin user created successfully');
-        console.log('Email: admin@school.com');
-        console.log('Password: admin123');
-        process.exit(0);
+        console.log(`Admin created: ${admin.email} / password123`);
+        process.exit();
     } catch (error) {
-        console.error('Seeding failed:', error);
+        console.error(`Error: ${error.message}`);
         process.exit(1);
     }
 };

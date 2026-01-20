@@ -1,9 +1,10 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-const SubstitutionSchema = new Schema({
-    date: {
-        type: Date,
+const TeacherAssignmentSchema = new Schema({
+    teacherId: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
         required: true
     },
     classId: {
@@ -26,24 +27,13 @@ const SubstitutionSchema = new Schema({
         ref: 'TimeSlot',
         required: true
     },
-    originalTeacherId: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    substituteTeacherId: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+    active: {
+        type: Boolean,
+        default: true
     },
     assignedBy: {
         type: Schema.Types.ObjectId,
         ref: 'User'
-    },
-    status: {
-        type: String,
-        enum: ['Assigned', 'Completed', 'Cancelled'],
-        default: 'Assigned'
     },
     createdAt: {
         type: Date,
@@ -51,7 +41,11 @@ const SubstitutionSchema = new Schema({
     }
 });
 
-// Ensure a specific slot for a class section only has one substitution per day
-SubstitutionSchema.index({ date: 1, classId: 1, sectionId: 1, timeSlotId: 1 }, { unique: true });
+// Clash Detection Indices
+// 1. Prevent multiple teachers for same class-section-subject-slot
+TeacherAssignmentSchema.index({ classId: 1, sectionId: 1, timeSlotId: 1 }, { unique: true, partialFilterExpression: { active: true } });
 
-module.exports = mongoose.model('Substitution', SubstitutionSchema);
+// 2. Prevent same teacher in two places at same time
+TeacherAssignmentSchema.index({ teacherId: 1, timeSlotId: 1 }, { unique: true, partialFilterExpression: { active: true } });
+
+module.exports = mongoose.model('TeacherAssignment', TeacherAssignmentSchema);

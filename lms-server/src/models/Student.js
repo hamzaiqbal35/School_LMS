@@ -1,60 +1,98 @@
 const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-const studentSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
-    },
+const StudentSchema = new Schema({
+    // Identifiers
     registrationNumber: {
         type: String,
-        required: true,
         unique: true,
+        required: true,
+        trim: true
     },
-    rollNumber: {
+
+    // Personal Info
+    fullName: {
         type: String,
         required: true,
+        trim: true
     },
-    class: {
+    fatherName: {
         type: String,
         required: true,
-    },
-    section: {
-        type: String,
-        required: true,
-    },
-    parentName: {
-        type: String,
-        required: true,
-    },
-    parentPhone: {
-        type: String,
-        required: true,
+        trim: true
     },
     dob: {
         type: Date,
+        required: true
     },
-    address: {
+    gender: {
         type: String,
+        enum: ['Male', 'Female', 'Other'],
+        required: true
     },
-    isActive: {
-        type: Boolean,
-        default: true,
+    phoneNumber: {
+        type: String,
+        trim: true
     },
+
+    // Academic Placement
+    classId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Class',
+        required: true
+    },
+    sectionId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Section',
+        required: true
+    },
+    campusId: {
+        type: String,
+        default: 'Main' // Can be expanded to reference if multiple branches exist
+    },
+
+    // Financial Structure (Authoritative Master Data)
+    monthlyFee: {
+        type: Number,
+        required: true,
+        min: 0
+    },
+    discountAmount: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+    lateFeeRule: {
+        type: String,
+        default: 'Standard'
+    },
+
+    // Status
     status: {
         type: String,
-        enum: ['active', 'inactive', 'suspended', 'passed_out'],
-        default: 'active'
+        enum: ['Active', 'Inactive', 'PassedOut', 'Expelled'],
+        default: 'Active'
     },
+
     admissionDate: {
         type: Date,
         default: Date.now
     },
-    frozenAttendance: {
-        isFrozen: { type: Boolean, default: false },
-        reason: String,
-        startDate: Date,
-        endDate: Date
-    }
-}, { timestamps: true });
 
-module.exports = mongoose.model('Student', studentSchema);
+    // Audit
+    lastModifiedBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    lastModifiedAt: {
+        type: Date,
+        default: Date.now
+    }
+});
+
+// Update timestamp on save
+StudentSchema.pre('save', function () {
+    this.lastModifiedAt = Date.now();
+});
+
+module.exports = mongoose.model('Student', StudentSchema);

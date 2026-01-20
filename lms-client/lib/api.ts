@@ -1,16 +1,28 @@
 import axios from 'axios';
-import { useAuthStore } from '../store/useAuthStore';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    withCredentials: true, // Send cookies with requests
 });
 
-api.interceptors.request.use((config) => {
-    const user = useAuthStore.getState().user;
-    if (user?.token) {
-        config.headers.Authorization = `Bearer ${user.token}`;
+// Request Interceptor: NO LONGER NEEDED for Token (Cookies handled by browser)
+// api.interceptors.request.use( ... );
+
+// Response Interceptor: Handle 401
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            // Token expired or invalid
+            useAuthStore.getState().logout();
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
     }
-    return config;
-});
+);
 
 export default api;

@@ -1,26 +1,42 @@
 const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-const teacherAttendanceSchema = new mongoose.Schema({
-    teacherId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
+const TeacherAttendanceSchema = new Schema({
     date: {
         type: Date,
         required: true
     },
-    status: {
-        type: String,
-        enum: ['Present', 'Absent', 'Leave', 'Half Day'],
+    teacherId: {
+        type: Schema.Types.ObjectId,
+        ref: 'User', // Assuming Teacher is a User with role TEACHER
         required: true
     },
-    remarks: {
-        type: String
-    }
-}, { timestamps: true });
+    status: {
+        type: String,
+        enum: ['Present', 'Absent', 'Leave', 'Late'],
+        required: true,
+        default: 'Absent'
+    },
+    markedBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    reason: String,
+    markedAt: {
+        type: Date,
+        default: Date.now
+    },
 
-// Ensure one record per teacher per day
-teacherAttendanceSchema.index({ teacherId: 1, date: 1 }, { unique: true });
+    // Audit Trail
+    history: [{
+        status: String,
+        changedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+        reason: String,
+        timestamp: { type: Date, default: Date.now }
+    }]
+});
 
-module.exports = mongoose.model('TeacherAttendance', teacherAttendanceSchema);
+// Unique attendance per teacher per day
+TeacherAttendanceSchema.index({ date: 1, teacherId: 1 }, { unique: true });
+
+module.exports = mongoose.model('TeacherAttendance', TeacherAttendanceSchema);
