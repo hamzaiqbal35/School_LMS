@@ -9,6 +9,10 @@ interface Student {
     registrationNumber: string;
     status: string;
 }
+interface Class {
+    _id: string;
+    name: string;
+}
 
 interface Challan {
     _id: string;
@@ -31,7 +35,7 @@ export default function FeesPage() {
     const [allStudents, setAllStudents] = useState<Student[]>([]);
     const [generating, setGenerating] = useState(false);
 
-    const [classes, setClasses] = useState<any[]>([]);
+    const [classes, setClasses] = useState<Class[]>([]);
     const [filters, setFilters] = useState({ search: '', classId: '', month: '' });
 
     // Verify Modal State
@@ -133,7 +137,7 @@ export default function FeesPage() {
                 </div>
                 <div>
                     <select
-                        className="border rounded-lg px-3 py-2 text-sm outline-none bg-white min-w-[150px]"
+                        className="border rounded-lg px-3 py-2 text-sm outline-none bg-white min-w-37.5"
                         value={filters.classId}
                         onChange={e => setFilters({ ...filters, classId: e.target.value })}
                     >

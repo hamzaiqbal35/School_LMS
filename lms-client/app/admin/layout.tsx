@@ -16,41 +16,30 @@ import {
     Menu,
     X
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import AdminFooter from "@/components/admin/AdminFooter";
 
-export default function AdminLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { user, isAuthenticated, logout, isHydrated, checkAuth, isCheckingAuth } = useAuthStore();
     const router = useRouter();
     const pathname = usePathname();
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+    useEffect(() => { checkAuth(); }, [checkAuth]);
 
     useEffect(() => {
-        checkAuth();
-    }, [checkAuth]);
-
-    useEffect(() => {
-        // Wait for check to finish
-        if (!isCheckingAuth && !isAuthenticated) {
-            router.push('/login');
-        } else if (!isCheckingAuth && user?.role !== 'ADMIN') {
+        if (!isCheckingAuth && (!isAuthenticated || user?.role !== 'ADMIN')) {
             router.push('/login');
         }
     }, [isAuthenticated, isCheckingAuth, user, router]);
 
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-    // Close sidebar on route change (mobile)
     useEffect(() => {
-        // Defer update to avoid synchronous set-state-in-effect warning
         const timer = setTimeout(() => setIsSidebarOpen(false), 0);
         return () => clearTimeout(timer);
     }, [pathname]);
 
-    if (!isHydrated || isCheckingAuth) return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    if (!isHydrated || isCheckingAuth) return <div className="flex items-center justify-center h-screen text-gray-700 text-lg font-semibold">Loading...</div>;
     if (!isAuthenticated || user?.role !== 'ADMIN') return null;
 
     const navItems = [
@@ -61,109 +50,131 @@ export default function AdminLayout({
         { href: "/admin/assignments", label: "Teacher Assignments", icon: Calendar },
         { href: "/admin/attendance", label: "Attendance", icon: Calendar },
         { href: "/admin/substitution", label: "Substitutions", icon: Users },
-        { href: "/admin/fees", label: "Finance", icon: CreditCard },
+        { href: "/admin/fees", label: "Fees Verification", icon: CreditCard },
     ];
 
+    const logoutHandler = async () => {
+        try { await api.post('/auth/logout'); } catch (e) { console.error('Logout failed', e); }
+        logout();
+        router.push('/login');
+    };
+
     return (
-        <div className="flex h-screen bg-gray-100">
+        <div className="flex h-screen bg-[#F8FAFC] font-sans text-slate-800 overflow-hidden">
             {/* Mobile Sidebar Overlay */}
-            {isSidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
-                    onClick={() => setIsSidebarOpen(false)}
-                />
-            )}
+            <AnimatePresence>
+                {isSidebarOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 md:hidden"
+                        onClick={() => setIsSidebarOpen(false)}
+                    />
+                )}
+            </AnimatePresence>
 
             {/* Sidebar */}
             <aside className={cn(
-                "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r shadow-sm flex flex-col transition-transform duration-300 ease-in-out md:relative md:translate-x-0",
+                "fixed inset-y-0 left-0 z-50 w-80 bg-slate-900 text-white shadow-2xl flex flex-col transition-all duration-500 ease-in-out md:relative md:translate-x-0 border-r border-slate-800",
                 isSidebarOpen ? "translate-x-0" : "-translate-x-full"
             )}>
-                <div className="p-6 flex justify-between items-center">
-                    <div className="flex flex-col items-center text-center">
-                        <Image src="/Logo2.png" alt="School Logo" width={0} height={0} sizes="100vw" className="mb-3" priority style={{ width: 'auto', height: '4rem' }} />
-                        <span className="font-bold text-gray-800 text-sm leading-tight">
-                            Oxford Grammar & <br /> Cambridge EdTech School
-                        </span>
-                        <span className="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Admin Console</span>
+                <div className="p-8 flex flex-col items-center text-center relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-full bg-linear-to-b from-cyan-500/10 to-transparent pointer-events-none"></div>
+                    <div className="relative z-10 w-full flex flex-col items-center">
+                        <motion.div
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="mb-4 w-22 h-22 bg-white rounded-full shadow-2xl shadow-cyan-500/20 flex items-center justify-center p-2 overflow-hidden border-4 border-slate-800"
+                        >
+                            <div className="relative w-16 h-16">
+                                <Image src="/Logo2.png" alt="School Logo" fill sizes="64px" className="object-contain" priority />
+                            </div>
+                        </motion.div>
+                        <h2 className="font-black text-white text-xl tracking-tight leading-tight uppercase italic">
+                            Oxford Grammar
+                        </h2>
+                        <p className="text-[10px] text-cyan-400 font-black uppercase tracking-[0.3em] mt-2 bg-cyan-900/50 px-3 py-1 rounded-full">Cambridge Edtech School</p>
                     </div>
-                    {/* Close button for mobile */}
-                    <button
-                        onClick={() => setIsSidebarOpen(false)}
-                        className="md:hidden text-gray-500 hover:text-gray-700"
-                    >
+                    <button onClick={() => setIsSidebarOpen(false)} className="md:hidden absolute top-6 right-6 text-slate-400 hover:text-white transition-colors">
                         <X className="w-6 h-6" />
                     </button>
                 </div>
 
-                <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
-                    {navItems.map((item) => {
+                <nav className="flex-1 px-4 py-2 space-y-2 overflow-y-auto custom-scrollbar">
+                    {navItems.map((item, idx) => {
                         const Icon = item.icon;
                         const isActive = pathname === item.href;
                         return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
+                            <Link key={item.href} href={item.href}
                                 className={cn(
-                                    "flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors",
+                                    "group flex items-center px-4 py-3.5 text-sm font-bold rounded-2xl transition-all duration-300 relative overflow-hidden",
                                     isActive
-                                        ? "bg-blue-50 text-blue-700"
-                                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                        ? "bg-cyan-600 text-white shadow-lg shadow-cyan-900/20"
+                                        : "text-slate-400 hover:text-white hover:bg-slate-800"
                                 )}
                             >
-                                <Icon className="w-5 h-5 mr-3" />
-                                {item.label}
+                                {isActive && (
+                                    <motion.div
+                                        layoutId="navGlow"
+                                        className="absolute inset-x-0 bottom-0 h-0.5 bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5)]"
+                                    />
+                                )}
+                                <Icon className={cn(
+                                    "w-5 h-5 mr-4 transition-all duration-300",
+                                    isActive ? "text-white" : "text-slate-500 group-hover:text-cyan-400 group-hover:scale-110"
+                                )} />
+                                <span className="tracking-wide">{item.label}</span>
                             </Link>
                         )
                     })}
                 </nav>
 
-                <div className="p-4 border-t bg-gray-50/50">
-                    <div className="flex items-center mb-4">
-                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border-2 border-white shadow-sm">
-                            {(user?.fullName || 'U').charAt(0)}
-                        </div>
-                        <div className="ml-3">
-                            <p className="text-sm font-medium text-gray-900">{user?.fullName || 'User'}</p>
-                            <p className="text-xs text-gray-500">Administrator</p>
+                <div className="p-4 mt-auto">
+                    <div className="p-4 rounded-4xl bg-slate-800/50 border border-slate-700/50 mb-4 backdrop-blur-md">
+                        <div className="flex items-center gap-4">
+                            <div className="w-8 h-8 rounded-2xl bg-linear-to-br from-cyan-500 to-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-lg ring-2 ring-slate-700">
+                                {(user?.fullName || 'U').charAt(0)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-black text-white truncate capitalize">{user?.fullName || 'Root Admin'}</p>
+                                <p className="text-[10px] text-cyan-400 font-extrabold uppercase tracking-widest mt-0.5">Systems Chief</p>
+                            </div>
                         </div>
                     </div>
                     <button
-                        onClick={async () => {
-                            try {
-                                await api.post('/auth/logout');
-                            } catch (e) {
-                                console.error('Logout failed', e);
-                            }
-                            logout();
-                            router.push('/login');
-                        }}
-                        className="w-full flex items-center justify-center px-4 py-2 text-sm text-red-600 bg-white border border-red-100 hover:bg-red-50 rounded-lg transition-colors shadow-sm"
+                        onClick={logoutHandler}
+                        className="w-full flex items-center justify-center gap-3 px-6 py-4 text-xs font-black text-white bg-slate-800 hover:bg-red-500/10 hover:text-red-500 rounded-2xl transition-all duration-300 border border-slate-700 hover:border-red-500/50 group"
                     >
-                        <LogOut className="w-4 h-4 mr-2" />
-                        Logout
+                        <LogOut className="w-4 h-3 transition-transform group-hover:-translate-x-1" />
+                        TERMINATE SESSION
                     </button>
                 </div>
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-auto flex flex-col w-full">
+            <main className="flex-1 overflow-auto flex flex-col w-full relative">
+                <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[16px_16px] opacity-40 pointer-events-none"></div>
+
                 {/* Mobile Header */}
-                <div className="md:hidden bg-white border-b p-4 flex items-center justify-between sticky top-0 z-30">
-                    <div className="flex items-center">
-                        <Image src="/Logo2.png" alt="School Logo" width={0} height={0} sizes="100vw" className="mr-2" priority style={{ width: 'auto', height: '2rem' }} />
-                        <span className="font-bold text-gray-800 text-sm">Oxford Grammar & Cambridge EdTech School</span>
+                <div className="md:hidden bg-white/80 backdrop-blur-md border-b border-slate-100 p-5 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-xl">
+                            <Image src="/Logo2.png" alt="School Logo" width={48} height={48} className="w-auto h-10 brightness-100" style={{ width: 'auto', height: 'auto' }} />
+                        </div>
+                        <span className="font-black text-slate-900 text-xs tracking-tight">Oxford Grammar School</span>
                     </div>
-                    <button
-                        onClick={() => setIsSidebarOpen(true)}
-                        className="p-2 -mr-2 text-gray-600 hover:bg-gray-100 rounded-full"
+                    <button onClick={() => setIsSidebarOpen(true)}
+                        className="p-2 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
                     >
                         <Menu className="w-6 h-6" />
                     </button>
                 </div>
 
-                <div className="p-4 md:p-8 flex-1 w-full max-w-[100vw]">
-                    {children}
+                <div className="p-4 md:p-10 flex-1 w-full relative z-10">
+                    <div className="max-w-7xl mx-auto space-y-8">
+                        {children}
+                    </div>
                 </div>
                 <AdminFooter />
             </main>

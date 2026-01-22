@@ -3,59 +3,128 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
+import { Menu, X } from "lucide-react";
 
 export default function LandingNavbar({ hideLoginBtn = false }: { hideLoginBtn?: boolean }) {
     const pathname = usePathname();
+    const [isScrolled, setIsScrolled] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    // Handle scroll effect
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 20);
+        };
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
+
+    // Prevent background scrolling when mobile menu is open
+    useEffect(() => {
+        if (mobileMenuOpen) {
+            const prev = document.body.style.overflow;
+            document.body.style.overflow = "hidden";
+            return () => {
+                document.body.style.overflow = prev || "";
+            };
+        }
+        // ensure overflow is reset when menu closes
+        document.body.style.overflow = "";
+        return () => {};
+    }, [mobileMenuOpen]);
 
     const isActive = (path: string) => pathname === path;
 
-    return (
-        <nav className="fixed w-full bg-white/90 backdrop-blur-xl z-50 border-b border-slate-100">
-            <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
-                <Link href="/" className="flex items-center gap-3 cursor-pointer group">
-                    <div className="relative w-52 h-12">
-                        <Image
-                            src="/Logo.png"
-                            alt="CampusAxis Logo"
-                            fill
-                            className="object-contain object-left"
-                            priority
-                            sizes="(max-width: 768px) 100vw, 320px"
-                        />
-                    </div>
-                </Link>
+    const navLinks = [
+        { name: "Home", href: "/" },
+        { name: "About Us", href: "/about" },
+        { name: "Contact", href: "/contact" },
+    ];
 
-                <div className="hidden md:flex gap-8 text-sm font-medium text-slate-500">
-                    <Link
-                        href="/"
-                        className={`transition-colors hover:text-purple-600 ${isActive('/') ? 'text-slate-900 border-b-2 border-purple-600' : ''}`}
-                    >
-                        Home
-                    </Link>
-                    <Link
-                        href="/about"
-                        className={`transition-colors hover:text-purple-600 ${isActive('/about') ? 'text-slate-900 border-b-2 border-purple-600' : ''}`}
-                    >
-                        About Us
-                    </Link>
-                    <Link
-                        href="/contact"
-                        className={`transition-colors hover:text-purple-600 ${isActive('/contact') ? 'text-slate-900 border-b-2 border-purple-600' : ''}`}
-                    >
-                        Contact
+    return (
+        <nav
+            className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${isScrolled ? "bg-white/90 backdrop-blur-xl shadow-sm py-4" : "bg-transparent py-6"
+                }`}
+        >
+            <div className="max-w-7xl mx-auto px-6 h-16 md:h-24 flex justify-between items-center transition-all duration-300">
+                {/* Left Side: Logo & School Name */}
+                <div className="flex items-center gap-4 z-50">
+                    <Link href="/" className="flex items-center gap-3 group">
+                        <div className="relative w-12 h-12 md:w-16 md:h-16 transition-transform group-hover:scale-105">
+                            <Image
+                                src="/Logo2.png"
+                                alt="Oxford Grammar School Logo"
+                                fill
+                                sizes="(max-width: 768px) 48px, 64px"
+                                className="object-contain"
+                                priority
+                            />
+                        </div>
+                        <span className="hidden lg:block text-lg md:text-xl font-bold bg-clip-text text-transparent bg-linear-to-r from-slate-800 to-slate-600 group-hover:from-cyan-700 group-hover:to-cyan-500 transition-all duration-300 leading-tight max-w-50 md:max-w-none">
+                            Oxford Grammar & <br className="hidden" /> Cambridge EdTech School
+                        </span>
                     </Link>
                 </div>
 
-                {!hideLoginBtn && (
-                    <div className="flex gap-4">
+                {/* Right Side: Navigation & Login */}
+                <div className="hidden md:flex items-center gap-8">
+                    {/* Nav Links */}
+                    <div className="flex items-center gap-8">
+                        {navLinks.map((link) => (
+                            <Link
+                                key={link.name}
+                                href={link.href}
+                                className={`text-sm font-semibold tracking-wide transition-all duration-300 hover:text-cyan-600 ${isActive(link.href) ? "text-cyan-600" : "text-slate-600"
+                                    } relative group`}
+                            >
+                                {link.name}
+                                <span className={`absolute -bottom-1 left-0 w-0 h-0.5 bg-cyan-600 transition-all duration-300 group-hover:w-full ${isActive(link.href) ? "w-full" : ""}`}></span>
+                            </Link>
+                        ))}
+                    </div>
+
+                    {/* Login Button */}
+                    {!hideLoginBtn && (
                         <Link
                             href="/login"
-                            className="px-6 py-2.5 rounded-full text-sm font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all shadow-sm hover:shadow-md"
+                            className="px-6 py-2.5 rounded-full text-sm font-bold bg-cyan-600 text-white hover:bg-cyan-700 hover:shadow-cyan-200 hover:shadow-lg transition-all active:scale-95 duration-300 border border-transparent"
                         >
                             Log In
                         </Link>
-                    </div>
-                )}
+                    )}
+                </div>
+
+                {/* Mobile Menu Toggle */}
+                <button
+                    className="md:hidden relative z-50 p-2 text-slate-800 hover:text-cyan-600 transition-colors"
+                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                >
+                    {mobileMenuOpen ? <X className="w-8 h-8" /> : <Menu className="w-8 h-8" />}
+                </button>
+
+                {/* Mobile Fullscreen Menu */}
+                <div className={`fixed inset-0 bg-white/95 backdrop-blur-xl z-40 flex flex-col justify-center items-center gap-8 transition-all duration-500 ease-in-out ${mobileMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-full pointer-events-none"}`}>
+                    {navLinks.map((link) => (
+                        <Link
+                            key={link.name}
+                            href={link.href}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="text-3xl font-extrabold text-slate-800 hover:text-cyan-600 transition-colors"
+                        >
+                            {link.name}
+                        </Link>
+                    ))}
+                    {!hideLoginBtn && (
+                        <Link
+                            href="/login"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="mt-8 px-10 py-4 rounded-full text-xl font-bold bg-cyan-600 text-white hover:bg-cyan-700 shadow-xl transition-all"
+                        >
+                            Log In
+                        </Link>
+                    )}
+                </div>
             </div>
         </nav>
     );

@@ -132,7 +132,7 @@ export default function AdminDashboard() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
-                <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-100 min-h-[300px] flex flex-col items-center justify-center text-center">
+                <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-100 min-h-75 flex flex-col items-center justify-center text-center">
                     <div className="p-4 bg-gray-50 rounded-full mb-4">
                         <ArrowUpRight className="w-8 h-8 text-gray-400" />
                     </div>
