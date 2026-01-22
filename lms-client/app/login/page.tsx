@@ -37,8 +37,10 @@ export default function LoginPage() {
             // Redirect based on role
             if (data.role === "ADMIN") {
                 router.push("/admin");
+            } else if (data.role === "TEACHER") {
+                router.push("/teacher");
             } else {
-                router.push("/dashboard");
+                router.push("/");
             }
         } catch (error: unknown) {
             console.error("Login error:", error);

@@ -74,7 +74,7 @@ export default function TeacherLayout({
                 <div className="p-6 flex justify-between items-start md:block border-b">
                     <div className="flex flex-col items-center text-center w-full">
                         <div className="relative mb-3 w-16 h-16">
-                            <Image src="/Logo2.png" alt="School Logo" fill className="object-contain" priority style={{ width: 'auto', height: 'auto' }} />
+                            <Image src="/Logo2.png" alt="School Logo" fill sizes="64px" className="object-contain" priority />
                         </div>
                         <span className="font-bold text-gray-800 text-sm leading-tight">
                             Oxford Grammar & <br /> Cambridge EdTech School
@@ -146,7 +146,7 @@ export default function TeacherLayout({
                 <div className="md:hidden bg-white border-b p-4 flex items-center justify-between sticky top-0 z-30">
                     <div className="flex items-center">
                         <div className="relative mr-2 w-8 h-8">
-                            <Image src="/Logo2.png" alt="School Logo" fill className="object-contain" priority style={{ width: 'auto', height: 'auto' }} />
+                            <Image src="/Logo2.png" alt="School Logo" fill sizes="32px" className="object-contain" priority />
                         </div>
                         <span className="font-bold text-gray-800 text-sm">Oxford Grammar & Cambridge EdTech School</span>
                     </div>
