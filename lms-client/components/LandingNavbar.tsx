@@ -22,17 +22,19 @@ export default function LandingNavbar({ hideLoginBtn = false }: { hideLoginBtn?:
 
     // Prevent background scrolling when mobile menu is open
     useEffect(() => {
+        const prev = document.body.style.overflow;
         if (mobileMenuOpen) {
-            const prev = document.body.style.overflow;
             document.body.style.overflow = "hidden";
-            return () => {
-                document.body.style.overflow = prev || "";
-            };
         }
-        // ensure overflow is reset when menu closes
-        document.body.style.overflow = "";
-        return () => {};
+        return () => {
+            document.body.style.overflow = prev || "";
+        };
     }, [mobileMenuOpen]);
+
+    // Close mobile menu on route change to avoid leftover open state
+    useEffect(() => {
+        setMobileMenuOpen(false);
+    }, [pathname]);
 
     const isActive = (path: string) => pathname === path;
 
@@ -61,7 +63,11 @@ export default function LandingNavbar({ hideLoginBtn = false }: { hideLoginBtn?:
                                 priority
                             />
                         </div>
-                        <span className="hidden lg:block text-lg md:text-xl font-bold bg-clip-text text-transparent bg-linear-to-r from-slate-800 to-slate-600 group-hover:from-cyan-700 group-hover:to-cyan-500 transition-all duration-300 leading-tight max-w-50 md:max-w-none">
+                        {/* Compact name for small screens, full name for large */}
+                        <span className="block md:hidden text-sm font-bold text-slate-800 leading-tight">
+                            Oxford Grammar
+                        </span>
+                        <span className="hidden md:block lg:text-xl text-lg font-bold bg-clip-text text-transparent bg-linear-to-r from-slate-800 to-slate-600 group-hover:from-cyan-700 group-hover:to-cyan-500 transition-all duration-300 leading-tight max-w-50 md:max-w-none">
                             Oxford Grammar & <br className="hidden" /> Cambridge EdTech School
                         </span>
                     </Link>
@@ -97,20 +103,34 @@ export default function LandingNavbar({ hideLoginBtn = false }: { hideLoginBtn?:
 
                 {/* Mobile Menu Toggle */}
                 <button
-                    className="md:hidden relative z-50 p-2 text-slate-800 hover:text-cyan-600 transition-colors"
+                    className="md:hidden relative z-30 p-2 text-slate-800 hover:text-cyan-600 transition-colors"
                     onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 >
                     {mobileMenuOpen ? <X className="w-8 h-8" /> : <Menu className="w-8 h-8" />}
                 </button>
 
                 {/* Mobile Fullscreen Menu */}
-                <div className={`fixed inset-0 bg-white/95 backdrop-blur-xl z-40 flex flex-col justify-center items-center gap-8 transition-all duration-500 ease-in-out ${mobileMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-full pointer-events-none"}`}>
+                <div 
+                    className={`fixed inset-0 w-full h-screen bg-white z-100 flex flex-col justify-center items-center gap-8 transition-all duration-500 ease-in-out ${
+                    mobileMenuOpen 
+                    ? "opacity-100 translate-y-0 pointer-events-auto" 
+                    : "opacity-0 -translate-y-full pointer-events-none"
+                }`}
+                >
+                    {/* Close button inside the menu for better UX */}
+                    <button 
+                        className="absolute top-6 right-6 p-2 text-slate-800"
+                        onClick={() => setMobileMenuOpen(false)}
+                    >
+                        <X className="w-10 h-10" />
+                    </button>
+
                     {navLinks.map((link) => (
                         <Link
                             key={link.name}
                             href={link.href}
                             onClick={() => setMobileMenuOpen(false)}
-                            className="text-3xl font-extrabold text-slate-800 hover:text-cyan-600 transition-colors"
+                            className="text-4xl font-extrabold text-slate-800 hover:text-cyan-600 transition-colors"
                         >
                             {link.name}
                         </Link>
@@ -119,7 +139,7 @@ export default function LandingNavbar({ hideLoginBtn = false }: { hideLoginBtn?:
                         <Link
                             href="/login"
                             onClick={() => setMobileMenuOpen(false)}
-                            className="mt-8 px-10 py-4 rounded-full text-xl font-bold bg-cyan-600 text-white hover:bg-cyan-700 shadow-xl transition-all"
+                            className="mt-8 px-12 py-4 rounded-full text-2xl font-bold bg-cyan-600 text-white hover:bg-cyan-700 shadow-xl transition-all active:scale-95"
                         >
                             Log In
                         </Link>
