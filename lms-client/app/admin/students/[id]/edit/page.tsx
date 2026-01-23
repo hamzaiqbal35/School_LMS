@@ -86,13 +86,14 @@ export default function EditStudentPage({ params }: { params: Promise<{ id: stri
         phoneNumber: '',
         classId: '',
         sectionId: '',
-        monthlyFee: '',
+        // monthlyFee removed
         discountAmount: '0',
         admissionDate: '',
-        status: 'Active'
+        status: 'Active',
+        isAdmissionPaid: false
     });
 
-
+    const [classFee, setClassFee] = useState(0);
 
     const fetchMasterData = useCallback(async () => {
         try {
@@ -108,24 +109,38 @@ export default function EditStudentPage({ params }: { params: Promise<{ id: stri
             const res = await api.get(`/admin/students/${studentId}`);
             const s = res.data;
             setFormData({
-                registrationNumber: s.registrationNumber,
-                fullName: s.fullName,
-                fatherName: s.fatherName,
+                registrationNumber: s.registrationNumber || '',
+                fullName: s.fullName || '',
+                fatherName: s.fatherName || '',
                 dob: s.dob ? s.dob.split('T')[0] : '',
-                gender: s.gender,
+                gender: s.gender || '',
                 phoneNumber: s.phoneNumber || '',
-                classId: s.classId?._id || s.classId,
-                sectionId: s.sectionId?._id || s.sectionId,
-                monthlyFee: s.monthlyFee,
+                classId: s.classId?._id || s.classId || '',
+                sectionId: s.sectionId?._id || s.sectionId || '',
                 discountAmount: s.discountAmount || '0',
                 admissionDate: s.admissionDate ? s.admissionDate.split('T')[0] : '',
-                status: s.status
+                status: s.status || 'Active',
+                isAdmissionPaid: !!s.isAdmissionPaid
             });
         } catch {
-            // console.error(error);
             alert('Failed to load student');
         }
     }, [studentId]);
+
+    // Fetch Fee when class changes
+    useEffect(() => {
+        if (formData.classId) {
+            const fetchFee = async () => {
+                try {
+                    const res = await api.get(`/fees/structures/${formData.classId}`);
+                    setClassFee(res.data.monthlyTuition || 0);
+                } catch {
+                    setClassFee(0);
+                }
+            };
+            fetchFee();
+        }
+    }, [formData.classId]);
 
     useEffect(() => {
         fetchMasterData();
@@ -135,7 +150,9 @@ export default function EditStudentPage({ params }: { params: Promise<{ id: stri
     }, [studentId, fetchMasterData, fetchStudent]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value, type } = e.target;
+        const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
+        setFormData({ ...formData, [name]: val });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -223,8 +240,28 @@ export default function EditStudentPage({ params }: { params: Promise<{ id: stri
                     <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Fee Structure</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <InputGroup label="Monthly Fee (PKR)" name="monthlyFee" type="number" value={formData.monthlyFee} onChange={handleChange} required />
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Tuition (Class Based)</label>
+                                <div className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 font-medium">
+                                    PKR {classFee.toLocaleString()}
+                                </div>
+                                <p className="text-xs text-gray-400 mt-1">Managed via Class Settings</p>
+                            </div>
                             <InputGroup label="Discount (PKR)" name="discountAmount" type="number" value={formData.discountAmount} onChange={handleChange} />
+
+                            <div className="flex items-center pt-6">
+                                <input
+                                    type="checkbox"
+                                    id="isAdmissionPaid"
+                                    name="isAdmissionPaid"
+                                    checked={formData.isAdmissionPaid}
+                                    onChange={handleChange}
+                                    className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                />
+                                <label htmlFor="isAdmissionPaid" className="ml-2 block text-sm font-medium text-gray-700">
+                                    Admission Fee Paid?
+                                </label>
+                            </div>
                         </div>
                     </div>
 

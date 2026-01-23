@@ -33,9 +33,7 @@ interface MasterData {
     timeslots: TimeSlotItem[];
 }
 
-// Union type for mapped items in the list
 type MasterDataItem = ClassItem & SubjectItem & TimeSlotItem;
-// Note: This is a loose intersection to handle the dynamic map. A discriminated union or separate lists would be stricter but this fits the current structure.
 
 export default function MasterDataPage() {
     const [activeTab, setActiveTab] = useState<'classes' | 'sections' | 'subjects' | 'timeslots'>('classes');
@@ -46,6 +44,17 @@ export default function MasterDataPage() {
     const [newItem, setNewItem] = useState<Partial<MasterDataItem>>({});
     const [submitting, setSubmitting] = useState(false);
 
+    // Fee Structure Modal State
+    const [showFeeModal, setShowFeeModal] = useState(false);
+    const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
+    const [feeStructure, setFeeStructure] = useState({
+        admissionFee: 0,
+        monthlyTuition: 0,
+        examFee: 0,
+        miscCharges: 0
+    });
+    const [loadingFee, setLoadingFee] = useState(false);
+
     useEffect(() => {
         fetchData();
     }, []);
@@ -54,7 +63,6 @@ export default function MasterDataPage() {
         setLoading(true);
         try {
             const res = await api.get('/admin/master-data');
-            // Ensure array fallbacks
             const d = res.data;
             setData({
                 classes: d.classes || [],
@@ -93,6 +101,38 @@ export default function MasterDataPage() {
         }
     };
 
+    const openFeeModal = async (cls: ClassItem) => {
+        setSelectedClass(cls);
+        setShowFeeModal(true);
+        setLoadingFee(true);
+        try {
+            const res = await api.get(`/fees/structures/${cls._id}`);
+            setFeeStructure({
+                admissionFee: res.data.admissionFee || 0,
+                monthlyTuition: res.data.monthlyTuition || 0,
+                examFee: res.data.examFee || 0,
+                miscCharges: res.data.miscCharges || 0
+            });
+        } catch {
+            // Default if not found
+            setFeeStructure({ admissionFee: 0, monthlyTuition: 0, examFee: 0, miscCharges: 0 });
+        } finally {
+            setLoadingFee(false);
+        }
+    };
+
+    const handleSaveFee = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedClass) return;
+        try {
+            await api.post('/fees/structures', { ...feeStructure, classId: selectedClass._id });
+            alert('Fee Structure Saved');
+            setShowFeeModal(false);
+        } catch {
+            alert('Failed to save fee structure');
+        }
+    };
+
     return (
         <div className="space-y-6">
             <h1 className="text-2xl font-bold text-gray-800">Master Data Configuration</h1>
@@ -124,6 +164,16 @@ export default function MasterDataPage() {
                                 <div key={item._id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg group">
                                     <div>
                                         <p className="font-medium text-gray-900">{item.name}</p>
+
+                                        {activeTab === 'classes' && (
+                                            <button
+                                                onClick={() => openFeeModal(item as ClassItem)}
+                                                className="text-xs text-blue-600 hover:underline mt-1"
+                                            >
+                                                Manage Fees
+                                            </button>
+                                        )}
+
                                         {activeTab === 'subjects' && (
                                             <div className="text-xs text-gray-500 mt-1">
                                                 Code: {item.code} <br />
@@ -275,6 +325,41 @@ export default function MasterDataPage() {
                                 {submitting ? 'Saving...' : 'Create'}
                             </button>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Fee Structure Modal */}
+            {showFeeModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-xl w-full max-w-md">
+                        <h3 className="text-lg font-bold mb-4">Fee Structure: {selectedClass?.name}</h3>
+                        {loadingFee ? <Loader2 className="animate-spin mx-auto" /> : (
+                            <form onSubmit={handleSaveFee} className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700">Admission Fee</label>
+                                        <input type="number" className="w-full border rounded p-2" value={feeStructure.admissionFee} onChange={e => setFeeStructure({ ...feeStructure, admissionFee: Number(e.target.value) })} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700">Monthly Tuition</label>
+                                        <input type="number" required className="w-full border rounded p-2" value={feeStructure.monthlyTuition} onChange={e => setFeeStructure({ ...feeStructure, monthlyTuition: Number(e.target.value) })} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700">Exam Fee</label>
+                                        <input type="number" className="w-full border rounded p-2" value={feeStructure.examFee} onChange={e => setFeeStructure({ ...feeStructure, examFee: Number(e.target.value) })} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700">Misc Charges</label>
+                                        <input type="number" className="w-full border rounded p-2" value={feeStructure.miscCharges} onChange={e => setFeeStructure({ ...feeStructure, miscCharges: Number(e.target.value) })} />
+                                    </div>
+                                </div>
+                                <div className="pt-4 flex justify-end gap-2">
+                                    <button type="button" onClick={() => setShowFeeModal(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
+                                    <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save Structure</button>
+                                </div>
+                            </form>
+                        )}
                     </div>
                 </div>
             )}

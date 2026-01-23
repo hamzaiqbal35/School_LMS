@@ -31,7 +31,13 @@ export default function FeesPage() {
 
     // Generation Modal State
     const [showGen, setShowGen] = useState(false);
-    const [genData, setGenData] = useState({ month: '', dueDate: '', studentIds: [] as string[] });
+    const [genData, setGenData] = useState({
+        month: '',
+        dueDate: '',
+        studentIds: [] as string[],
+        includeExamFee: false,
+        includeMisc: false
+    });
     const [allStudents, setAllStudents] = useState<Student[]>([]);
     const [generating, setGenerating] = useState(false);
 
@@ -82,13 +88,14 @@ export default function FeesPage() {
         e.preventDefault();
         setGenerating(true);
         try {
-            // Select all active students by default for now if none selected (Bulk)
             const ids = genData.studentIds.length > 0 ? genData.studentIds : allStudents.map(s => s._id);
 
             await api.post('/fees/generate', {
                 month: genData.month,
                 dueDate: genData.dueDate,
-                studentIds: ids
+                studentIds: ids,
+                includeExamFee: genData.includeExamFee,
+                includeMisc: genData.includeMisc
             });
             setShowGen(false);
             fetchChallans();
@@ -209,9 +216,9 @@ export default function FeesPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            {c.pdfUrl && (
+                                            {(c.pdfUrl || c.status !== 'Pending') && (
                                                 <a
-                                                    href={`http://localhost:5000${c.pdfUrl}`}
+                                                    href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/fees/download/${c._id}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="text-purple-600 hover:text-purple-800 text-sm font-medium mr-4"
@@ -266,12 +273,12 @@ export default function FeesPage() {
                                 </select>
                             </div>
                             <div>
-                                <label htmlFor="genMonth" className="block text-sm font-medium text-gray-700">Month (e.g. Jan-2025)</label>
+                                <label htmlFor="genMonth" className="block text-sm font-medium text-gray-700">Month (e.g. 2025-01)</label>
                                 <input
                                     id="genMonth"
                                     name="genMonth"
                                     type="text" required
-                                    placeholder="Jan-2025"
+                                    placeholder="2025-01"
                                     className="w-full border rounded p-2"
                                     value={genData.month}
                                     onChange={e => setGenData({ ...genData, month: e.target.value })}
@@ -288,6 +295,28 @@ export default function FeesPage() {
                                     onChange={e => setGenData({ ...genData, dueDate: e.target.value })}
                                 />
                             </div>
+
+                            <div className="flex gap-4">
+                                <label className="flex items-center text-sm text-gray-700">
+                                    <input
+                                        type="checkbox"
+                                        className="mr-2 rounded"
+                                        checked={genData.includeExamFee}
+                                        onChange={e => setGenData({ ...genData, includeExamFee: e.target.checked })}
+                                    />
+                                    Include Exam Fee
+                                </label>
+                                <label className="flex items-center text-sm text-gray-700">
+                                    <input
+                                        type="checkbox"
+                                        className="mr-2 rounded"
+                                        checked={genData.includeMisc}
+                                        onChange={e => setGenData({ ...genData, includeMisc: e.target.checked })}
+                                    />
+                                    Include Misc Charges
+                                </label>
+                            </div>
+
                             <div className="text-xs text-gray-500">
                                 {genData.studentIds.length > 0
                                     ? `Will generate for selected student.`

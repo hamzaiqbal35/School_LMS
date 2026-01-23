@@ -26,7 +26,11 @@ const FeeChallanSchema = new Schema({
     },
 
     // Financial Snapshot (Snapshot at time of generation)
+    admissionFee: { type: Number, default: 0 },
     tuitionFee: { type: Number, required: true },
+    examFee: { type: Number, default: 0 },
+    miscCharges: { type: Number, default: 0 },
+
     otherCharges: { type: Number, default: 0 },
     discount: { type: Number, default: 0 },
     lateFee: { type: Number, default: 0 },
@@ -46,6 +50,9 @@ const FeeChallanSchema = new Schema({
         ref: 'User'
     },
     verificationNote: String,
+
+    pdfUrl: { type: String },
+    pdfPublicId: { type: String },
 
     createdAt: { type: Date, default: Date.now }
 });

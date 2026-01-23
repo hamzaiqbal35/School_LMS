@@ -52,19 +52,11 @@ const StudentSchema = new Schema({
     },
 
     // Financial Structure (Authoritative Master Data)
-    monthlyFee: {
-        type: Number,
-        required: true,
-        min: 0
-    },
+    // Removed direct fee storage. Referenced via ClassFeeStructure.
     discountAmount: {
         type: Number,
         default: 0,
         min: 0
-    },
-    lateFeeRule: {
-        type: String,
-        default: 'Standard'
     },
 
     // Status

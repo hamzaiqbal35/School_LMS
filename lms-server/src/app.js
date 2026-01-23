@@ -15,7 +15,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:3000', // Must specify origin for credentials
+    origin: process.env.CLIENT_URL, // Must specify in .env
     credentials: true
 }));
 app.use(express.json());

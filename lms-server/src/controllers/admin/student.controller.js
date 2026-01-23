@@ -1,15 +1,24 @@
 const Student = require('../../models/Student');
+const StudentFeeStatus = require('../../models/StudentFeeStatus');
 
 // @desc    Create a new student
 // @route   POST /api/admin/students
 // @access  Admin
 exports.createStudent = async (req, res) => {
     try {
+        const { isAdmissionPaid, ...studentData } = req.body;
+
         const student = await Student.create({
-            ...req.body,
-            ...req.body,
+            ...studentData,
             lastModifiedBy: req.user._id
         });
+
+        // Create Fee Status
+        await StudentFeeStatus.create({
+            studentId: student._id,
+            isAdmissionPaid: !!isAdmissionPaid
+        });
+
         res.status(201).json(student);
     } catch (error) {
         if (error.code === 11000) {
@@ -61,8 +70,17 @@ exports.getStudentById = async (req, res) => {
 
         if (!student) return res.status(404).json({ message: 'Student not found' });
 
-        res.json(student);
+        // Fetch Fee Status
+        const feeStatus = await StudentFeeStatus.findOne({ studentId: student._id });
+
+        const response = {
+            ...student.toObject(),
+            isAdmissionPaid: feeStatus ? feeStatus.isAdmissionPaid : false
+        };
+
+        res.json(response);
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -72,14 +90,28 @@ exports.getStudentById = async (req, res) => {
 // @access  Admin
 exports.updateStudent = async (req, res) => {
     try {
+        const { isAdmissionPaid, ...updateData } = req.body;
+
         const student = await Student.findByIdAndUpdate(
             req.params.id,
-            { ...req.body, lastModifiedBy: req.user._id },
+            { ...updateData, lastModifiedBy: req.user._id },
             { new: true }
         );
+
         if (!student) return res.status(404).json({ message: 'Student not found' });
+
+        // Update Fee Status
+        if (isAdmissionPaid !== undefined) {
+            await StudentFeeStatus.findOneAndUpdate(
+                { studentId: student._id },
+                { isAdmissionPaid: isAdmissionPaid },
+                { upsert: true, new: true }
+            );
+        }
+
         res.json(student);
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: 'Server Error' });
     }
 };

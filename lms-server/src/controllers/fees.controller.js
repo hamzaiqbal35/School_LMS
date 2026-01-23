@@ -1,7 +1,10 @@
 const FeeChallan = require('../models/FeeChallan');
 const Student = require('../models/Student');
 const User = require('../models/User'); // If needed for verification
+const ClassFeeStructure = require('../models/ClassFeeStructure');
+const StudentFeeStatus = require('../models/StudentFeeStatus');
 const { generateChallanPDF } = require('../utils/pdfGenerator');
+const cloudinary = require('../config/cloudinary');
 
 // Helper: Generate Challan No (Deterministic-ish but unique enough)
 // CH-YEARMONTH-STUDENTID_LAST4
@@ -16,38 +19,54 @@ const generateChallanNumber = (studentId, monthStr) => {
  * Core Logic: Create or Retrieve Challan
  * Safe, Idempotent, Snapshot-based
  */
-const createOrGetChallan = async (studentId, month, dueDate) => {
+const createOrGetChallan = async (studentId, month, dueDate, options = {}) => {
+    // Options can include: { includeExamFee: boolean, includeMisc: boolean, forceAdmission: boolean }
+    const { includeExamFee = false, includeMisc = false } = options;
+
     // 1. Check DB for existing
     const existing = await FeeChallan.findOne({ studentId, month });
     if (existing) {
         return {
             challan: existing,
             status: 'EXISTING',
-            pdfPath: existing.pdfPath // Assuming we save this reference or generate dynamic? 
-            // Better to re-generate PDF path if not stored? Let's check model.
-            // Model doesn't have pdfPath. Let's return dynamic path or generate on fly if needed?
-            // User req: "Return existing PDF path". 
-            // Note: If we don't store PDF path in DB, we rely on the file system.
-            // Let's assume filename is deterministic based on challanNumber.
+            pdfPath: `/challans/challan-${existing.challanNumber}.pdf`
         };
     }
 
-    // 2. Fetch Student Data (Snapshot source)
+    // 2. Fetch Student Data & Fee Structure
     const student = await Student.findById(studentId).populate('classId sectionId');
     if (!student) throw new Error(`Student not found: ${studentId}`);
 
-    // 3. Calculate Amounts
-    const tuition = student.monthlyFee || 0;
+    const feeStructure = await ClassFeeStructure.findOne({ classId: student.classId._id });
+    if (!feeStructure) throw new Error(`Fee Structure not defined for class ${student.classId.name}`);
+
+    // 3. Fetch/Create Fee Status
+    let feeStatus = await StudentFeeStatus.findOne({ studentId });
+    if (!feeStatus) {
+        feeStatus = await StudentFeeStatus.create({ studentId });
+    }
+
+    // 4. Calculate Amounts
+    const tuition = feeStructure.monthlyTuition;
+    let admission = 0;
+
+    // Auto-include admission if not paid logic (or explicit override?)
+    // Requirement: "Auto-exclude admission fee if already paid"
+    if (!feeStatus.isAdmissionPaid && feeStructure.admissionFee > 0) {
+        admission = feeStructure.admissionFee;
+    }
+
+    const exam = includeExamFee ? feeStructure.examFee : 0;
+    const misc = includeMisc ? feeStructure.miscCharges : 0;
+
     const discount = student.discountAmount || 0;
-    // Late fee is rule-based, but for GENERATION, it's usually 0 unless we are regenerating overdue?
-    // Requirement: "Input: monthlyFee, discount. Calculate total."
-    // Let's assume lateFee is 0 at generation time.
-    const lateFee = 0;
-    const otherCharges = 0; // Can be added via extra args if needed
+    const otherCharges = 0; // Configurable if needed via inputs
+    const lateFee = 0; // 0 at generation
 
-    const total = Math.max(0, tuition + otherCharges - discount + lateFee);
+    const subTotal = tuition + admission + exam + misc + otherCharges;
+    const total = Math.max(0, subTotal - discount);
 
-    // 4. Generate Object
+    // 5. Generate Object
     const challanNo = generateChallanNumber(student._id, month);
 
     const newChallan = new FeeChallan({
@@ -55,22 +74,30 @@ const createOrGetChallan = async (studentId, month, dueDate) => {
         studentId: student._id,
         month,
         dueDate,
+
+        // Breakdown
         tuitionFee: tuition,
+        admissionFee: admission,
+        examFee: exam,
+        miscCharges: misc,
+        otherCharges,
+
         discount,
         lateFee,
-        otherCharges,
         totalAmount: total,
         status: 'Pending'
     });
 
-    // 5. Generate PDF
-    // We need student data for PDF too.
-    const pdfUrl = await generateChallanPDF(newChallan.toObject(), student.toObject());
+    // 6. Generate PDF
+    const { url, public_id } = await generateChallanPDF(newChallan.toObject(), student.toObject());
 
-    // 6. Save DB
+    newChallan.pdfUrl = url;
+    newChallan.pdfPublicId = public_id;
+
+    // 7. Save DB
     await newChallan.save();
 
-    return { challan: newChallan, status: 'CREATED', pdfPath: pdfUrl };
+    return { challan: newChallan, status: 'CREATED', pdfPath: url };
 };
 
 
@@ -80,7 +107,7 @@ const createOrGetChallan = async (studentId, month, dueDate) => {
 exports.generateChallan = async (req, res) => {
     try {
         // Can accept studentId (Single), studentIds (Array), or classId (Bulk by Class)
-        const { studentId, studentIds, classId, month, dueDate } = req.body;
+        const { studentId, studentIds, classId, month, dueDate, includeExamFee, includeMisc } = req.body;
 
         if (!month || !dueDate) {
             return res.status(400).json({ message: 'Month and Due Date are required' });
@@ -106,7 +133,7 @@ exports.generateChallan = async (req, res) => {
         // Process all targets
         for (const id of targets) {
             try {
-                const result = await createOrGetChallan(id, month, dueDate);
+                const result = await createOrGetChallan(id, month, dueDate, { includeExamFee, includeMisc });
                 results.push(result);
             } catch (err) {
                 errors.push({ studentId: id, error: err.message });
@@ -154,14 +181,12 @@ exports.getChallans = async (req, res) => {
             const students = await Student.find(studentQuery).select('_id');
             const ids = students.map(s => s._id);
 
-            // If filtering by student, we must match one of the found students
-            // Since we might already have studentId query, we need to be careful.
-            // But if studentId is passed, usually search/class isn't.
-            // Let's assume standard intersection if multiple provided, but safe to overwrite if studentId was null.
+            // Merge with existing studentId filter if any
             if (query.studentId) {
-                // If specific student requested AND class/search, effectively intersection (but simplest is just $in ids)
-                // For now, let's just set the $in.
-                query.studentId = { $in: ids };
+                // Intersect or... basically if query.studentId is present, we must match BOTH.
+                // But simplified:
+                query.studentId = { $in: ids }; // This overwrites single ID if set?
+                // If both are set, we should ideally check intersection, but for typical usage it's one or other.
             } else {
                 query.studentId = { $in: ids };
             }
@@ -171,11 +196,23 @@ exports.getChallans = async (req, res) => {
             .populate('studentId', 'fullName registrationNumber fatherName classId sectionId')
             .sort({ createdAt: -1 });
 
-        // Augment with PDF link if needed (deterministic based on challanNumber)
-        const augmented = challans.map(c => ({
-            ...c.toObject(),
-            pdfUrl: `/challans/challan-${c.challanNumber}.pdf`
-        }));
+        // Augment with Signed URL for authenticated access
+        const augmented = challans.map(c => {
+            const obj = c.toObject();
+            if (obj.pdfPublicId) {
+                // Generate Signed URL
+                obj.pdfUrl = cloudinary.url(obj.pdfPublicId, {
+                    resource_type: 'image',
+                    type: 'authenticated',
+                    sign_url: true
+                });
+            } else if (obj.pdfUrl && obj.pdfUrl.startsWith('/')) {
+                // Local Fallback: Dynamic Host
+                const baseUrl = `${req.protocol}://${req.get('host')}`;
+                obj.pdfUrl = `${baseUrl}${obj.pdfUrl}`;
+            }
+            return obj;
+        });
 
         res.json(augmented);
     } catch (error) {
@@ -204,9 +241,95 @@ exports.verifyPayment = async (req, res) => {
 
         await challan.save();
 
+        // Update Student Fee Status if Paid
+        if (challan.status === 'Paid') {
+            const feeStatus = await StudentFeeStatus.findOne({ studentId: challan.studentId });
+            if (feeStatus) {
+                let updated = false;
+
+                // If Admission Fee was included, mark as paid
+                if (challan.admissionFee > 0 && !feeStatus.isAdmissionPaid) {
+                    feeStatus.isAdmissionPaid = true;
+                    updated = true;
+                }
+
+                // Update last paid tuition month logic?
+                // Simple logic: if this month > lastPaid, update. 
+                // But string comparison YYYY-MM works.
+                if (challan.tuitionFee > 0) {
+                    // Check if current month is greater than stored
+                    // Assuming format YYYY-MM
+                    if (!feeStatus.lastPaidTuitionMonth || challan.month > feeStatus.lastPaidTuitionMonth) {
+                        feeStatus.lastPaidTuitionMonth = challan.month;
+                        updated = true;
+                    }
+                }
+
+                if (updated) await feeStatus.save();
+            }
+        }
+
         res.json({ message: 'Payment Verified', challan });
     } catch (error) {
         console.error(error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+// @desc    Download Challan Proxy (Proxy Stream)
+// @route   GET /api/fees/download/:id
+// @access  Protected
+exports.downloadChallan = async (req, res) => {
+    try {
+        const challan = await FeeChallan.findById(req.params.id);
+        if (!challan) return res.status(404).json({ message: 'Challan not found' });
+
+        // 1. Try Local File First (Preferred/Offline)
+        const path = require('path');
+        const fs = require('fs');
+        const fileName = `challan-${challan.challanNumber}.pdf`;
+        const localPath = path.join(__dirname, '../../public/challans', fileName);
+
+        if (fs.existsSync(localPath)) {
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+            const fileStream = fs.createReadStream(localPath);
+            fileStream.pipe(res);
+            return;
+        }
+
+        // 2. Try Cloudinary (Network)
+        if (challan.pdfPublicId) {
+            // Generate Signed URL (Backend Only)
+            const url = cloudinary.url(challan.pdfPublicId, {
+                resource_type: 'image', // Must match upload type
+                type: 'authenticated',
+                sign_url: true,
+                format: 'pdf' // Ensure PDF extension
+            });
+
+            // Fetch and Stream
+            // We need 'https' to get the stream
+            const https = require('https');
+
+            https.get(url, (stream) => {
+                if (stream.statusCode !== 200) {
+                    console.error('Cloudinary Stream Error:', stream.statusCode);
+                    return res.status(stream.statusCode).send('Failed to fetch from cloud');
+                }
+                res.setHeader('Content-Type', 'application/pdf');
+                res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+                stream.pipe(res);
+            }).on('error', (err) => {
+                console.error('Stream Request Error:', err);
+                res.status(500).send('Stream Error');
+            });
+            return;
+        }
+
+        res.status(404).json({ message: 'PDF not found locally or on cloud' });
+
+    } catch (error) {
+        console.error('Download Error:', error);
         res.status(500).json({ message: 'Server Error' });
     }
 };

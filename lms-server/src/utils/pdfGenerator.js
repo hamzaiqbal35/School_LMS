@@ -1,6 +1,7 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs');
+const cloudinary = require('../config/cloudinary');
 
 const generateChallanPDF = async (challanData, studentData) => {
     try {
@@ -17,6 +18,7 @@ const generateChallanPDF = async (challanData, studentData) => {
             const logoData = fs.readFileSync(logoPath);
             logoBase64 = `data:image/png;base64,${logoData.toString('base64')}`;
         }
+
 
         // Helper
         const formatDate = (date) => new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -84,10 +86,25 @@ const generateChallanPDF = async (challanData, studentData) => {
                         </tr>
                     </thead>
                     <tbody>
+                        ${challanData.admissionFee > 0 ? `
+                        <tr>
+                            <td>Admission Fee</td>
+                            <td class="text-right">${challanData.admissionFee.toLocaleString()}</td>
+                        </tr>` : ''}
                         <tr>
                             <td>Tuition Fee</td>
                             <td class="text-right">${challanData.tuitionFee.toLocaleString()}</td>
                         </tr>
+                        ${challanData.examFee > 0 ? `
+                        <tr>
+                            <td>Exam Fee</td>
+                            <td class="text-right">${challanData.examFee.toLocaleString()}</td>
+                        </tr>` : ''}
+                         ${challanData.miscCharges > 0 ? `
+                        <tr>
+                            <td>Misc Charges</td>
+                            <td class="text-right">${challanData.miscCharges.toLocaleString()}</td>
+                        </tr>` : ''}
                         ${challanData.otherCharges > 0 ? `
                         <tr>
                             <td>Other Charges</td>
@@ -147,13 +164,13 @@ const generateChallanPDF = async (challanData, studentData) => {
                     font-family: 'Inter', sans-serif;
                     background: #fdfdfd;
                     margin: 0;
-                    padding: 40px;
+                    padding: 20px;
                     box-sizing: border-box;
                 }
 
                 .container {
                     display: flex;
-                    gap: 40px;
+                    gap: 30px;
                     width: 100%;
                     max-width: 1100px;
                     margin: 0 auto;
@@ -164,7 +181,7 @@ const generateChallanPDF = async (challanData, studentData) => {
                     background: #fff;
                     border: 1px solid #e2e8f0;
                     border-radius: 12px;
-                    padding: 24px;
+                    padding: 16px;
                     position: relative;
                     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
                 }
@@ -182,38 +199,38 @@ const generateChallanPDF = async (challanData, studentData) => {
 
                 .header {
                     text-align: center;
-                    margin-bottom: 20px;
-                }
-
-                .logo {
-                    height: 60px;
-                    object-fit: contain;
                     margin-bottom: 12px;
                 }
 
+                .logo {
+                    height: 50px;
+                    object-fit: contain;
+                    margin-bottom: 8px;
+                }
+
                 .logo-placeholder {
-                    height: 60px;
-                    width: 60px;
+                    height: 50px;
+                    width: 50px;
                     background: #e2e8f0;
                     border-radius: 50%;
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
-                    margin-bottom: 12px;
+                    margin-bottom: 8px;
                     font-weight: 700;
                     color: #64748b;
                 }
 
                 .school-info h2 {
                     margin: 0;
-                    font-size: 16px;
+                    font-size: 14px;
                     color: #1e293b;
                     font-weight: 700;
                 }
 
                 .school-info p {
-                    margin: 4px 0 0;
-                    font-size: 9px;
+                    margin: 2px 0 0;
+                    font-size: 8px;
                     color: #64748b;
                 }
 
@@ -221,13 +238,13 @@ const generateChallanPDF = async (challanData, studentData) => {
                     text-align: center;
                     border-bottom: 1px solid #e2e8f0;
                     line-height: 0.1em;
-                    margin: 10px 0 20px;
+                    margin: 8px 0 16px;
                 }
 
                 .badge {
                     background: #f1f5f9;
-                    padding: 4px 12px;
-                    font-size: 10px;
+                    padding: 4px 10px;
+                    font-size: 9px;
                     font-weight: 600;
                    color: #475569;
                     border-radius: 12px;
@@ -237,23 +254,23 @@ const generateChallanPDF = async (challanData, studentData) => {
                 .grid-info {
                     display: grid;
                     grid-template-columns: 1fr 1fr;
-                    gap: 12px;
+                    gap: 8px;
                     background: #f8fafc;
-                    padding: 12px;
+                    padding: 10px;
                     border-radius: 8px;
-                    margin-bottom: 20px;
+                    margin-bottom: 16px;
                 }
 
                 .info-group label {
                     display: block;
-                    font-size: 9px;
+                    font-size: 8px;
                     color: #94a3b8;
                     text-transform: uppercase;
                     margin-bottom: 2px;
                 }
 
                 .info-group .value {
-                    font-size: 11px;
+                    font-size: 10px;
                     font-weight: 600;
                     color: #334155;
                 }
@@ -262,10 +279,10 @@ const generateChallanPDF = async (challanData, studentData) => {
                 .overdue { color: #dc2626; }
 
                 .student-section {
-                    margin-bottom: 20px;
+                    margin-bottom: 16px;
                     border: 1px solid #f1f5f9;
                     border-radius: 8px;
-                    padding: 12px;
+                    padding: 10px;
                 }
 
                 .student-section .row {
@@ -288,7 +305,7 @@ const generateChallanPDF = async (challanData, studentData) => {
                 .fee-table {
                     width: 100%;
                     border-collapse: collapse;
-                    margin-bottom: 24px;
+                    margin-bottom: 16px;
                 }
 
                 .fee-table th {
@@ -329,7 +346,7 @@ const generateChallanPDF = async (challanData, studentData) => {
                     font-size: 10px;
                     font-weight: 700;
                     text-transform: uppercase;
-                    margin-bottom: 24px;
+                    margin-bottom: 16px;
                 }
 
                 .status-badge.pending { background: #fee2e2; color: #991b1b; }
@@ -374,17 +391,8 @@ const generateChallanPDF = async (challanData, studentData) => {
 
         await page.setContent(htmlContent);
 
-        // Ensure directory exists
-        const pdfDir = path.join(__dirname, '../../public/challans');
-        if (!fs.existsSync(pdfDir)) {
-            fs.mkdirSync(pdfDir, { recursive: true });
-        }
-
-        const fileName = `challan-${challanData.challanNumber}.pdf`;
-        const filePath = path.join(pdfDir, fileName);
-
-        await page.pdf({
-            path: filePath,
+        // Generate PDF Buffer
+        const pdfBuffer = await page.pdf({
             format: 'A4',
             landscape: true,
             printBackground: true,
@@ -393,7 +401,48 @@ const generateChallanPDF = async (challanData, studentData) => {
 
         await browser.close();
 
-        return `/challans/${fileName}`;
+        // Generate PDF Buffer
+        // Save locally first to ensure we have a fallback file and stream source
+        const fileName = `challan-${challanData.challanNumber}.pdf`;
+        const pdfDir = path.join(__dirname, '../../public/challans');
+        if (!fs.existsSync(pdfDir)) {
+            fs.mkdirSync(pdfDir, { recursive: true });
+        }
+        const filePath = path.join(pdfDir, fileName);
+
+        // We already have pdfBuffer from above, let's write it to disk for fallback/stream
+        fs.writeFileSync(filePath, pdfBuffer);
+
+        // Attempt Cloudinary Upload (Fallback to Local)
+        try {
+            return new Promise((resolve) => {
+                const uploadStream = cloudinary.uploader.upload_stream(
+                    {
+                        resource_type: 'image', // Treat as image for better PDF delivery support
+                        public_id: `challan-${challanData.challanNumber}`, // No extension for image type
+                        folder: 'school_challans',
+                        format: 'pdf',
+                        type: 'authenticated',
+                        overwrite: true
+                    },
+                    (error, result) => {
+                        if (error) {
+                            console.error('Cloudinary Upload Failed:', error.message);
+                            // Fallback to local
+                            resolve({ url: `/challans/${fileName}`, public_id: null });
+                        } else {
+                            resolve({ url: result.secure_url, public_id: result.public_id });
+                        }
+                    }
+                );
+                uploadStream.end(pdfBuffer);
+            });
+        } catch (err) {
+            console.error('Upload Logic Error:', err);
+            // Absolute fallback
+            return { url: `/challans/${fileName}`, public_id: null };
+        }
+
     } catch (error) {
         console.error('PDF Generation Error:', error);
         throw error;

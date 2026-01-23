@@ -20,6 +20,7 @@ interface Student {
     phoneNumber?: string;
     monthlyFee: number;
     discountAmount?: number;
+    isAdmissionPaid?: boolean;
 }
 
 interface Fee {
@@ -35,16 +36,31 @@ export default function StudentDetailsPage({ params }: { params: Promise<{ id: s
     const router = useRouter();
     const [student, setStudent] = useState<Student | null>(null);
     const [fees, setFees] = useState<Fee[]>([]);
+    const [classFee, setClassFee] = useState(0); // New state
     const [loading, setLoading] = useState(true);
 
     const fetchData = useCallback(async () => {
         try {
+            // First fetch student and fees
             const [studentRes, feesRes] = await Promise.all([
                 api.get(`/admin/students/${resolvedParams.id}`),
                 api.get(`/fees?studentId=${resolvedParams.id}`)
             ]);
-            setStudent(studentRes.data);
+            const s = studentRes.data;
+            setStudent(s);
             setFees(feesRes.data);
+
+            // Then fetch class fee structure if classId exists
+            if (s.classId?._id) {
+                try {
+                    const feeRes = await api.get(`/fees/structures/${s.classId._id}`);
+                    setClassFee(feeRes.data.monthlyTuition || 0);
+                } catch {
+                    // console.log("No fee structure found");
+                    setClassFee(0);
+                }
+            }
+
         } catch (error) {
             console.error(error);
         } finally {
@@ -133,11 +149,23 @@ export default function StudentDetailsPage({ params }: { params: Promise<{ id: s
                         <div className="grid grid-cols-2 gap-4">
                             <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 text-center">
                                 <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Monthly Fee</p>
-                                <p className="text-2xl font-bold text-gray-800">Rs {student.monthlyFee?.toLocaleString()}</p>
+                                <p className="text-2xl font-bold text-gray-800">Rs {classFee.toLocaleString()}</p>
                             </div>
                             <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 text-center">
                                 <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Discount</p>
-                                <p className="text-2xl font-bold text-green-600">Rs {student.discountAmount?.toLocaleString()}</p>
+                                <p className="text-2xl font-bold text-green-600">Rs {(student.discountAmount || 0).toLocaleString()}</p>
+                            </div>
+                        </div>
+
+                        <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between">
+                            <div>
+                                <p className="text-xs font-semibold text-gray-500 uppercase">Admission Fee Status</p>
+                                <p className={`text-sm font-bold mt-1 ${student.isAdmissionPaid ? 'text-green-600' : 'text-red-500'}`}>
+                                    {student.isAdmissionPaid ? 'PAID' : 'PENDING'}
+                                </p>
+                            </div>
+                            <div className={`p-2 rounded-full ${student.isAdmissionPaid ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                {student.isAdmissionPaid ? <DollarSign className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
                             </div>
                         </div>
 
@@ -148,7 +176,7 @@ export default function StudentDetailsPage({ params }: { params: Promise<{ id: s
                             <div>
                                 <h4 className="font-bold text-blue-900">Net Payable</h4>
                                 <p className="text-sm text-blue-700">Calculated after discount</p>
-                                <p className="text-3xl font-bold text-blue-800 mt-2">Rs {(student.monthlyFee - (student.discountAmount || 0)).toLocaleString()}</p>
+                                <p className="text-3xl font-bold text-blue-800 mt-2">Rs {(Math.max(0, classFee - (student.discountAmount || 0))).toLocaleString()}</p>
                             </div>
                         </div>
                     </div>
