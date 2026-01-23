@@ -57,30 +57,66 @@ export default function ContactPage() {
                         <form className="space-y-6">
                             <div className="grid grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-700">First Name</label>
-                                    <input type="text" className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-purple-50 transition-all font-medium" placeholder="Jane" />
+                                    <label htmlFor="firstName" className="text-sm font-bold text-slate-700">First Name</label>
+                                    <input
+                                        id="firstName"
+                                        name="firstName"
+                                        type="text"
+                                        className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-purple-50 transition-all font-medium"
+                                        placeholder="Jane"
+                                        autoComplete="given-name"
+                                        required
+                                    />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-700">Last Name</label>
-                                    <input type="text" className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-50 transition-all font-medium" placeholder="Doe" />
+                                    <label htmlFor="lastName" className="text-sm font-bold text-slate-700">Last Name</label>
+                                    <input
+                                        id="lastName"
+                                        name="lastName"
+                                        type="text"
+                                        className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-50 transition-all font-medium"
+                                        placeholder="Doe"
+                                        autoComplete="family-name"
+                                        required
+                                    />
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-bold text-slate-700">Email Address</label>
-                                <input type="email" className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-50 transition-all font-medium" placeholder="jane@example.com" />
+                                <label htmlFor="email" className="text-sm font-bold text-slate-700">Email Address</label>
+                                <input
+                                    id="email"
+                                    name="email"
+                                    type="email"
+                                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-50 transition-all font-medium"
+                                    placeholder="jane@example.com"
+                                    autoComplete="email"
+                                    required
+                                />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-bold text-slate-700">Subject</label>
-                                <select className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-50 transition-all font-medium appearance-none">
-                                    <option>General Inquiry</option>
-                                    <option>Technical Support</option>
-                                    <option>Admissions</option>
-                                    <option>Other</option>
+                                <label htmlFor="subject" className="text-sm font-bold text-slate-700">Subject</label>
+                                <select
+                                    id="subject"
+                                    name="subject"
+                                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-50 transition-all font-medium appearance-none"
+                                    required
+                                >
+                                    <option value="">Select a subject</option>
+                                    <option value="general">General Inquiry</option>
+                                    <option value="support">Technical Support</option>
+                                    <option value="admissions">Admissions</option>
+                                    <option value="other">Other</option>
                                 </select>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-bold text-slate-700">Message</label>
-                                <textarea className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-50 transition-all font-medium h-32 resize-none" placeholder="How can we help you?"></textarea>
+                                <label htmlFor="message" className="text-sm font-bold text-slate-700">Message</label>
+                                <textarea
+                                    id="message"
+                                    name="message"
+                                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-50 transition-all font-medium h-32 resize-none"
+                                    placeholder="How can we help you?"
+                                    required
+                                ></textarea>
                             </div>
                             <button type="submit" className="w-full py-4 rounded-xl bg-cyan-600 text-white font-bold text-lg hover:bg-cyan-700 shadow-lg shadow-purple-200 hover:shadow-cyan-300 transform hover:-translate-y-1 transition-all">
                                 Send Message

@@ -79,22 +79,24 @@ export default function Home() {
               </div>
 
               {/* Right Visual */}
-              <div className="lg:w-1/2 relative animate-fade-in-up [animation-delay:500ms]">
-                <div className="relative z-10 bg-white/50 backdrop-blur-sm rounded-4xl p-4 shadow-2xl shadow-cyan-100/50 border border-white/60">
-                  <div className="rounded-3xl overflow-hidden bg-slate-900 border border-slate-800 relative aspect-16/10 shadow-inner group">
-                    <Image
-                      src="/images/hero-dashboard.png"
-                      alt="Dashboard Preview"
-                      fill
-                      sizes="(max-width: 1023px) 100vw, 640px"
-                      className="object-cover opacity-90 transition-transform duration-700 group-hover:scale-105"
-                      priority
-                    />
+              <div className="lg:w-1/2 relative animate-fade-in-up [animation-delay:500ms] w-full">
+                <div className="relative z-10 bg-white/50 backdrop-blur-sm rounded-[2rem] p-4 shadow-2xl shadow-cyan-100/50 border border-white/60 w-full">
+                  <div className="rounded-3xl overflow-hidden bg-slate-900 border border-slate-800 relative w-full h-0 pb-[62.5%] shadow-inner group">
+                    <div className="absolute inset-0 w-full h-full">
+                      <Image
+                        src="/images/hero-dashboard.png"
+                        alt="Dashboard Preview"
+                        fill
+                        sizes="(max-width: 1023px) 100vw, 640px"
+                        className="object-cover opacity-90 transition-transform duration-700 group-hover:scale-105"
+                        priority
+                      />
+                    </div>
                   </div>
                 </div>
 
                 {/* Decorative Elements */}
-                <div className="absolute -inset-10 bg-linear-to-tr from-cyan-400/20 to-teal-400/20 rounded-full blur-[100px] -z-10"></div>
+                <div className="absolute -inset-10 bg-gradient-to-tr from-cyan-400/20 to-teal-400/20 rounded-full blur-[100px] -z-10"></div>
               </div>
             </div>
           </div>

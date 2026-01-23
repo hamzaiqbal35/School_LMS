@@ -10,6 +10,12 @@ export default function LandingNavbar({ hideLoginBtn = false }: { hideLoginBtn?:
     const pathname = usePathname();
     const [isScrolled, setIsScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [prevPath, setPrevPath] = useState(pathname);
+
+    if (pathname !== prevPath) {
+        setPrevPath(pathname);
+        setMobileMenuOpen(false);
+    }
 
     // Handle scroll effect
     useEffect(() => {
@@ -31,10 +37,9 @@ export default function LandingNavbar({ hideLoginBtn = false }: { hideLoginBtn?:
         };
     }, [mobileMenuOpen]);
 
-    // Close mobile menu on route change to avoid leftover open state
-    useEffect(() => {
-        setMobileMenuOpen(false);
-    }, [pathname]);
+    // Close mobile menu on route change (e.g., browser back/forward)
+    // Only closes if pathname actually changed to avoid unnecessary renders
+    // Logic moved to render phase above to avoid set-state-in-effect error
 
     const isActive = (path: string) => pathname === path;
 
@@ -46,7 +51,7 @@ export default function LandingNavbar({ hideLoginBtn = false }: { hideLoginBtn?:
 
     return (
         <nav
-            className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${isScrolled ? "bg-white/90 backdrop-blur-xl shadow-sm py-4" : "bg-transparent py-6"
+            className={`fixed top-0 left-0 w-full z-40 transition-all duration-300 ${isScrolled ? "bg-white/90 backdrop-blur-xl shadow-sm py-4" : "bg-transparent py-6"
                 }`}
         >
             <div className="max-w-7xl mx-auto px-6 h-16 md:h-24 flex justify-between items-center transition-all duration-300">
@@ -103,22 +108,21 @@ export default function LandingNavbar({ hideLoginBtn = false }: { hideLoginBtn?:
 
                 {/* Mobile Menu Toggle */}
                 <button
-                    className="md:hidden relative z-30 p-2 text-slate-800 hover:text-cyan-600 transition-colors"
+                    className="md:hidden relative z-50 p-2 text-slate-800 hover:text-cyan-600 transition-colors"
                     onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 >
                     {mobileMenuOpen ? <X className="w-8 h-8" /> : <Menu className="w-8 h-8" />}
                 </button>
 
                 {/* Mobile Fullscreen Menu */}
-                <div 
-                    className={`fixed inset-0 w-full h-screen bg-white z-100 flex flex-col justify-center items-center gap-8 transition-all duration-500 ease-in-out ${
-                    mobileMenuOpen 
-                    ? "opacity-100 translate-y-0 pointer-events-auto" 
-                    : "opacity-0 -translate-y-full pointer-events-none"
-                }`}
+                <div
+                    className={`fixed inset-0 w-full h-screen bg-white z-50 flex flex-col justify-center items-center gap-8 transition-all duration-500 ease-in-out ${mobileMenuOpen
+                            ? "opacity-100 translate-y-0 pointer-events-auto"
+                            : "opacity-0 -translate-y-full pointer-events-none"
+                        }`}
                 >
                     {/* Close button inside the menu for better UX */}
-                    <button 
+                    <button
                         className="absolute top-6 right-6 p-2 text-slate-800"
                         onClick={() => setMobileMenuOpen(false)}
                     >

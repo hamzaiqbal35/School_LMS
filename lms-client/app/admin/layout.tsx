@@ -50,7 +50,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { href: "/admin/assignments", label: "Teacher Assignments", icon: Calendar },
         { href: "/admin/attendance", label: "Attendance", icon: Calendar },
         { href: "/admin/substitution", label: "Substitutions", icon: Users },
-        { href: "/admin/fees", label: "Fees Verification", icon: CreditCard },
+        { href: "/admin/fees", label: "Finance", icon: CreditCard },
     ];
 
     const logoutHandler = async () => {
@@ -88,7 +88,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             className="mb-4 w-22 h-22 bg-white rounded-full shadow-2xl shadow-cyan-500/20 flex items-center justify-center p-2 overflow-hidden border-4 border-slate-800"
                         >
                             <div className="relative w-16 h-16">
-                                <Image src="/Logo2.png" alt="School Logo" fill sizes="64px" className="object-contain" priority />
+                                <Image 
+                                    src="/Logo2.png" 
+                                    alt="School Logo" 
+                                    fill 
+                                    sizes="64px" 
+                                    className="object-contain" 
+                                    priority 
+                                    style={{ objectFit: 'contain' }}
+                                />
                             </div>
                         </motion.div>
                         <h2 className="font-black text-white text-xl tracking-tight leading-tight uppercase italic">
@@ -102,7 +110,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </div>
 
                 <nav className="flex-1 px-4 py-2 space-y-2 overflow-y-auto custom-scrollbar">
-                    {navItems.map((item, idx) => {
+                    {navItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = pathname === item.href;
                         return (
@@ -160,7 +168,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <div className="md:hidden bg-white/80 backdrop-blur-md border-b border-slate-100 p-5 flex items-center justify-between sticky top-0 z-30 shadow-sm">
                     <div className="flex items-center gap-3">
                         <div className="p-2 rounded-xl">
-                            <Image src="/Logo2.png" alt="School Logo" width={48} height={48} className="w-auto h-10 brightness-100" style={{ width: 'auto', height: 'auto' }} />
+                            <div className="relative w-12 h-10">
+                                <Image 
+                                    src="/Logo2.png" 
+                                    alt="School Logo" 
+                                    fill 
+                                    sizes="48px" 
+                                    className="object-contain brightness-100" 
+                                    priority
+                                    style={{ objectFit: 'contain' }}
+                                />
+                            </div>
                         </div>
                         <span className="font-black text-slate-900 text-xs tracking-tight">Oxford Grammar School</span>
                     </div>

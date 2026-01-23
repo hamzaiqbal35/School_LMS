@@ -140,25 +140,37 @@ export default function TeachersPage() {
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                 <div className="flex flex-1 gap-4 w-full md:w-auto">
                     <div className="relative flex-1 md:max-w-xs">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <input
-                            type="text"
-                            placeholder="Search teachers..."
-                            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
-                            value={keyword}
-                            onChange={(e) => setKeyword(e.target.value)}
-                        />
+                        <label htmlFor="teacherSearch" className="sr-only">Search teachers</label>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            <input
+                                id="teacherSearch"
+                                name="teacherSearch"
+                                type="search"
+                                placeholder="Search teachers..."
+                                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                                value={keyword}
+                                onChange={(e) => setKeyword(e.target.value)}
+                                aria-label="Search teachers"
+                            />
+                        </div>
                     </div>
-                    <select
-                        className="p-2 border rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                        value={selectedSubject}
-                        onChange={(e) => setSelectedSubject(e.target.value)}
-                    >
+                    <div className="flex flex-col">
+                        <label htmlFor="subjectFilter" className="sr-only">Filter by subject</label>
+                        <select
+                            id="subjectFilter"
+                            name="subjectFilter"
+                            className="p-2 border rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            value={selectedSubject}
+                            onChange={(e) => setSelectedSubject(e.target.value)}
+                            aria-label="Filter by subject"
+                        >
                         <option value="">All Subjects</option>
                         {subjects.map(s => (
                             <option key={s._id} value={s._id}>{s.name}</option>
                         ))}
                     </select>
+                    </div>
                 </div>
                 <button
                     onClick={() => {

@@ -145,13 +145,16 @@ export default function MarkAttendancePage() {
                                 ))}
                             </select>
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                        <div className="space-y-1">
+                            <label htmlFor="attendanceDate" className="block text-sm font-medium text-gray-700">Date</label>
                             <input
+                                id="attendanceDate"
+                                name="attendanceDate"
                                 type="date"
-                                className="w-full border rounded-lg p-2"
+                                className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 value={attendanceDate}
                                 onChange={(e) => setAttendanceDate(e.target.value)}
+                                aria-required="true"
                             />
                         </div>
                     </div>
