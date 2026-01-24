@@ -5,6 +5,8 @@ import api from "@/lib/api";
 import { Users, BookOpen, CreditCard, Calendar, ArrowUpRight, GraduationCap, TrendingUp, DollarSign } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import FeesDonutChart from "@/components/dashboard/FeesDonutChart";
+import AttendanceGraph from "@/components/dashboard/AttendanceGraph";
 
 export default function AdminDashboard() {
     const { user } = useAuthStore();
@@ -201,56 +203,66 @@ export default function AdminDashboard() {
                 </motion.div>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-                <motion.div variants={item} className="p-8 bg-white rounded-3xl shadow-sm border border-slate-200 min-h-[300px] flex flex-col items-center justify-center text-center relative overflow-hidden">
-                    <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] bg-size-[20px_20px] opacity-50 pointer-events-none"></div>
-                    <div className="p-6 bg-slate-50 rounded-full mb-6 relative group">
-                        <div className="absolute inset-0 bg-cyan-100 rounded-full scale-0 group-hover:scale-100 transition-transform duration-300"></div>
-                        <ArrowUpRight className="w-10 h-10 text-slate-400 relative z-10 group-hover:text-cyan-600 transition-colors" />
-                    </div>
-                    <h3 className="text-xl font-bold text-slate-900 mb-2">Analytics Dashboard</h3>
-                    <p className="text-slate-500 max-w-sm">
-                        Detailed visualization of enrollment trends, fee collection analytics, and attendance heatmaps coming soon.
-                    </p>
+            {/* Analytics & Actions Grid */}
+            <div className="grid gap-6 grid-cols-1 lg:grid-cols-4">
+                {/* Attendance Chart - Spans 2 columns */}
+                <motion.div variants={item} className="lg:col-span-2">
+                    <AttendanceGraph />
                 </motion.div>
 
-                <motion.div variants={item} className="p-6 bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col">
+                {/* Fees Chart - Spans 1 column */}
+                <motion.div variants={item} className="lg:col-span-1">
+                    <FeesDonutChart />
+                </motion.div>
+
+                {/* Quick Actions - Spans 1 column */}
+                <motion.div variants={item} className="lg:col-span-1 p-6 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col h-full">
                     <h3 className="text-lg font-bold text-slate-900 mb-6 px-2 flex items-center gap-2">
                         <span className="w-1.5 h-6 bg-cyan-500 rounded-full"></span>
                         Quick Actions
                     </h3>
                     <div className="flex-1 space-y-3">
-                        <Link href="/admin/students/create" className="group flex items-center gap-4 p-4 rounded-2xl border border-slate-100 hover:border-blue-100 hover:bg-blue-50/50 hover:shadow-sm transition-all duration-200">
-                            <div className="h-12 w-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <GraduationCap className="w-6 h-6" />
+                        <Link href="/admin/students/create" className="group flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-blue-100 hover:bg-blue-50/50 hover:shadow-sm transition-all duration-200">
+                            <div className="h-10 w-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <GraduationCap className="w-5 h-5" />
                             </div>
-                            <div className="flex-1">
-                                <h4 className="font-bold text-slate-900 group-hover:text-blue-700">Admission</h4>
-                                <p className="text-xs text-slate-500">Register a new student</p>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-sm text-slate-900 group-hover:text-blue-700 truncate">Admission</h4>
+                                <p className="text-[10px] text-slate-500 truncate">New student</p>
                             </div>
-                            <ArrowUpRight className="w-5 h-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
+                            <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-all" />
                         </Link>
 
-                        <Link href="/admin/classes" className="group flex items-center gap-4 p-4 rounded-2xl border border-slate-100 hover:border-indigo-100 hover:bg-indigo-50/50 hover:shadow-sm transition-all duration-200">
-                            <div className="h-12 w-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <BookOpen className="w-6 h-6" />
+                        <Link href="/admin/classes" className="group flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-indigo-100 hover:bg-indigo-50/50 hover:shadow-sm transition-all duration-200">
+                            <div className="h-10 w-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <BookOpen className="w-5 h-5" />
                             </div>
-                            <div className="flex-1">
-                                <h4 className="font-bold text-slate-900 group-hover:text-indigo-700">Academics</h4>
-                                <p className="text-xs text-slate-500">Manage classes & subjects</p>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-sm text-slate-900 group-hover:text-indigo-700 truncate">Academics</h4>
+                                <p className="text-[10px] text-slate-500 truncate">Classes & Subs</p>
                             </div>
-                            <ArrowUpRight className="w-5 h-5 text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
+                            <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-all" />
                         </Link>
 
-                        <Link href="/admin/fees" className="group flex items-center gap-4 p-4 rounded-2xl border border-slate-100 hover:border-emerald-100 hover:bg-emerald-50/50 hover:shadow-sm transition-all duration-200">
-                            <div className="h-12 w-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <CreditCard className="w-6 h-6" />
+                        <Link href="/admin/fees" className="group flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-emerald-100 hover:bg-emerald-50/50 hover:shadow-sm transition-all duration-200">
+                            <div className="h-10 w-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <CreditCard className="w-5 h-5" />
                             </div>
-                            <div className="flex-1">
-                                <h4 className="font-bold text-slate-900 group-hover:text-emerald-700">Finance</h4>
-                                <p className="text-xs text-slate-500">Check fee status & dues</p>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-sm text-slate-900 group-hover:text-emerald-700 truncate">Finance</h4>
+                                <p className="text-[10px] text-slate-500 truncate">Check dues</p>
                             </div>
-                            <ArrowUpRight className="w-5 h-5 text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
+                            <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-500 transition-all" />
+                        </Link>
+                        <Link href="/admin/attendance" className="group flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-cyan-100 hover:bg-cyan-50/50 hover:shadow-sm transition-all duration-200">
+                            <div className="h-10 w-10 rounded-lg bg-cyan-100 text-cyan-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <Calendar className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-sm text-slate-900 group-hover:text-cyan-700 truncate">Attendance</h4>
+                                <p className="text-[10px] text-slate-500 truncate">Mark/View</p>
+                            </div>
+                            <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-cyan-500 transition-all" />
                         </Link>
                     </div>
                 </motion.div>

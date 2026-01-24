@@ -60,3 +60,73 @@ exports.getDashboardStats = async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 };
+
+// @desc    Get Fees Analytics (For Donut Chart)
+// @route   GET /api/admin/dashboard/fees-chart
+exports.getFeesAnalytics = async (req, res) => {
+    try {
+        const stats = await Fee.aggregate([
+            {
+                $group: {
+                    _id: "$status",
+                    count: { $sum: 1 },
+                    totalAmount: { $sum: "$totalAmount" }
+                }
+            }
+        ]);
+
+        // Transform into standardized format
+        const result = {
+            Paid: { count: 0, amount: 0 },
+            Pending: { count: 0, amount: 0 },
+            Overdue: { count: 0, amount: 0 }
+        };
+
+        stats.forEach(s => {
+            if (result[s._id]) {
+                result[s._id] = { count: s.count, amount: s.totalAmount };
+            }
+        });
+
+        res.json(result);
+    } catch (error) {
+        console.error('Fees Chart Error:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Get Attendance Analytics (For Graph)
+// @route   GET /api/admin/dashboard/attendance-chart?type=student|teacher&range=week|month|year
+exports.getAttendanceAnalytics = async (req, res) => {
+    try {
+        const { type = 'student', range = 'week' } = req.query;
+        const Model = type === 'teacher' ? require('../../models/TeacherAttendance') : Attendance;
+
+        let startDate = new Date();
+        startDate.setHours(0, 0, 0, 0);
+
+        if (range === 'week') startDate.setDate(startDate.getDate() - 7);
+        else if (range === 'month') startDate.setMonth(startDate.getMonth() - 1);
+        else if (range === 'year') startDate.setFullYear(startDate.getFullYear() - 1);
+
+        const pipeline = [
+            { $match: { date: { $gte: startDate } } },
+            {
+                $group: {
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
+                    present: { $sum: { $cond: [{ $eq: ["$status", "Present"] }, 1, 0] } },
+                    absent: { $sum: { $cond: [{ $eq: ["$status", "Absent"] }, 1, 0] } },
+                    leave: { $sum: { $cond: [{ $eq: ["$status", "Leave"] }, 1, 0] } },
+                    late: { $sum: { $cond: [{ $eq: ["$status", "Late"] }, 1, 0] } }
+                }
+            },
+            { $sort: { _id: 1 } }
+        ];
+
+        const data = await Model.aggregate(pipeline);
+        res.json(data);
+    } catch (error) {
+        console.error('Attendance Chart Error:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};

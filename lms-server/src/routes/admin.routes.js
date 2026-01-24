@@ -12,6 +12,8 @@ router.use(protect, adminOnly);
 
 // Dashboard
 router.get('/dashboard/stats', dashboardController.getDashboardStats);
+router.get('/dashboard/fees-chart', dashboardController.getFeesAnalytics);
+router.get('/dashboard/attendance-chart', dashboardController.getAttendanceAnalytics);
 
 // Teachers
 router.get('/teachers', teacherController.getTeachers);
