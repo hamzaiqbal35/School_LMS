@@ -5,6 +5,7 @@ const ClassFeeStructure = require('../models/ClassFeeStructure');
 const StudentFeeStatus = require('../models/StudentFeeStatus');
 const { generateChallanPDF } = require('../utils/pdfGenerator');
 const cloudinary = require('../config/cloudinary');
+const puppeteer = require('puppeteer');
 
 // Helper: Generate Challan No (Deterministic-ish but unique enough)
 // CH-YEARMONTH-STUDENTID_LAST4
@@ -19,7 +20,7 @@ const generateChallanNumber = (studentId, monthStr) => {
  * Core Logic: Create or Retrieve Challan
  * Safe, Idempotent, Snapshot-based
  */
-const createOrGetChallan = async (studentId, month, dueDate, options = {}) => {
+const createOrGetChallan = async (studentId, month, dueDate, options = {}, browser = null) => {
     // Options can include: { includeExamFee: boolean, includeMisc: boolean, forceAdmission: boolean }
     const { includeExamFee = false, includeMisc = false } = options;
 
@@ -89,7 +90,7 @@ const createOrGetChallan = async (studentId, month, dueDate, options = {}) => {
     });
 
     // 6. Generate PDF
-    const { url, public_id } = await generateChallanPDF(newChallan.toObject(), student.toObject());
+    const { url, public_id } = await generateChallanPDF(newChallan.toObject(), student.toObject(), browser);
 
     newChallan.pdfUrl = url;
     newChallan.pdfPublicId = public_id;
@@ -130,14 +131,30 @@ exports.generateChallan = async (req, res) => {
             return res.status(400).json({ message: 'Provide studentId, studentIds, or classId' });
         }
 
-        // Process all targets
-        for (const id of targets) {
-            try {
-                const result = await createOrGetChallan(id, month, dueDate, { includeExamFee, includeMisc });
-                results.push(result);
-            } catch (err) {
-                errors.push({ studentId: id, error: err.message });
+        // Process all targets in batches
+        const BATCH_SIZE = 5;
+        let browser;
+
+        try {
+            browser = await puppeteer.launch({
+                headless: 'new',
+                args: ['--no-sandbox', '--disable-setuid-sandbox']
+            });
+
+            for (let i = 0; i < targets.length; i += BATCH_SIZE) {
+                const batch = targets.slice(i, i + BATCH_SIZE);
+
+                await Promise.all(batch.map(async (id) => {
+                    try {
+                        const result = await createOrGetChallan(id, month, dueDate, { includeExamFee, includeMisc }, browser);
+                        results.push(result);
+                    } catch (err) {
+                        errors.push({ studentId: id, error: err.message });
+                    }
+                }));
             }
+        } finally {
+            if (browser) await browser.close();
         }
 
         res.status(200).json({

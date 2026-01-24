@@ -95,6 +95,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                     sizes="64px"
                                     className="object-contain"
                                     priority
+                                    loading="eager"
                                     style={{ objectFit: 'contain' }}
                                 />
                             </div>
@@ -143,7 +144,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         <Link href="/admin/profile" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                             <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-blue-600/20 overflow-hidden relative">
                                 {user?.avatar ? (
-                                    <Image src={user.avatar} alt={user.fullName || 'User Avatar'} fill className="object-cover" />
+                                    <Image src={user.avatar} alt={user.fullName || 'User Avatar'} fill className="object-cover" sizes="40px" />
                                 ) : (
                                     (user?.fullName || 'A').charAt(0)
                                 )}
@@ -179,6 +180,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                     fill
                                     sizes="48px"
                                     className="object-contain brightness-100"
+                                    loading="eager"
                                     style={{ objectFit: 'contain' }}
                                 />
                             </div>

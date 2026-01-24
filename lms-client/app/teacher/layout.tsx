@@ -50,7 +50,7 @@ export default function TeacherLayout({
         <div className="flex items-center justify-center min-h-screen bg-slate-50">
             <div className="flex flex-col items-center gap-4">
                 <div className="relative w-16 h-16 animate-pulse">
-                    <Image src="/Logo2.png" alt="Loading" fill className="object-contain" sizes="64px" priority />
+                    <Image src="/Logo2.png" alt="Loading" fill className="object-contain" sizes="64px" priority loading="eager" />
                 </div>
                 <div className="flex gap-1">
                     <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
@@ -91,7 +91,7 @@ export default function TeacherLayout({
                 <div className="p-6">
                     <div className="flex items-center gap-3 px-2">
                         <div className="relative w-10 h-10 shrink-0">
-                            <Image src="/Logo2.png" alt="Logo" fill className="object-contain" sizes="40px" priority />
+                            <Image src="/Logo2.png" alt="Logo" fill className="object-contain" sizes="40px" priority loading="eager" />
                         </div>
                         <div className="flex flex-col">
                             <span className="font-bold text-slate-900 text-sm leading-tight tracking-tight">OGCES Panel</span>
@@ -139,7 +139,7 @@ export default function TeacherLayout({
                         <Link href="/teacher/profile" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                             <div className="w-10 h-10 rounded-full bg-linear-to-br from-green-500 to-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-green-500/20 overflow-hidden relative">
                                 {user?.avatar ? (
-                                    <Image src={user.avatar} alt={user.fullName} fill className="object-cover" />
+                                    <Image src={user.avatar} alt={user.fullName} fill className="object-cover" sizes="40px" />
                                 ) : (
                                     (user?.fullName || 'T').charAt(0)
                                 )}
@@ -170,7 +170,7 @@ export default function TeacherLayout({
                 <header className="md:hidden bg-white border-b border-slate-200 p-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
                     <div className="flex items-center gap-3">
                         <div className="relative w-8 h-8">
-                            <Image src="/Logo2.png" alt="Logo" fill className="object-contain" sizes="32px" priority />
+                            <Image src="/Logo2.png" alt="Logo" fill className="object-contain" sizes="32px" priority loading="eager" />
                         </div>
                         <span className="font-bold text-slate-900 text-sm">Teacher Portal</span>
                     </div>

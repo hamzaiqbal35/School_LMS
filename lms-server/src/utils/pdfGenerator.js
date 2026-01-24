@@ -3,12 +3,19 @@ const path = require('path');
 const fs = require('fs');
 const cloudinary = require('../config/cloudinary');
 
-const generateChallanPDF = async (challanData, studentData) => {
+const generateChallanPDF = async (challanData, studentData, browserInstance = null) => {
+    let browser = browserInstance;
+    let ownBrowser = false;
+
     try {
-        const browser = await puppeteer.launch({
-            headless: 'new',
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-        });
+        if (!browser) {
+            browser = await puppeteer.launch({
+                headless: 'new',
+                args: ['--no-sandbox', '--disable-setuid-sandbox']
+            });
+            ownBrowser = true;
+        }
+
         const page = await browser.newPage();
 
         // Load Logo as Base64
@@ -18,6 +25,9 @@ const generateChallanPDF = async (challanData, studentData) => {
             const logoData = fs.readFileSync(logoPath);
             logoBase64 = `data:image/png;base64,${logoData.toString('base64')}`;
         }
+        // ... (rest of template logic stays same, skipping to save bytes in prompt, I will assume it's preserved if I target specific lines or if I replace mainly the wrapper)
+        // Wait, replace_file_content replaces the whole block. I need to be careful not to delete the template.
+        // I will use specific line replacement for the launch logic.
 
 
         // Helper
@@ -399,7 +409,9 @@ const generateChallanPDF = async (challanData, studentData) => {
             margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' }
         });
 
-        await browser.close();
+        if (ownBrowser) {
+            await browser.close();
+        }
 
         // Generate PDF Buffer
         // Save locally first to ensure we have a fallback file and stream source

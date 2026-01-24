@@ -41,21 +41,75 @@ export default function ProfileView() {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+    // Helper: Compress Image
+    const compressImage = (file: File): Promise<Blob> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = document.createElement('img');
+                img.src = event.target?.result as string;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const MAX_WIDTH = 800;
+                    const MAX_HEIGHT = 800;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx?.drawImage(img, 0, 0, width, height);
+
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            resolve(blob);
+                        } else {
+                            reject(new Error('Canvas to Blob failed'));
+                        }
+                    }, 'image/jpeg', 0.7); // Compress to JPEG 70%
+                };
+                img.onerror = (error) => reject(error);
+            };
+            reader.onerror = (error) => reject(error);
+        });
+    };
+
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Validate file type/size if needed
-        if (file.size > 5 * 1024 * 1024) {
-            setMsg({ type: 'error', text: 'Image size should be less than 5MB' });
+        // Basic validation
+        if (!file.type.startsWith('image/')) {
+            setMsg({ type: 'error', text: 'Please upload an image file' });
             return;
         }
 
         setIsUploading(true);
-        const uploadData = new FormData();
-        uploadData.append('file', file);
+        setMsg({ type: '', text: '' }); // Clear prev msg
 
         try {
+            // Compress
+            const compressedBlob = await compressImage(file);
+            const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+                type: 'image/jpeg'
+            });
+
+            const uploadData = new FormData();
+            uploadData.append('file', compressedFile);
+
             const res = await api.post('/upload/avatar', uploadData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
