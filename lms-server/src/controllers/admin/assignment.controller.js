@@ -7,61 +7,89 @@ const { Class, Section, Subject, TimeSlot } = require('../../models/ClassStructu
 // @access  Admin
 exports.createAssignment = async (req, res) => {
     try {
-        const { teacherId, classId, sectionId, subjectId, timeSlotId } = req.body;
+        const { teacherId, classId, sectionId, subjectId, timeSlotId, timeSlotIds } = req.body;
 
-        // 1. Validate Teacher existence and role
+        // 1. Validate Teacher
         const teacher = await User.findById(teacherId);
         if (!teacher || teacher.role !== 'TEACHER') {
             return res.status(400).json({ message: 'Invalid teacher ID' });
         }
 
-        // 2. Validate TimeSlot (Optional but good)
-        // const slot = await TimeSlot.findById(timeSlotId);
-        // if(!slot) return res.status(400).json({message: 'Invalid Time Slot'});
-
-        // 3. CLASH DETECTION
-
-        // Check if Teacher is busy at this slot
-        const teacherBusy = await TeacherAssignment.findOne({
-            teacherId,
-            timeSlotId,
-            active: true
-        }).populate('timeSlotId');
-
-        if (teacherBusy) {
-            return res.status(409).json({
-                message: `Teacher is already assigned to another class at this time (${teacherBusy.timeSlotId?.name})`
-            });
+        // Normalize timeSlotIds
+        // Support both single 'timeSlotId' (legacy/single) and 'timeSlotIds' (bulk)
+        let slotsToProcess = [];
+        if (timeSlotIds && Array.isArray(timeSlotIds)) {
+            slotsToProcess = timeSlotIds;
+        } else if (timeSlotId) {
+            slotsToProcess = [timeSlotId];
         }
 
-        // Check if Class has a teacher for this slot already
-        const classBusy = await TeacherAssignment.findOne({
-            classId,
-            sectionId,
-            timeSlotId,
-            active: true
-        });
-
-        if (classBusy) {
-            return res.status(409).json({
-                message: `Class already has a teacher assigned at this time slot`
-            });
+        if (slotsToProcess.length === 0) {
+            return res.status(400).json({ message: 'No time slot selected' });
         }
 
-        const assignment = await TeacherAssignment.create({
-            teacherId,
-            classId,
-            sectionId,
-            subjectId,
-            timeSlotId,
-            assignedBy: req.user._id
+        const createdAssignments = [];
+        const errors = [];
+
+        // Process each slot
+        for (const slotId of slotsToProcess) {
+            // Check Teacher Clash
+            const teacherBusy = await TeacherAssignment.findOne({
+                teacherId,
+                timeSlotId: slotId,
+                active: true
+            }).populate('timeSlotId');
+
+            if (teacherBusy) {
+                errors.push(`Teacher busy at ${teacherBusy.timeSlotId?.name || 'slot'}`);
+                continue;
+            }
+
+            // Check Class Clash
+            const classBusy = await TeacherAssignment.findOne({
+                classId,
+                sectionId,
+                timeSlotId: slotId,
+                active: true
+            }).populate('timeSlotId');
+
+            if (classBusy) {
+                // If it's the SAME subject and SAME teacher, maybe we don't need to error, but for now assume strict uniqueness
+                errors.push(`Class already occupied at slot ${classBusy.timeSlotId?.name || slotId}`);
+                continue;
+            }
+
+            // Create
+            try {
+                const assignment = await TeacherAssignment.create({
+                    teacherId,
+                    classId,
+                    sectionId,
+                    subjectId,
+                    timeSlotId: slotId,
+                    assignedBy: req.user._id
+                });
+                createdAssignments.push(assignment);
+            } catch (err) {
+                if (err.code === 11000) {
+                    errors.push(`Duplicate assignment for slot ${slotId}`);
+                } else {
+                    errors.push(`Error assigning slot ${slotId}`);
+                }
+            }
+        }
+
+        if (createdAssignments.length === 0 && errors.length > 0) {
+            return res.status(409).json({ message: errors.join(', ') });
+        }
+
+        res.status(201).json({
+            message: `Created ${createdAssignments.length} assignments`,
+            assignments: createdAssignments,
+            warnings: errors
         });
 
-        res.status(201).json(assignment);
     } catch (error) {
-        if (error.code === 11000) {
-            return res.status(409).json({ message: 'Duplicate assignment detected (DB constraint)' });
-        }
         console.error(error);
         res.status(500).json({ message: 'Server Error' });
     }
@@ -73,7 +101,7 @@ exports.createAssignment = async (req, res) => {
 exports.getAssignments = async (req, res) => {
     try {
         const { teacherId } = req.query;
-        let query = {};
+        let query = { active: true };
         if (teacherId) {
             query.teacherId = teacherId;
         }

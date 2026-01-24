@@ -1,7 +1,8 @@
 "use client"
 import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
-import { Loader2, Plus } from 'lucide-react';
+import { Loader2, Plus, Download, Search, Filter, CheckCircle, AlertCircle, Clock, FileText, ChevronDown, RefreshCw, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Student {
     _id: string;
@@ -22,6 +23,7 @@ interface Challan {
     totalAmount: number;
     status: string;
     pdfUrl?: string;
+    dueDate?: string;
 }
 
 export default function FeesPage() {
@@ -47,6 +49,7 @@ export default function FeesPage() {
     // Verify Modal State
     const [verifyId, setVerifyId] = useState('');
     const [verifyData, setVerifyData] = useState({ paymentReference: '', paymentDate: new Date().toISOString().split('T')[0], note: '' });
+    const [verifying, setVerifying] = useState(false);
 
     const fetchChallans = useCallback(async () => {
         setLoading(true);
@@ -109,290 +112,434 @@ export default function FeesPage() {
 
     const handleVerify = async (e: React.FormEvent) => {
         e.preventDefault();
+        setVerifying(true);
         try {
             await api.post(`/fees/verify/${verifyId}`, { ...verifyData, status: 'Paid' });
             setVerifyId('');
             fetchChallans();
         } catch {
             alert('Verification failed');
+        } finally {
+            setVerifying(false);
         }
     };
 
+    const container = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.05
+            }
+        }
+    };
+
+    const item = {
+        hidden: { y: 20, opacity: 0 },
+        show: { y: 0, opacity: 1 }
+    };
+
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-gray-800">Fee Management</h1>
+        <div className="space-y-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Fee Management</h1>
+                    <p className="text-slate-500 mt-1">Generate, track and verify student fee challans</p>
+                </div>
                 <button
                     onClick={() => setShowGen(true)}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center shadow-sm"
+                    className="group bg-cyan-600 hover:bg-cyan-700 text-white px-5 py-3 rounded-xl font-bold shadow-lg shadow-cyan-600/20 flex items-center gap-2 transition-all transform hover:scale-[1.02]"
                 >
-                    <Plus className="w-4 h-4 mr-2" />
+                    <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
                     Generate Challans
                 </button>
             </div>
 
             {/* Filters Bar */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 space-y-4 md:space-y-0 md:flex md:items-center md:gap-4">
-                <div className="flex-1">
-                    <input
-                        id="searchStudent"
-                        name="searchStudent"
-                        type="text"
-                        placeholder="Search Student..."
-                        aria-label="Search Student"
-                        className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none"
-                        value={filters.search}
-                        onChange={e => setFilters({ ...filters, search: e.target.value })}
-                    />
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <div className="grid md:grid-cols-12 gap-4 items-end">
+                    <div className="md:col-span-4">
+                        <label htmlFor="searchStudent" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Search Student</label>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-3 text-slate-400 w-4 h-4" />
+                            <input
+                                id="searchStudent"
+                                name="searchStudent"
+                                type="text"
+                                placeholder="Name or Reg. Number..."
+                                className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 outline-none transition-all"
+                                value={filters.search}
+                                onChange={e => setFilters({ ...filters, search: e.target.value })}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="md:col-span-3">
+                        <label htmlFor="filterClass" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Class</label>
+                        <div className="relative">
+                            <select
+                                id="filterClass"
+                                name="filterClass"
+                                className="w-full pl-3 pr-10 py-2.5 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 outline-none appearance-none bg-white transition-all"
+                                value={filters.classId}
+                                onChange={e => setFilters({ ...filters, classId: e.target.value })}
+                            >
+                                <option value="">All Classes</option>
+                                {classes.map(c => (
+                                    <option key={c._id} value={c._id}>{c.name}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-3 text-slate-400 w-4 h-4 pointer-events-none" />
+                        </div>
+                    </div>
+
+                    <div className="md:col-span-3">
+                        <label htmlFor="filterMonth" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Month</label>
+                        <input
+                            id="filterMonth"
+                            name="filterMonth"
+                            type="text"
+                            placeholder="YYYY-MM"
+                            className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 outline-none transition-all"
+                            value={filters.month}
+                            onChange={e => setFilters({ ...filters, month: e.target.value })}
+                        />
+                    </div>
+
+                    <div className="md:col-span-2">
+                        <button
+                            onClick={() => { setFilters({ search: '', classId: '', month: '' }); setFilterStatus(''); fetchChallans(); }}
+                            className="w-full py-2.5 border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2"
+                        >
+                            <RefreshCw className="w-4 h-4" /> Reset
+                        </button>
+                    </div>
                 </div>
-                <div>
-                    <select
-                        id="filterClass"
-                        name="filterClass"
-                        aria-label="Filter by Class"
-                        className="border rounded-lg px-3 py-2 text-sm outline-none bg-white min-w-37.5"
-                        value={filters.classId}
-                        onChange={e => setFilters({ ...filters, classId: e.target.value })}
-                    >
-                        <option value="">All Classes</option>
-                        {classes.map(c => (
-                            <option key={c._id} value={c._id}>{c.name}</option>
-                        ))}
-                    </select>
-                </div>
-                <div>
-                    <input
-                        id="filterMonth"
-                        name="filterMonth"
-                        type="text"
-                        placeholder="Month (e.g 2025-01)"
-                        aria-label="Filter by Month"
-                        className="border rounded-lg px-3 py-2 text-sm outline-none"
-                        value={filters.month}
-                        onChange={e => setFilters({ ...filters, month: e.target.value })}
-                    />
-                </div>
-                {/* Status Filter (Integrated) */}
-                <div className="flex bg-gray-100 p-1 rounded-lg">
+
+                <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap gap-2">
                     {['', 'Pending', 'Paid', 'Overdue'].map(status => (
                         <button
                             key={status}
                             onClick={() => setFilterStatus(status)}
-                            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${filterStatus === status
-                                ? 'bg-white text-gray-900 shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700'
+                            className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all border ${filterStatus === status
+                                ? 'bg-cyan-50 text-cyan-700 border-cyan-200 shadow-sm'
+                                : 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:border-slate-200'
                                 }`}
                         >
-                            {status || 'All'}
+                            {status || 'All Status'}
                         </button>
                     ))}
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden min-h-[400px]">
                 {loading ? (
-                    <div className="p-10 flex justify-center"><Loader2 className="animate-spin" /></div>
+                    <div className="h-full flex flex-col items-center justify-center py-20">
+                        <Loader2 className="animate-spin text-cyan-600 w-10 h-10 mb-4" />
+                        <p className="text-slate-500 font-medium">Loading transactions...</p>
+                    </div>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
+                        <table className="min-w-full divide-y divide-slate-100">
+                            <thead className="bg-slate-50/50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Challan #</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Month</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Action</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Transaction Info</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Student Details</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Due Date</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {challans.map(c => (
-                                    <tr key={c._id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 text-sm font-mono text-gray-600">{c.challanNumber}</td>
-                                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                                            {c.studentId?.fullName} <br />
-                                            <span className="text-xs text-gray-500">{c.studentId?.registrationNumber}</span>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">{c.month}</td>
-                                        <td className="px-6 py-4 text-sm font-bold text-gray-900">Rs. {c.totalAmount}</td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold
-                                                ${c.status === 'Paid' ? 'bg-green-100 text-green-800' :
-                                                    c.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                        'bg-red-100 text-red-800'}
-                                            `}>
-                                                {c.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            {(c.pdfUrl || c.status !== 'Pending') && (
-                                                <a
-                                                    href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/fees/download/${c._id}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-purple-600 hover:text-purple-800 text-sm font-medium mr-4"
-                                                >
-                                                    Download PDF
-                                                </a>
-                                            )}
-                                            {c.status === 'Pending' && (
-                                                <button
-                                                    onClick={() => setVerifyId(c._id)}
-                                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                                                >
-                                                    Verify
-                                                </button>
-                                            )}
+                            <motion.tbody
+                                variants={container}
+                                initial="hidden"
+                                animate="show"
+                                className="divide-y divide-slate-100 bg-white"
+                            >
+                                <AnimatePresence>
+                                    {challans.map(c => (
+                                        <motion.tr
+                                            key={c._id}
+                                            variants={item}
+                                            className="group hover:bg-slate-50/80 transition-colors"
+                                        >
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400">
+                                                        <FileText className="w-5 h-5" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-mono text-sm font-bold text-slate-900">{c.challanNumber}</div>
+                                                        <div className="text-xs text-slate-500 font-medium">{c.month}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="font-bold text-slate-900">{c.studentId?.fullName}</div>
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono bg-slate-100 text-slate-600 mt-1">
+                                                    {c.studentId?.registrationNumber}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-500 font-medium">
+                                                {c.dueDate ? new Date(c.dueDate).toLocaleDateString() : 'N/A'}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="text-sm font-black text-slate-900">PKR {c.totalAmount.toLocaleString()}</div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border ${c.status === 'Paid' ? 'bg-green-50 text-green-700 border-green-100' :
+                                                    c.status === 'Pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-100' :
+                                                        'bg-red-50 text-red-700 border-red-100'
+                                                    }`}>
+                                                    {c.status === 'Paid' && <CheckCircle className="w-3 h-3 mr-1.5" />}
+                                                    {c.status === 'Pending' && <Clock className="w-3 h-3 mr-1.5" />}
+                                                    {c.status === 'Overdue' && <AlertCircle className="w-3 h-3 mr-1.5" />}
+                                                    {c.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex justify-end items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    {(c.pdfUrl || c.status !== 'Pending') && (
+                                                        <a
+                                                            href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/fees/download/${c._id}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="p-2 text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors"
+                                                            title="Download PDF"
+                                                        >
+                                                            <Download className="w-4 h-4" />
+                                                        </a>
+                                                    )}
+                                                    {c.status === 'Pending' && (
+                                                        <button
+                                                            onClick={() => setVerifyId(c._id)}
+                                                            className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 rounded-lg text-xs font-bold transition-colors"
+                                                        >
+                                                            Verify
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </motion.tr>
+                                    ))}
+                                </AnimatePresence>
+                                {challans.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6} className="p-12 text-center text-slate-500">
+                                            <div className="flex flex-col items-center">
+                                                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-3">
+                                                    <Filter className="w-8 h-8 text-slate-300" />
+                                                </div>
+                                                <p className="font-medium">No fee records found matches your filters.</p>
+                                            </div>
                                         </td>
                                     </tr>
-                                ))}
-                                {challans.length === 0 && <tr><td colSpan={6} className="text-center p-8 text-gray-500">No records found.</td></tr>}
-                            </tbody>
+                                )}
+                            </motion.tbody>
                         </table>
                     </div>
                 )}
             </div>
 
             {/* Generation Modal */}
-            {showGen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-xl w-full max-w-md">
-                        <h3 className="text-lg font-bold mb-4">Generate Monthly Challans</h3>
-                        <form onSubmit={handleGenerate} className="space-y-4">
-                            <div>
-                                <label htmlFor="genStudent" className="block text-sm font-medium text-gray-700">Student</label>
-                                <select
-                                    id="genStudent"
-                                    className="w-full border rounded p-2"
-                                    value={genData.studentIds[0] || ''}
-                                    onChange={e => {
-                                        const val = e.target.value;
-                                        setGenData({
-                                            ...genData,
-                                            studentIds: val ? [val] : [] // If empty, means 'All' in our logic below? No, let's make it explicit.
-                                        });
-                                    }}
-                                >
-                                    <option value="">All Active Students</option>
-                                    {allStudents.map(s => (
-                                        <option key={s._id} value={s._id}>
-                                            {s.fullName} ({s.registrationNumber})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label htmlFor="genMonth" className="block text-sm font-medium text-gray-700">Month (e.g. 2025-01)</label>
-                                <input
-                                    id="genMonth"
-                                    name="genMonth"
-                                    type="text" required
-                                    placeholder="2025-01"
-                                    className="w-full border rounded p-2"
-                                    value={genData.month}
-                                    onChange={e => setGenData({ ...genData, month: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <label htmlFor="genDueDate" className="block text-sm font-medium text-gray-700">Due Date</label>
-                                <input
-                                    id="genDueDate"
-                                    name="genDueDate"
-                                    type="date" required
-                                    className="w-full border rounded p-2"
-                                    value={genData.dueDate}
-                                    onChange={e => setGenData({ ...genData, dueDate: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="flex gap-4">
-                                <label className="flex items-center text-sm text-gray-700">
-                                    <input
-                                        type="checkbox"
-                                        className="mr-2 rounded"
-                                        checked={genData.includeExamFee}
-                                        onChange={e => setGenData({ ...genData, includeExamFee: e.target.checked })}
-                                    />
-                                    Include Exam Fee
-                                </label>
-                                <label className="flex items-center text-sm text-gray-700">
-                                    <input
-                                        type="checkbox"
-                                        className="mr-2 rounded"
-                                        checked={genData.includeMisc}
-                                        onChange={e => setGenData({ ...genData, includeMisc: e.target.checked })}
-                                    />
-                                    Include Misc Charges
-                                </label>
-                            </div>
-
-                            <div className="text-xs text-gray-500">
-                                {genData.studentIds.length > 0
-                                    ? `Will generate for selected student.`
-                                    : `Will generate for all ${allStudents.length} active students.`}
-                            </div>
-                            <div className="flex justify-end gap-2 pt-4">
-                                <button type="button" onClick={() => setShowGen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
-                                <button type="submit" disabled={generating} className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50">
-                                    {generating ? 'Processing...' : 'Generate'}
+            <AnimatePresence>
+                {showGen && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden"
+                        >
+                            <div className="p-6 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
+                                <h3 className="text-xl font-bold text-slate-900">Generate Challans</h3>
+                                <button onClick={() => setShowGen(false)} className="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+                                    <X className="w-5 h-5" />
                                 </button>
                             </div>
-                        </form>
+
+                            <div className="p-6">
+                                <form onSubmit={handleGenerate} className="space-y-5">
+                                    <div>
+                                        <label htmlFor="genStudent" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Target Student(s)</label>
+                                        <div className="relative">
+                                            <select
+                                                id="genStudent"
+                                                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 outline-none appearance-none bg-white"
+                                                value={genData.studentIds[0] || ''}
+                                                onChange={e => {
+                                                    const val = e.target.value;
+                                                    setGenData({
+                                                        ...genData,
+                                                        studentIds: val ? [val] : []
+                                                    });
+                                                }}
+                                            >
+                                                <option value="">All Active Students</option>
+                                                {allStudents.map(s => (
+                                                    <option key={s._id} value={s._id}>
+                                                        {s.fullName} ({s.registrationNumber})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <ChevronDown className="absolute right-4 top-3.5 text-slate-400 w-4 h-4 pointer-events-none" />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label htmlFor="genMonth" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Month</label>
+                                            <input
+                                                id="genMonth"
+                                                name="genMonth"
+                                                type="month" required
+                                                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 outline-none"
+                                                value={genData.month}
+                                                onChange={e => setGenData({ ...genData, month: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label htmlFor="genDueDate" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Due Date</label>
+                                            <input
+                                                id="genDueDate"
+                                                name="genDueDate"
+                                                type="date" required
+                                                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 outline-none"
+                                                value={genData.dueDate}
+                                                onChange={e => setGenData({ ...genData, dueDate: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-slate-50 p-4 rounded-xl space-y-3 border border-slate-100">
+                                        <label className="flex items-center gap-3 cursor-pointer group">
+                                            <div className="relative flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    className="peer sr-only"
+                                                    checked={genData.includeExamFee}
+                                                    onChange={e => setGenData({ ...genData, includeExamFee: e.target.checked })}
+                                                />
+                                                <div className="w-5 h-5 border-2 border-slate-300 rounded peer-checked:bg-cyan-600 peer-checked:border-cyan-600 transition-all"></div>
+                                                <CheckCircle className="w-3.5 h-3.5 text-white absolute left-0.5 top-0.5 opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                            </div>
+                                            <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">Include Exam Fee</span>
+                                        </label>
+                                        <label className="flex items-center gap-3 cursor-pointer group">
+                                            <div className="relative flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    className="peer sr-only"
+                                                    checked={genData.includeMisc}
+                                                    onChange={e => setGenData({ ...genData, includeMisc: e.target.checked })}
+                                                />
+                                                <div className="w-5 h-5 border-2 border-slate-300 rounded peer-checked:bg-cyan-600 peer-checked:border-cyan-600 transition-all"></div>
+                                                <CheckCircle className="w-3.5 h-3.5 text-white absolute left-0.5 top-0.5 opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                            </div>
+                                            <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">Include Misc Charges</span>
+                                        </label>
+                                    </div>
+
+                                    <div className="flex items-start gap-3 p-3 bg-blue-50 text-blue-700 rounded-xl text-sm leading-relaxed">
+                                        <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                                        <p>
+                                            {genData.studentIds.length > 0
+                                                ? `1 challan will be generated for the selected student.`
+                                                : `${allStudents.length} challans will be generated for all active students.`}
+                                        </p>
+                                    </div>
+
+                                    <div className="flex justify-end gap-3 pt-2">
+                                        <button type="button" onClick={() => setShowGen(false)} className="px-5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl font-bold transition-colors">Cancel</button>
+                                        <button
+                                            type="submit"
+                                            disabled={generating}
+                                            className="px-6 py-2.5 bg-cyan-600 text-white rounded-xl hover:bg-cyan-700 font-bold shadow-lg shadow-cyan-600/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+                                        >
+                                            {generating ? <Loader2 className="animate-spin w-4 h-4" /> : 'Generate Now'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </motion.div>
                     </div>
-                </div>
-            )}
+                )}
+            </AnimatePresence>
 
             {/* Verification Modal */}
-            {verifyId && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-xl w-full max-w-md">
-                        <h3 className="text-lg font-bold mb-4">Manual Payment Verification</h3>
-                        <form onSubmit={handleVerify} className="space-y-4">
-                            <div className="bg-yellow-50 p-3 rounded text-sm text-yellow-800 border border-yellow-200">
-                                Confirm that you have received payment in the bank account. This action cannot be undone by teachers.
+            <AnimatePresence>
+                {verifyId && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden"
+                        >
+                            <div className="p-6 bg-slate-50/50 border-b border-slate-100">
+                                <h3 className="text-xl font-bold text-slate-900">Verify Payment</h3>
+                                <p className="text-sm text-slate-500 mt-1">Manual verification for cash/cheque payments</p>
                             </div>
-                            <div>
-                                <label htmlFor="payRef" className="block text-sm font-medium text-gray-700">Transaction Ref / Cheque No</label>
-                                <input
-                                    id="payRef"
-                                    name="payRef"
-                                    type="text" required
-                                    className="w-full border rounded p-2"
-                                    value={verifyData.paymentReference}
-                                    onChange={e => setVerifyData({ ...verifyData, paymentReference: e.target.value })}
-                                />
+
+                            <div className="p-6">
+                                <form onSubmit={handleVerify} className="space-y-4">
+                                    <div className="p-4 bg-yellow-50 text-yellow-800 rounded-xl text-sm font-medium border border-yellow-100 flex gap-3">
+                                        <AlertCircle className="w-5 h-5 shrink-0" />
+                                        <p>This action marks the challan as PAID and updates records. Ensure you have received the funds.</p>
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="payRef" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Reference No / Cheque No</label>
+                                        <input
+                                            id="payRef"
+                                            name="payRef"
+                                            type="text" required
+                                            className="w-full px-4 py-2.5 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                                            value={verifyData.paymentReference}
+                                            onChange={e => setVerifyData({ ...verifyData, paymentReference: e.target.value })}
+                                            placeholder="e.g. TRX-8839201"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="payDate" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Payment Date</label>
+                                        <input
+                                            id="payDate"
+                                            name="payDate"
+                                            type="date" required
+                                            className="w-full px-4 py-2.5 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                                            value={verifyData.paymentDate}
+                                            onChange={e => setVerifyData({ ...verifyData, paymentDate: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="payNote" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Note (Optional)</label>
+                                        <textarea
+                                            id="payNote"
+                                            name="payNote"
+                                            className="w-full px-4 py-2.5 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none min-h-[80px]"
+                                            value={verifyData.note}
+                                            onChange={e => setVerifyData({ ...verifyData, note: e.target.value })}
+                                            placeholder="Any additional details..."
+                                        />
+                                    </div>
+
+                                    <div className="flex justify-end gap-3 pt-4">
+                                        <button type="button" onClick={() => setVerifyId('')} className="px-5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl font-bold transition-colors">Cancel</button>
+                                        <button
+                                            type="submit"
+                                            disabled={verifying}
+                                            className="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold shadow-lg shadow-blue-600/20 flex items-center gap-2"
+                                        >
+                                            {verifying ? <Loader2 className="animate-spin w-4 h-4" /> : 'Confirm Payment'}
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
-                            <div>
-                                <label htmlFor="payDate" className="block text-sm font-medium text-gray-700">Payment Date</label>
-                                <input
-                                    id="payDate"
-                                    name="payDate"
-                                    type="date" required
-                                    className="w-full border rounded p-2"
-                                    value={verifyData.paymentDate}
-                                    onChange={e => setVerifyData({ ...verifyData, paymentDate: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <label htmlFor="payNote" className="block text-sm font-medium text-gray-700">Note (Optional)</label>
-                                <textarea
-                                    id="payNote"
-                                    name="payNote"
-                                    className="w-full border rounded p-2"
-                                    value={verifyData.note}
-                                    onChange={e => setVerifyData({ ...verifyData, note: e.target.value })}
-                                />
-                            </div>
-                            <div className="flex justify-end gap-2 pt-4">
-                                <button type="button" onClick={() => setVerifyId('')} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
-                                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                                    Confirm Payment
-                                </button>
-                            </div>
-                        </form>
+                        </motion.div>
                     </div>
-                </div>
-            )}
+                )}
+            </AnimatePresence>
         </div>
     );
 }

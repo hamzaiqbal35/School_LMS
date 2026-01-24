@@ -2,7 +2,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api';
-import { Loader2, Plus, Search, MoreVertical, Pencil, Eye } from 'lucide-react';
+import { Loader2, Plus, Search, MoreVertical, Pencil, Eye, GraduationCap } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Student {
     _id: string;
@@ -67,10 +68,13 @@ export default function StudentsPage() {
         }
     }, [keyword, selectedClass, selectedSection]);
 
-    // Debounce search? Or just button? Button is fine per current UI pattern.
     useEffect(() => {
         // Auto-fetch when filters change (optional, but good UX)
-        fetchStudents();
+        // Debounce could be added for keyword if needed
+        const timer = setTimeout(() => {
+            fetchStudents();
+        }, 500);
+        return () => clearTimeout(timer);
     }, [fetchStudents]);
 
     const handleSearch = (e: React.FormEvent) => {
@@ -78,138 +82,128 @@ export default function StudentsPage() {
         fetchStudents();
     };
 
+    const container = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1
+            }
+        }
+    };
+
+    const item = {
+        hidden: { y: 20, opacity: 0 },
+        show: { y: 0, opacity: 1 }
+    };
+
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                <h2 className="text-2xl font-bold text-gray-800">Students Directory</h2>
-                <Link href="/admin/students/create" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center shadow-sm transition-colors">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add New Student
+        <div className="space-y-8">
+            <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Student Directory</h1>
+                    <p className="text-slate-500 mt-1">Manage student enrollments and profiles</p>
+                </div>
+                <Link href="/admin/students/create" className="group bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-bold shadow-lg shadow-blue-600/20 flex items-center gap-2 transition-all transform hover:scale-[1.02]">
+                    <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+                    Admit Student
                 </Link>
             </div>
 
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 space-y-4">
-                <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-                        <input
-                            id="searchKeyword"
-                            name="searchKeyword"
-                            type="text"
-                            placeholder="Search by Name or Reg Number..."
-                            aria-label="Search by Name or Reg Number"
-                            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                            value={keyword}
-                            onChange={(e) => setKeyword(e.target.value)}
-                        />
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <form onSubmit={handleSearch} className="grid md:grid-cols-12 gap-4 items-end">
+                    <div className="md:col-span-5">
+                        <label htmlFor="searchKeyword" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Search</label>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                            <input
+                                id="searchKeyword"
+                                name="searchKeyword"
+                                type="text"
+                                placeholder="Search by Name or Reg Number..."
+                                className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                                value={keyword}
+                                onChange={(e) => setKeyword(e.target.value)}
+                            />
+                        </div>
                     </div>
 
-                    <select
-                        id="filterClass"
-                        name="filterClass"
-                        aria-label="Filter by Class"
-                        className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                        value={selectedClass}
-                        onChange={(e) => setSelectedClass(e.target.value)}
-                    >
-                        <option value="">All Classes</option>
-                        {masterData.classes.map((c: ReferenceData) => (
-                            <option key={c._id} value={c._id}>{c.name}</option>
-                        ))}
-                    </select>
-
-                    <select
-                        id="filterSection"
-                        name="filterSection"
-                        aria-label="Filter by Section"
-                        className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                        value={selectedSection}
-                        onChange={(e) => setSelectedSection(e.target.value)}
-                    >
-                        <option value="">All Sections</option>
-                        {masterData.sections.map((s: ReferenceData) => (
-                            <option key={s._id} value={s._id}>{s.name}</option>
-                        ))}
-                    </select>
-
-                    <button type="submit" className="bg-gray-800 hover:bg-gray-900 text-white px-6 py-2 rounded-lg font-medium transition-colors">
-                        Search
-                    </button>
-                    {(keyword || selectedClass || selectedSection) && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setKeyword('');
-                                setSelectedClass('');
-                                setSelectedSection('');
-                                // fetchStudents() will trigger via useEffect
-                            }}
-                            className="text-gray-500 hover:text-gray-700 px-4 py-2"
+                    <div className="md:col-span-3">
+                        <label htmlFor="filterClass" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Class</label>
+                        <select
+                            id="filterClass"
+                            name="filterClass"
+                            className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white transition-all appearance-none"
+                            value={selectedClass}
+                            onChange={(e) => setSelectedClass(e.target.value)}
                         >
-                            Clear
-                        </button>
-                    )}
+                            <option value="">All Classes</option>
+                            {masterData.classes.map((c: ReferenceData) => (
+                                <option key={c._id} value={c._id}>{c.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="md:col-span-3">
+                        <label htmlFor="filterSection" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Section</label>
+                        <select
+                            id="filterSection"
+                            name="filterSection"
+                            className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white transition-all appearance-none"
+                            value={selectedSection}
+                            onChange={(e) => setSelectedSection(e.target.value)}
+                        >
+                            <option value="">All Sections</option>
+                            {masterData.sections.map((s: ReferenceData) => (
+                                <option key={s._id} value={s._id}>{s.name}</option>
+                            ))}
+                        </select>
+                    </div>
                 </form>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-visible">
+            <div className="min-h-[400px]">
                 {loading ? (
-                    <div className="flex justify-center p-12">
-                        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                    <div className="flex flex-col items-center justify-center h-64">
+                        <Loader2 className="w-10 h-10 animate-spin text-blue-600 mb-4" />
+                        <p className="text-slate-500 font-medium">Loading directory...</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-visible min-h-[400px]">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reg No</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200 relative">
+                    <>
+                        <motion.div
+                            variants={container}
+                            initial="hidden"
+                            animate="show"
+                            className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                        >
+                            <AnimatePresence>
                                 {students.map((student) => (
-                                    <tr key={student._id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            {student.registrationNumber}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            <div>{student.fullName}</div>
-                                            <div className="text-xs text-gray-500">{student.fatherName}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {student.classId?.name} {student.sectionId?.name}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${student.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                                }`}>
-                                                {student.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
-                                            <div className="relative inline-block text-left">
+                                    <motion.div
+                                        key={student._id}
+                                        variants={item}
+                                        className="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all duration-300 relative overflow-hidden"
+                                    >
+                                        <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                            <div className="relative">
                                                 <button
                                                     onClick={() => setOpenMenuId(openMenuId === student._id ? null : student._id)}
-                                                    className="p-2 text-gray-400 hover:text-blue-600 rounded-full hover:bg-gray-100 transition-colors"
+                                                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                 >
                                                     <MoreVertical className="w-5 h-5" />
                                                 </button>
-
                                                 {openMenuId === student._id && (
                                                     <>
-                                                        <div className="fixed inset-0 z-10 cursor-default" onClick={() => setOpenMenuId(null)}></div>
-                                                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-100 z-20 py-1 origin-top-right animate-in fade-in zoom-in-95 duration-200">
+                                                        <div className="fixed inset-0 z-40 cursor-default" onClick={() => setOpenMenuId(null)}></div>
+                                                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 z-50 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                                                             <Link
                                                                 href={`/admin/students/${student._id}`}
-                                                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                                                                className="flex items-center px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-600 font-medium"
                                                             >
                                                                 <Eye className="w-4 h-4 mr-2" /> View Details
                                                             </Link>
                                                             <Link
                                                                 href={`/admin/students/${student._id}/edit`}
-                                                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                                                                className="flex items-center px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-600 font-medium"
                                                             >
                                                                 <Pencil className="w-4 h-4 mr-2" /> Edit Student
                                                             </Link>
@@ -217,19 +211,52 @@ export default function StudentsPage() {
                                                     </>
                                                 )}
                                             </div>
-                                        </td>
-                                    </tr>
+                                        </div>
+
+                                        <div className="flex items-start gap-4">
+                                            <div className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold bg-slate-100 text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors`}>
+                                                {student.fullName.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-slate-900 line-clamp-1" title={student.fullName}>{student.fullName}</h3>
+                                                <p className="text-xs text-slate-500 font-medium mt-0.5">{student.registrationNumber}</p>
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide mt-2 ${student.status === 'Active' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                                                    {student.status}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-4 pt-4 border-t border-slate-50 grid grid-cols-2 gap-2 text-xs">
+                                            <div>
+                                                <span className="text-slate-400 font-bold block mb-0.5">Class</span>
+                                                <span className="text-slate-700 font-medium bg-slate-100 px-2 py-1 rounded inline-block">
+                                                    {student.classId?.name || 'N/A'} {student.sectionId?.name}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-400 font-bold block mb-0.5">Father</span>
+                                                <span className="text-slate-700 font-medium truncate block" title={student.fatherName}>
+                                                    {student.fatherName}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </motion.div>
                                 ))}
-                                {students.length === 0 && (
-                                    <tr>
-                                        <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                                            No students found.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                            </AnimatePresence>
+                        </motion.div>
+
+                        {students.length === 0 && (
+                            <div className="flex flex-col items-center justify-center py-20 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+                                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm">
+                                    <GraduationCap className="w-8 h-8 text-slate-300" />
+                                </div>
+                                <h3 className="text-lg font-bold text-slate-900">No students found</h3>
+                                <p className="text-slate-500 max-w-sm text-center mt-1">
+                                    Try adjusting your search criteria or add a new student to the directory.
+                                </p>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>

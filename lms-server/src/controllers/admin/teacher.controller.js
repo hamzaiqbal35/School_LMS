@@ -1,16 +1,85 @@
 const User = require('../../models/User');
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
 
+// @desc    Get all teachers
+// @route   GET /api/admin/teachers
+const TeacherAssignment = require('../../models/TeacherAssignment');
+
+// @desc    Get all teachers
+// @route   GET /api/admin/teachers
 // @desc    Get all teachers
 // @route   GET /api/admin/teachers
 exports.getTeachers = async (req, res) => {
     try {
-        const teachers = await User.find({ role: 'TEACHER', isActive: true })
-            .populate('qualifiedSubjects', 'name code')
-            .select('-password')
-            .sort({ fullName: 1 });
+        const { keyword, subjectId } = req.query;
+
+        const pipeline = [
+            // 1. Initial Match: Active Teachers
+            { $match: { role: 'TEACHER', isActive: true } },
+
+            // 2. Lookup Assigned Subjects (via TeacherAssignment)
+            {
+                $lookup: {
+                    from: 'teacherassignments',
+                    let: { teacherId: '$_id' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ['$teacherId', '$$teacherId'] }, active: true } },
+                        { $lookup: { from: 'subjects', localField: 'subjectId', foreignField: '_id', as: 'subject' } },
+                        { $unwind: '$subject' },
+                        { $replaceRoot: { newRoot: '$subject' } }
+                    ],
+                    as: 'assignedSubjects'
+                }
+            },
+
+            // 3. Lookup Qualified Subjects
+            {
+                $lookup: {
+                    from: 'subjects',
+                    localField: 'qualifiedSubjects',
+                    foreignField: '_id',
+                    as: 'qualifiedSubjects'
+                }
+            }
+        ];
+
+        // 4. Apply Filters
+        const matchStage = {};
+
+        if (keyword) {
+            const regex = new RegExp(keyword, 'i');
+            matchStage.$or = [
+                { fullName: regex },
+                { email: regex },
+                { phoneNumber: regex },
+                { qualifications: { $elemMatch: { $regex: regex } } }
+                // Optional: Search by subject name if needed, but usually filtered by dropdown
+            ];
+        }
+
+        if (subjectId) {
+            matchStage.$or = [
+                { 'assignedSubjects._id': new mongoose.Types.ObjectId(subjectId) },
+                { 'qualifiedSubjects._id': new mongoose.Types.ObjectId(subjectId) }
+            ];
+        }
+
+        if (Object.keys(matchStage).length > 0) {
+            pipeline.push({ $match: matchStage });
+        }
+
+        // 5. Sort
+        pipeline.push({ $sort: { fullName: 1 } });
+
+        // 6. Projection (hide password)
+        pipeline.push({ $project: { password: 0 } });
+
+        const teachers = await User.aggregate(pipeline);
+
         res.json(teachers);
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -110,13 +179,19 @@ exports.deleteTeacher = async (req, res) => {
             return res.status(404).json({ message: 'Teacher not found' });
         }
 
-        // Hard delete or soft delete? 
-        // Soft delete is safer for historical assignments
-        teacher.isActive = false;
-        await teacher.save();
+        // Hard Delete: Remove User and related data
+        const TeacherAssignment = require('../../models/TeacherAssignment');
+        const TeacherAttendance = require('../../models/TeacherAttendance');
 
-        res.json({ message: 'Teacher deactivated' });
+        await Promise.all([
+            User.findByIdAndDelete(req.params.id),
+            TeacherAssignment.deleteMany({ teacherId: req.params.id }),
+            TeacherAttendance.deleteMany({ teacherId: req.params.id })
+        ]);
+
+        res.json({ message: 'Teacher and related data deleted permanently' });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: 'Server Error' });
     }
 };

@@ -19,7 +19,7 @@ exports.getFeeStructureByClass = async (req, res) => {
     try {
         const structure = await ClassFeeStructure.findOne({ classId: req.params.classId });
         if (!structure) {
-            return res.status(404).json({ message: 'Fee Structure not defined for this class' });
+            return res.json(null);
         }
         res.json(structure);
     } catch (error) {

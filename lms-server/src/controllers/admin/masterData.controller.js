@@ -1,5 +1,6 @@
 const { Class, Section, Subject, TimeSlot } = require('../../models/ClassStructure');
 const User = require('../../models/User');
+const ClassFeeStructure = require('../../models/ClassFeeStructure');
 
 // @desc    Get all master data (Classes, Sections, Subjects, TimeSlots)
 // @route   GET /api/admin/master-data
@@ -99,7 +100,11 @@ exports.deleteItem = async (req, res) => {
 
     try {
         let model;
-        if (type === 'classes') model = Class;
+        if (type === 'classes') {
+            model = Class;
+            // Cascading delete for fee structure
+            await ClassFeeStructure.findOneAndDelete({ classId: id });
+        }
         else if (type === 'sections') model = Section;
         else if (type === 'subjects') model = Subject;
         else if (type === 'timeslots') model = TimeSlot;
@@ -108,6 +113,7 @@ exports.deleteItem = async (req, res) => {
         await model.findByIdAndDelete(id);
         res.json({ message: 'Item deleted' });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: 'Server Error' });
     }
 };

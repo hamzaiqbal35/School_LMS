@@ -1,7 +1,8 @@
 "use client"
 import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
-import { Loader2, Lock, Unlock, History } from 'lucide-react';
+import { Loader2, Lock, Unlock, History, Calendar, UserCheck, UserX, Clock, Users, GraduationCap, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface AttendanceRecord {
     _id: string;
@@ -131,86 +132,98 @@ export default function AdminAttendancePage() {
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-gray-800">Attendance Audit</h1>
-                <div className="flex bg-gray-100 p-1 rounded-lg">
+        <div className="space-y-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Attendance Audit</h1>
+                    <p className="text-slate-500 mt-1">Track and manage daily attendance records</p>
+                </div>
+                <div className="flex bg-white p-1.5 rounded-xl shadow-sm border border-slate-200">
                     <button
                         onClick={() => setActiveTab('STUDENT')}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'STUDENT' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                            }`}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'STUDENT' ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
                     >
-                        Student Attendance
+                        <GraduationCap className="w-4 h-4" />
+                        Students
                     </button>
                     <button
                         onClick={() => setActiveTab('TEACHER')}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'TEACHER' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                            }`}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'TEACHER' ? 'bg-indigo-50 text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
                     >
-                        Teacher Attendance
+                        <Users className="w-4 h-4" />
+                        Teachers
                     </button>
                 </div>
             </div>
 
             {/* Controls */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <div className="flex items-center gap-4">
-                    <div>
-                        <label htmlFor="filterDate" className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                        <input
-                            id="filterDate"
-                            name="filterDate"
-                            type="date"
-                            className="border rounded-lg p-2"
-                            value={date}
-                            onChange={(e) => setDate(e.target.value)}
-                        />
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div className="flex flex-wrap items-center gap-4">
+                    <div className="w-full md:w-auto">
+                        <label htmlFor="filterDate" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Date</label>
+                        <div className="relative">
+                            <Calendar className="absolute left-3 top-2.5 text-slate-400 w-4 h-4" />
+                            <input
+                                id="filterDate"
+                                name="filterDate"
+                                type="date"
+                                className="pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-slate-700 font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none w-full md:w-auto transition-all"
+                                value={date}
+                                onChange={(e) => setDate(e.target.value)}
+                            />
+                        </div>
                     </div>
 
                     {activeTab === 'STUDENT' && (
                         <>
-                            <div>
-                                <label htmlFor="filterClass" className="block text-sm font-medium text-gray-700 mb-1">Class</label>
-                                <select
-                                    id="filterClass"
-                                    name="filterClass"
-                                    className="border rounded-lg p-2 min-w-[150px]"
-                                    value={classId}
-                                    onChange={(e) => setClassId(e.target.value)}
-                                >
-                                    <option value="">Select Class</option>
-                                    {masterData.classes.map((c: { _id: string; name: string }) => (
-                                        <option key={c._id} value={c._id}>{c.name}</option>
-                                    ))}
-                                </select>
+                            <div className="w-full md:w-auto">
+                                <label htmlFor="filterClass" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Class</label>
+                                <div className="relative">
+                                    <select
+                                        id="filterClass"
+                                        name="filterClass"
+                                        className="pl-3 pr-8 py-2.5 border border-slate-200 rounded-xl text-slate-700 font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none w-full md:min-w-[180px] appearance-none transition-all bg-white"
+                                        value={classId}
+                                        onChange={(e) => setClassId(e.target.value)}
+                                    >
+                                        <option value="">Select Class</option>
+                                        {masterData.classes.map((c: { _id: string; name: string }) => (
+                                            <option key={c._id} value={c._id}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-3 top-3 text-slate-400 w-4 h-4 pointer-events-none" />
+                                </div>
                             </div>
-                            <div>
-                                <label htmlFor="filterSection" className="block text-sm font-medium text-gray-700 mb-1">Section</label>
-                                <select
-                                    id="filterSection"
-                                    name="filterSection"
-                                    className="border rounded-lg p-2 min-w-[150px]"
-                                    value={sectionId}
-                                    onChange={(e) => setSectionId(e.target.value)}
-                                >
-                                    <option value="">Select Section</option>
-                                    {masterData.sections.map((s: { _id: string; name: string }) => (
-                                        <option key={s._id} value={s._id}>{s.name}</option>
-                                    ))}
-                                </select>
+                            <div className="w-full md:w-auto">
+                                <label htmlFor="filterSection" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Section</label>
+                                <div className="relative">
+                                    <select
+                                        id="filterSection"
+                                        name="filterSection"
+                                        className="pl-3 pr-8 py-2.5 border border-slate-200 rounded-xl text-slate-700 font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none w-full md:min-w-[180px] appearance-none transition-all bg-white"
+                                        value={sectionId}
+                                        onChange={(e) => setSectionId(e.target.value)}
+                                    >
+                                        <option value="">Select Section</option>
+                                        {masterData.sections.map((s: { _id: string; name: string }) => (
+                                            <option key={s._id} value={s._id}>{s.name}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-3 top-3 text-slate-400 w-4 h-4 pointer-events-none" />
+                                </div>
                             </div>
 
                             {classId && sectionId && (
-                                <div className="ml-auto self-end">
+                                <div className="ml-auto self-end w-full md:w-auto">
                                     <button
                                         onClick={toggleFreeze}
-                                        className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${isFrozen
-                                            ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
-                                            : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
+                                        className={`w-full md:w-auto flex items-center justify-center px-4 py-2.5 rounded-xl font-bold transition-all ${isFrozen
+                                            ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 shadow-sm'
+                                            : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-sm'
                                             }`}
                                     >
                                         {isFrozen ? <Lock className="w-4 h-4 mr-2" /> : <Unlock className="w-4 h-4 mr-2" />}
-                                        {isFrozen ? 'Attendance Frozen' : 'Freeze Attendance'}
+                                        {isFrozen ? 'Unfreeze Record' : 'Freeze Record'}
                                     </button>
                                 </div>
                             )}
@@ -220,141 +233,192 @@ export default function AdminAttendancePage() {
             </div>
 
             {/* Data Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 {loading ? (
-                    <div className="p-12 flex justify-center"><Loader2 className="animate-spin text-blue-600 w-8 h-8" /></div>
+                    <div className="p-20 flex justify-center items-center flex-col gap-4">
+                        <Loader2 className="animate-spin text-blue-600 w-10 h-10" />
+                        <p className="text-slate-500 font-medium">Loading records...</p>
+                    </div>
                 ) : (
                     activeTab === 'STUDENT' ? (
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Marked By</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">History</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {studentRecords.map(record => (
-                                    <tr key={record._id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4">
-                                            <div className="font-medium text-gray-900">{record.studentId?.fullName}</div>
-                                            <div className="text-xs text-gray-500">{record.studentId?.registrationNumber}</div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${record.status === 'Present' ? 'bg-green-100 text-green-700' :
-                                                record.status === 'Absent' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
-                                                }`}>
-                                                {record.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-600">
-                                            {record.markedBy?.fullName || 'N/A'}
-                                            <div className="text-xs text-gray-400">{new Date(record.markedAt).toLocaleTimeString()}</div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {record.history && record.history.length > 1 && (
-                                                <div className="group relative">
-                                                    <button className="text-blue-600 hover:text-blue-800 flex items-center text-xs font-medium">
-                                                        <History className="w-3 h-3 mr-1" /> {record.history.length} Updates
-                                                    </button>
-                                                    {/* Tooltip */}
-                                                    <div className="absolute right-0 bottom-full mb-2 w-64 bg-white rounded-lg shadow-xl border border-gray-100 p-3 hidden group-hover:block z-50">
-                                                        <h4 className="text-xs font-bold text-gray-700 mb-2 border-b pb-1">Modification Log</h4>
-                                                        <div className="space-y-2 max-h-40 overflow-y-auto">
-                                                            {record.history.map((h: { status: string; timestamp: string; reason?: string }, i: number) => (
-                                                                <div key={i} className="text-xs text-gray-600 border-b border-gray-50 pb-1 last:border-0">
-                                                                    <div className="flex justify-between">
-                                                                        <span className={`font-semibold ${h.status === 'Present' ? 'text-green-600' : 'text-red-600'}`}>{h.status}</span>
-                                                                        <span className="text-gray-400 text-[10px]">{new Date(h.timestamp).toLocaleTimeString()}</span>
-                                                                    </div>
-                                                                    {h.reason && <div className="text-gray-500 italic mt-0.5">&quot;{h.reason}&quot;</div>}
-                                                                </div>
-                                                            ))}
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-slate-100">
+                                <thead className="bg-slate-50/50">
+                                    <tr>
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Student</th>
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Marked By</th>
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">History</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 bg-white">
+                                    <AnimatePresence>
+                                        {studentRecords.map(record => (
+                                            <motion.tr
+                                                key={record._id}
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                className="group hover:bg-slate-50/50 transition-colors"
+                                            >
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold">
+                                                            {record.studentId?.fullName.charAt(0)}
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-bold text-slate-900">{record.studentId?.fullName}</div>
+                                                            <div className="text-xs text-slate-500 font-mono">{record.studentId?.registrationNumber}</div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                                {studentRecords.length === 0 && (
-                                    <tr><td colSpan={4} className="p-8 text-center text-gray-500">No student records found.</td></tr>
-                                )}
-                            </tbody>
-                        </table>
-                    ) : (
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Teacher</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {teachers.map(teacher => {
-                                    const record = teacherRecords.find(r => r.teacherId._id === teacher._id);
-                                    const status = record ? record.status : null;
-
-                                    return (
-                                        <tr key={teacher._id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4">
-                                                <div className="font-medium text-gray-900">{teacher.fullName}</div>
-                                                <div className="text-xs text-gray-500">{teacher.email}</div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                {status ? (
-                                                    <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${status === 'Present' ? 'bg-green-100 text-green-700' :
-                                                        status === 'Absent' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border ${record.status === 'Present' ? 'bg-green-50 text-green-700 border-green-100' :
+                                                        record.status === 'Absent' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-yellow-50 text-yellow-700 border-yellow-100'
                                                         }`}>
-                                                        {status}
+                                                        {record.status === 'Present' && <UserCheck className="w-3 h-3 mr-1.5" />}
+                                                        {record.status === 'Absent' && <UserX className="w-3 h-3 mr-1.5" />}
+                                                        {record.status}
                                                     </span>
-                                                ) : (
-                                                    <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-bold uppercase border border-gray-200">
-                                                        Not Marked
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => markTeacherStatus(teacher._id, 'Present')}
-                                                        className={`px-3 py-1 text-xs font-semibold rounded ${status === 'Present'
-                                                            ? 'bg-green-600 text-white'
-                                                            : 'bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-600'
-                                                            }`}
-                                                    >
-                                                        Present
-                                                    </button>
-                                                    <button
-                                                        onClick={() => markTeacherStatus(teacher._id, 'Absent')}
-                                                        className={`px-3 py-1 text-xs font-semibold rounded ${status === 'Absent'
-                                                            ? 'bg-red-600 text-white'
-                                                            : 'bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600'
-                                                            }`}
-                                                    >
-                                                        Absent
-                                                    </button>
-                                                    <button
-                                                        onClick={() => markTeacherStatus(teacher._id, 'Leave')}
-                                                        className={`px-3 py-1 text-xs font-semibold rounded ${status === 'Leave'
-                                                            ? 'bg-yellow-500 text-white'
-                                                            : 'bg-gray-100 text-gray-600 hover:bg-yellow-50 hover:text-yellow-600'
-                                                            }`}
-                                                    >
-                                                        Leave
-                                                    </button>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-slate-600">
+                                                    <div className="font-medium">{record.markedBy?.fullName || 'N/A'}</div>
+                                                    <div className="text-xs text-slate-400 flex items-center mt-0.5">
+                                                        <Clock className="w-3 h-3 mr-1" />
+                                                        {new Date(record.markedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    {record.history && record.history.length > 1 && (
+                                                        <div className="group/tooltip relative inline-block">
+                                                            <button className="text-blue-600 hover:text-blue-800 flex items-center text-xs font-bold bg-blue-50 px-2 py-1 rounded-md transition-colors">
+                                                                <History className="w-3 h-3 mr-1.5" />
+                                                                {record.history.length} Updates
+                                                            </button>
+                                                            {/* Tooltip */}
+                                                            <div className="absolute right-0 bottom-full mb-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 p-4 hidden group-hover/tooltip:block z-50">
+                                                                <h4 className="text-xs font-bold text-slate-900 mb-3 border-b border-slate-100 pb-2 uppercase tracking-wide">Modification Log</h4>
+                                                                <div className="space-y-3 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                                                                    {record.history.map((h: { status: string; timestamp: string; reason?: string }, i: number) => (
+                                                                        <div key={i} className="text-xs text-slate-600 border-b border-slate-50 pb-2 last:border-0 last:pb-0">
+                                                                            <div className="flex justify-between items-center mb-1">
+                                                                                <span className={`font-bold px-1.5 py-0.5 rounded ${h.status === 'Present' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{h.status}</span>
+                                                                                <span className="text-slate-400 text-[10px]">{new Date(h.timestamp).toLocaleTimeString()}</span>
+                                                                            </div>
+                                                                            {h.reason && <div className="text-slate-500 italic bg-slate-50 p-1.5 rounded mt-1">&quot;{h.reason}&quot;</div>}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            </motion.tr>
+                                        ))}
+                                    </AnimatePresence>
+                                    {studentRecords.length === 0 && (
+                                        <tr>
+                                            <td colSpan={4} className="p-12 text-center text-slate-500">
+                                                <div className="flex flex-col items-center">
+                                                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-3">
+                                                        <Users className="w-8 h-8 text-slate-300" />
+                                                    </div>
+                                                    <p className="font-medium">No student records found</p>
+                                                    <p className="text-sm mt-1 text-slate-400">Select a class and section to view attendance.</p>
                                                 </div>
                                             </td>
                                         </tr>
-                                    );
-                                })}
-                                {teachers.length === 0 && (
-                                    <tr><td colSpan={3} className="p-8 text-center text-gray-500">No teachers found.</td></tr>
-                                )}
-                            </tbody>
-                        </table>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-slate-100">
+                                <thead className="bg-slate-50/50">
+                                    <tr>
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Teacher</th>
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Current Status</th>
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 bg-white">
+                                    <AnimatePresence>
+                                        {teachers.map(teacher => {
+                                            const record = teacherRecords.find(r => r.teacherId._id === teacher._id);
+                                            const status = record ? record.status : null;
+
+                                            return (
+                                                <motion.tr
+                                                    key={teacher._id}
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    className="group hover:bg-slate-50/50 transition-colors"
+                                                >
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold">
+                                                                {teacher.fullName.charAt(0)}
+                                                            </div>
+                                                            <div>
+                                                                <div className="font-bold text-slate-900">{teacher.fullName}</div>
+                                                                <div className="text-xs text-slate-500">{teacher.email}</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        {status ? (
+                                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${status === 'Present' ? 'bg-green-50 text-green-700 border-green-100' :
+                                                                status === 'Absent' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-yellow-50 text-yellow-700 border-yellow-100'
+                                                                }`}>
+                                                                {status}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-slate-100 text-slate-500 border border-slate-200">
+                                                                Not Marked
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex bg-slate-100 rounded-lg p-1 w-fit">
+                                                            <button
+                                                                onClick={() => markTeacherStatus(teacher._id, 'Present')}
+                                                                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${status === 'Present'
+                                                                    ? 'bg-white text-green-600 shadow-sm ring-1 ring-black/5'
+                                                                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                                                                    }`}
+                                                            >
+                                                                Present
+                                                            </button>
+                                                            <button
+                                                                onClick={() => markTeacherStatus(teacher._id, 'Absent')}
+                                                                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${status === 'Absent'
+                                                                    ? 'bg-white text-red-600 shadow-sm ring-1 ring-black/5'
+                                                                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                                                                    }`}
+                                                            >
+                                                                Absent
+                                                            </button>
+                                                            <button
+                                                                onClick={() => markTeacherStatus(teacher._id, 'Leave')}
+                                                                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${status === 'Leave'
+                                                                    ? 'bg-white text-yellow-600 shadow-sm ring-1 ring-black/5'
+                                                                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                                                                    }`}
+                                                            >
+                                                                Leave
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </motion.tr>
+                                            );
+                                        })}
+                                    </AnimatePresence>
+                                    {teachers.length === 0 && (
+                                        <tr><td colSpan={3} className="p-12 text-center text-slate-500">No teachers found.</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     )
                 )}
             </div>

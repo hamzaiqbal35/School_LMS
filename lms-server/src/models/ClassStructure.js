@@ -54,8 +54,7 @@ const TimeSlotSchema = new Schema({
     name: {
         type: String, // e.g., "09:00 AM - 10:00 AM" or "Period 1"
         required: true,
-        trim: true,
-        unique: true
+        trim: true
     },
     day: {
         type: String, // e.g. Monday
