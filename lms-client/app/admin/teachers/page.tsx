@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api';
-import { Loader2, Plus, Pencil, Trash2, X, Check, Search, MoreVertical, Eye, Mail, Phone, BookOpen, Filter } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, X, Check, Search, MoreVertical, Eye, EyeOff, Mail, Phone, BookOpen, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface AxiosErrorLike {
@@ -34,6 +34,7 @@ export default function TeachersPage() {
     const [loading, setLoading] = useState(true);
     const [keyword, setKeyword] = useState('');
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+    const [showPassword, setShowPassword] = useState(false);
 
     const [selectedSubject, setSelectedSubject] = useState('');
 
@@ -468,17 +469,26 @@ export default function TeachersPage() {
                                         <label htmlFor="password" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">
                                             Password {editingId && <span className="text-slate-400 font-normal normal-case">(Optional)</span>}
                                         </label>
-                                        <input
-                                            id="password"
-                                            name="password"
-                                            type="password"
-                                            autoComplete="new-password"
-                                            required={!editingId}
-                                            className="w-full px-4 py-2.5 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
-                                            value={formData.password}
-                                            onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                            placeholder={editingId ? "Leave blank to keep current" : "Set initial password"}
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                id="password"
+                                                name="password"
+                                                type={showPassword ? "text" : "password"}
+                                                autoComplete="new-password"
+                                                required={!editingId}
+                                                className="w-full pl-4 pr-10 py-2.5 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                                                value={formData.password}
+                                                onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                                placeholder={editingId ? "Leave blank to keep current" : "Set initial password"}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                                            >
+                                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -533,8 +543,9 @@ export default function TeachersPage() {
                             </form>
                         </motion.div>
                     </div>
-                )}
-            </AnimatePresence>
+                )
+                }
+            </AnimatePresence >
         </div >
     );
 }
