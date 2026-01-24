@@ -139,16 +139,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </nav>
 
                 <div className="p-4 mt-auto">
-                    <div className="p-4 rounded-4xl bg-slate-800/50 border border-slate-700/50 mb-4 backdrop-blur-md">
-                        <div className="flex items-center gap-4">
-                            <div className="w-8 h-8 rounded-2xl bg-linear-to-br from-cyan-500 to-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-lg ring-2 ring-slate-700">
-                                {(user?.fullName || 'U').charAt(0)}
+                    <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm mb-3">
+                        <Link href="/admin/profile" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                            <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-blue-600/20 overflow-hidden relative">
+                                {user?.avatar ? (
+                                    <Image src={user.avatar} alt={user.fullName || 'User Avatar'} fill className="object-cover" />
+                                ) : (
+                                    (user?.fullName || 'A').charAt(0)
+                                )}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-black text-white truncate capitalize">{user?.fullName || 'Root Admin'}</p>
-                                <p className="text-[10px] text-cyan-400 font-extrabold uppercase tracking-widest mt-0.5">Systems Chief</p>
+                                <p className="text-sm font-bold text-slate-900 truncate">{user?.fullName || 'Admin User'}</p>
+                                <p className="text-xs text-slate-500 truncate">{user?.email}</p>
                             </div>
-                        </div>
+                        </Link>
                     </div>
                     <button
                         onClick={logoutHandler}

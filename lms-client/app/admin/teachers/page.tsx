@@ -4,6 +4,7 @@ import Link from 'next/link';
 import api from '@/lib/api';
 import { Loader2, Plus, Pencil, Trash2, X, Check, Search, MoreVertical, Eye, EyeOff, Mail, Phone, BookOpen, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 
 interface AxiosErrorLike {
     response?: {
@@ -26,6 +27,7 @@ interface Teacher {
     qualifications?: string[];
     qualifiedSubjects?: Subject[];
     assignedSubjects?: Subject[];
+    avatar?: string;
 }
 
 export default function TeachersPage() {
@@ -304,10 +306,20 @@ export default function TeachersPage() {
                                         <div className="px-6 pb-6 flex-1 flex flex-col">
                                             {/* Avatar moving up into banner */}
                                             <div className="relative -mt-12 mb-4 flex justify-between items-end">
-                                                <div className="w-24 h-24 rounded-2xl bg-white p-1 shadow-md">
-                                                    <div className="w-full h-full rounded-xl bg-gradient-to-br from-indigo-50 to-blue-50 flex items-center justify-center text-blue-600 font-bold text-3xl border border-slate-100">
-                                                        {(teacher.fullName || 'T').charAt(0)}
-                                                    </div>
+                                                <div className="w-24 h-24 rounded-2xl bg-white p-1 shadow-md relative overflow-hidden">
+                                                    {teacher.avatar ? (
+                                                        <Image
+                                                            src={teacher.avatar}
+                                                            alt={teacher.fullName}
+                                                            fill
+                                                            className="object-cover rounded-xl"
+                                                            sizes="96px"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full rounded-xl bg-gradient-to-br from-indigo-50 to-blue-50 flex items-center justify-center text-blue-600 font-bold text-3xl border border-slate-100">
+                                                            {(teacher.fullName || 'T').charAt(0)}
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 {/* Quick Badge or Role could go here */}
                                                 <div className="mb-1">

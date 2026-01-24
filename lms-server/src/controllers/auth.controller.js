@@ -19,7 +19,8 @@ exports.getMe = async (req, res) => {
             username: user.username,
             email: user.email,
             role: user.role,
-            fullName: user.fullName
+            fullName: user.fullName,
+            avatar: user.avatar
         });
     } catch (error) {
         console.error(error);
@@ -52,7 +53,9 @@ exports.loginUser = async (req, res) => {
                 username: user.username,
                 email: user.email,
                 role: user.role,
-                fullName: user.fullName
+                role: user.role,
+                fullName: user.fullName,
+                avatar: user.avatar
             });
         } else {
             res.status(401).json({ message: 'Invalid email or password' });
@@ -113,6 +116,64 @@ exports.registerAdmin = async (req, res) => {
         } else {
             res.status(400).json({ message: 'Invalid user data' });
         }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+exports.updateProfile = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // 1. Teacher cannot change password
+
+
+        // 2. Email Change Logic (Requires Current Password)
+        if (req.body.email && req.body.email !== user.email) {
+            if (!req.body.currentPassword) {
+                return res.status(400).json({ message: 'Current password is required to change email.' });
+            }
+            if (!(await user.comparePassword(req.body.currentPassword))) {
+                return res.status(401).json({ message: 'Invalid current password provided.' });
+            }
+
+            // Check if email is already taken
+            const emailExists = await User.findOne({ email: req.body.email });
+            if (emailExists && emailExists._id.toString() !== user._id.toString()) {
+                return res.status(400).json({ message: 'Email address already in use.' });
+            }
+
+            user.email = req.body.email;
+        }
+
+        user.fullName = req.body.fullName || user.fullName;
+        user.avatar = req.body.avatar || user.avatar;
+
+        if (req.body.password) {
+            user.password = req.body.password;
+        }
+
+        const updatedUser = await user.save();
+
+        res.json({
+            _id: updatedUser._id,
+            username: updatedUser.username,
+            email: updatedUser.email,
+            role: updatedUser.role,
+            fullName: updatedUser.fullName,
+            avatar: updatedUser.avatar,
+        });
+
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server Error' });

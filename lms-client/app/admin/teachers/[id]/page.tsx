@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Loader2, ArrowLeft, Mail, Phone, BookOpen, Calendar, User as UserIcon, Award } from 'lucide-react';
+import Image from 'next/image';
 import { use } from 'react';
 
 interface Teacher {
@@ -12,6 +13,7 @@ interface Teacher {
     phoneNumber?: string;
     qualifications?: string[];
     qualifiedSubjects?: Array<{ _id: string; name: string }>;
+    avatar?: string;
 }
 
 interface Assignment {
@@ -85,8 +87,21 @@ export default function TeacherDetailsPage({ params }: { params: Promise<{ id: s
                     <UserIcon className="w-64 h-64" />
                 </div>
                 <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
-                    <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center shadow-xl border-4 border-white/20 text-blue-700 text-5xl font-bold">
-                        {(teacher.fullName || '?').charAt(0)}
+                    <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center shadow-xl border-4 border-white/20 relative overflow-hidden">
+                        {teacher.avatar ? (
+                            <Image
+                                src={teacher.avatar}
+                                alt={teacher.fullName}
+                                fill
+                                className="object-cover"
+                                sizes="128px"
+                                priority
+                            />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-blue-700 text-5xl font-bold bg-white">
+                                {(teacher.fullName || '?').charAt(0)}
+                            </div>
+                        )}
                     </div>
                     <div className="text-center md:text-left space-y-2">
                         <h1 className="text-4xl font-bold">{teacher.fullName}</h1>

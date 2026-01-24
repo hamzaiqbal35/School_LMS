@@ -107,7 +107,7 @@ exports.getAssignments = async (req, res) => {
         }
 
         const assignments = await TeacherAssignment.find(query)
-            .populate('teacherId', 'fullName email')
+            .populate('teacherId', 'fullName email avatar')
             .populate('classId', 'name')
             .populate('sectionId', 'name')
             .populate('subjectId', 'name code')

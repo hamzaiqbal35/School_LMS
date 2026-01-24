@@ -7,6 +7,7 @@ interface User {
     fullName: string;
     email: string;
     role: 'ADMIN' | 'TEACHER';
+    avatar?: string;
 }
 
 interface AuthState {
@@ -17,6 +18,7 @@ interface AuthState {
     login: (user: User) => void;
     logout: () => void;
     checkAuth: () => Promise<void>;
+    setUser: (user: User) => void;
     setHydrated: () => void;
 }
 
@@ -27,6 +29,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     isHydrated: true, // Always hydrated since memory-only
     login: (user) => set({ user, isAuthenticated: true }),
     logout: () => set({ user: null, isAuthenticated: false }),
+    setUser: (user) => set({ user }),
     checkAuth: async () => {
         set({ isCheckingAuth: true });
         try {

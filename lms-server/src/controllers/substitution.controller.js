@@ -38,7 +38,7 @@ exports.getNeededSubstitutions = async (req, res) => {
             .populate('classId')
             .populate('sectionId')
             .populate('subjectId')
-            .populate('teacherId', 'fullName email');
+            .populate('teacherId', 'fullName email avatar');
 
         // 3. Filter assignments that match the current Day
         const relevantAssignments = assignments.filter(a =>
@@ -83,7 +83,7 @@ exports.getAvailableTeachers = async (req, res) => {
         if (!date || !timeSlotId) return res.status(400).json({ message: 'Date and TimeSlotId required' });
 
         // 1. Get All Teachers
-        const allTeachers = await User.find({ role: 'TEACHER' }).select('fullName email qualification');
+        const allTeachers = await User.find({ role: 'TEACHER' }).select('fullName email qualification avatar');
 
         // 2. Get Supervisors/Absent Teachers for that day
         const absentRecords = await TeacherAttendance.find({

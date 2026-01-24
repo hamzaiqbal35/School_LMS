@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { AlertCircle, CheckCircle, Loader2, Trash2, Calendar, Clock, BookOpen, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 
 interface TimeSlot {
     _id: string;
@@ -25,7 +26,7 @@ interface Assignment {
     classId: { _id: string; name: string };
     sectionId: { _id: string; name: string };
     subjectId: { _id: string; name: string };
-    teacherId: { _id: string; fullName: string };
+    teacherId: { _id: string; fullName: string; avatar?: string };
     timeSlotId: TimeSlot;
 }
 
@@ -327,8 +328,18 @@ export default function AssignmentsPage() {
                                             >
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center">
-                                                        <div className="flex-shrink-0 h-10 w-10 text-xl font-bold rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center">
-                                                            {(assignment.teacherId?.fullName || 'T').charAt(0)}
+                                                        <div className="flex-shrink-0 h-10 w-10 text-xl font-bold rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center relative overflow-hidden">
+                                                            {assignment.teacherId?.avatar ? (
+                                                                <Image
+                                                                    src={assignment.teacherId.avatar}
+                                                                    alt={assignment.teacherId.fullName}
+                                                                    fill
+                                                                    className="object-cover"
+                                                                    sizes="40px"
+                                                                />
+                                                            ) : (
+                                                                (assignment.teacherId?.fullName || 'T').charAt(0)
+                                                            )}
                                                         </div>
                                                         <div className="ml-4">
                                                             <div className="text-sm font-bold text-slate-900">{assignment.teacherId?.fullName}</div>

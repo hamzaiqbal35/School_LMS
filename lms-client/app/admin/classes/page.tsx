@@ -246,7 +246,7 @@ export default function MasterDataPage() {
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-3">
                                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${activeTabConfig.bg} ${activeTabConfig.color}`}>
-                                                        {item.name.charAt(0).toUpperCase()}
+                                                        {activeTab === 'classes' && (item as ClassItem).order ? (item as ClassItem).order : item.name.charAt(0).toUpperCase()}
                                                     </div>
                                                     <div>
                                                         <h4 className="font-bold text-slate-900">{item.name}</h4>

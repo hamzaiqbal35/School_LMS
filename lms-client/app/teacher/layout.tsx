@@ -136,15 +136,19 @@ export default function TeacherLayout({
 
                 <div className="mt-auto p-4 border-t border-slate-100 bg-slate-50/50">
                     <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm mb-3">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-linear-to-br from-green-500 to-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-green-500/20">
-                                {(user?.fullName || 'T').charAt(0)}
+                        <Link href="/teacher/profile" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                            <div className="w-10 h-10 rounded-full bg-linear-to-br from-green-500 to-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-green-500/20 overflow-hidden relative">
+                                {user?.avatar ? (
+                                    <Image src={user.avatar} alt={user.fullName} fill className="object-cover" />
+                                ) : (
+                                    (user?.fullName || 'T').charAt(0)
+                                )}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-bold text-slate-900 truncate">{user?.fullName}</p>
                                 <p className="text-xs text-slate-500 truncate">{user?.email}</p>
                             </div>
-                        </div>
+                        </Link>
                     </div>
                     <button
                         onClick={async () => {

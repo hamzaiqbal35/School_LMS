@@ -41,6 +41,10 @@ const UserSchema = new mongoose.Schema({
     phoneNumber: {
         type: String
     },
+    avatar: {
+        type: String, // URL to the image
+        default: ''
+    },
     createdAt: {
         type: Date,
         default: Date.now

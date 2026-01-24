@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
 import { Loader2, Calendar, AlertTriangle, CheckCircle, UserX, Clock, ArrowRight, X, UserCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 
 interface TimeSlot {
     _id: string;
@@ -22,6 +23,7 @@ interface Teacher {
     qualification?: string;
     isFree?: boolean;
     reason?: string;
+    avatar?: string;
 }
 
 interface NeedSubstitution {
@@ -302,8 +304,12 @@ export default function AdminSubstitutionPage() {
                                                                     }`}
                                                             >
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${teacher.isFree ? 'bg-blue-100 text-blue-600' : 'bg-slate-200 text-slate-500'}`}>
-                                                                        {teacher.fullName.charAt(0)}
+                                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold relative overflow-hidden ${teacher.isFree ? 'bg-blue-100 text-blue-600' : 'bg-slate-200 text-slate-500'}`}>
+                                                                        {teacher.avatar ? (
+                                                                            <Image src={teacher.avatar} alt={teacher.fullName} fill className="object-cover" sizes="32px" />
+                                                                        ) : (
+                                                                            teacher.fullName.charAt(0)
+                                                                        )}
                                                                     </div>
                                                                     <div>
                                                                         <div className={`text-sm font-bold ${teacher.isFree ? 'text-slate-800' : 'text-slate-500'}`}>

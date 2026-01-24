@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
 import { Loader2, Lock, Unlock, History, Calendar, UserCheck, UserX, Clock, Users, GraduationCap, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 
 interface AttendanceRecord {
     _id: string;
@@ -12,14 +13,14 @@ interface AttendanceRecord {
         registrationNumber: string;
     };
     status: string;
-    markedBy?: { fullName: string };
+    markedBy?: { fullName: string; avatar?: string };
     markedAt: string;
     isFrozen: boolean;
     history?: { status: string; timestamp: string; reason?: string }[];
 }
 
 interface TeacherRecord {
-    teacherId: { _id: string; fullName: string };
+    teacherId: { _id: string; fullName: string; avatar?: string };
     status: string;
     markedAt?: string;
     markedBy?: { fullName: string };
@@ -45,7 +46,7 @@ export default function AdminAttendancePage() {
     const [isFrozen, setIsFrozen] = useState(false);
 
     // Teacher State
-    const [teachers, setTeachers] = useState<{ _id: string; fullName: string; email: string }[]>([]);
+    const [teachers, setTeachers] = useState<{ _id: string; fullName: string; email: string; avatar?: string }[]>([]);
     const [teacherRecords, setTeacherRecords] = useState<TeacherRecord[]>([]);
 
     useEffect(() => {
@@ -262,8 +263,8 @@ export default function AdminAttendancePage() {
                                             >
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold">
-                                                            {record.studentId?.fullName.charAt(0)}
+                                                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold relative overflow-hidden">
+                                                            {(record.studentId?.fullName || '?').charAt(0)}
                                                         </div>
                                                         <div>
                                                             <div className="font-bold text-slate-900">{record.studentId?.fullName}</div>
@@ -356,8 +357,12 @@ export default function AdminAttendancePage() {
                                                 >
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold">
-                                                                {teacher.fullName.charAt(0)}
+                                                            <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold relative overflow-hidden">
+                                                                {teacher.avatar ? (
+                                                                    <Image src={teacher.avatar} alt={teacher.fullName} fill className="object-cover" sizes="40px" />
+                                                                ) : (
+                                                                    teacher.fullName.charAt(0)
+                                                                )}
                                                             </div>
                                                             <div>
                                                                 <div className="font-bold text-slate-900">{teacher.fullName}</div>
