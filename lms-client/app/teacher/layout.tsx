@@ -1,3 +1,4 @@
+
 "use client"
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -6,14 +7,16 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import {
-    Calendar,
-    BookOpen,
     LogOut,
     UserCheck,
     Menu,
-    X
+    X,
+    LayoutDashboard,
+    GraduationCap,
+    ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function TeacherLayout({
     children,
@@ -23,13 +26,13 @@ export default function TeacherLayout({
     const { user, isAuthenticated, logout, isHydrated, checkAuth, isCheckingAuth } = useAuthStore();
     const router = useRouter();
     const pathname = usePathname();
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
         checkAuth();
     }, [checkAuth]);
 
     useEffect(() => {
-        // Wait for check to finish
         if (!isCheckingAuth && !isAuthenticated) {
             router.push('/login');
         } else if (!isCheckingAuth && user?.role !== 'TEACHER') {
@@ -37,129 +40,148 @@ export default function TeacherLayout({
         }
     }, [isAuthenticated, isCheckingAuth, user, router]);
 
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-    // Close sidebar on route change (mobile)
     // Close sidebar on route change (mobile)
     useEffect(() => {
-        // Defer update to avoid synchronous set-state-in-effect warning
         const timer = setTimeout(() => setIsSidebarOpen(false), 0);
         return () => clearTimeout(timer);
     }, [pathname]);
 
-    if (!isHydrated || isCheckingAuth) return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    if (!isHydrated || isCheckingAuth) return (
+        <div className="flex items-center justify-center min-h-screen bg-slate-50">
+            <div className="flex flex-col items-center gap-4">
+                <div className="relative w-16 h-16 animate-pulse">
+                    <Image src="/Logo2.png" alt="Loading" fill className="object-contain" sizes="64px" priority />
+                </div>
+                <div className="flex gap-1">
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce"></span>
+                </div>
+            </div>
+        </div>
+    );
     if (!isAuthenticated || user?.role !== 'TEACHER') return null;
 
     const navItems = [
-        { href: "/teacher", label: "My Classes", icon: Calendar },
+        { href: "/teacher", label: "Dashboard", icon: LayoutDashboard },
         { href: "/teacher/attendance", label: "Mark Attendance", icon: UserCheck },
-        { href: "/teacher/students", label: "View Students", icon: BookOpen },
+        { href: "/teacher/students", label: "My Students", icon: GraduationCap },
     ];
 
     return (
-        <div className="flex h-screen bg-gray-50">
+        <div className="flex h-screen bg-slate-50 overflow-hidden font-sans text-slate-900">
             {/* Mobile Sidebar Overlay */}
-            {isSidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
-                    onClick={() => setIsSidebarOpen(false)}
-                />
-            )}
+            <AnimatePresence>
+                {isSidebarOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 md:hidden"
+                        onClick={() => setIsSidebarOpen(false)}
+                    />
+                )}
+            </AnimatePresence>
 
             {/* Sidebar */}
             <aside className={cn(
-                "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r shadow-sm flex flex-col transition-transform duration-300 ease-in-out md:relative md:translate-x-0",
+                "fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 shadow-xl shadow-slate-200/50 flex flex-col transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:shadow-none",
                 isSidebarOpen ? "translate-x-0" : "-translate-x-full"
             )}>
-                <div className="p-6 flex justify-between items-start md:block border-b">
-                    <div className="flex flex-col items-center text-center w-full">
-                        <div className="relative mb-3 w-16 h-16">
-                            <Image src="/Logo2.png" alt="School Logo" fill sizes="64px" className="object-contain" priority />
+                <div className="p-6">
+                    <div className="flex items-center gap-3 px-2">
+                        <div className="relative w-10 h-10 shrink-0">
+                            <Image src="/Logo2.png" alt="Logo" fill className="object-contain" sizes="40px" priority />
                         </div>
-                        <span className="font-bold text-gray-800 text-sm leading-tight">
-                            Oxford Grammar & <br /> Cambridge EdTech School
-                        </span>
-                        <span className="text-[10px] text-green-600 uppercase tracking-wider mt-1">Teacher Portal</span>
+                        <div className="flex flex-col">
+                            <span className="font-bold text-slate-900 text-sm leading-tight tracking-tight">OGCES Panel</span>
+                            <span className="text-[10px] uppercase font-bold text-green-600 tracking-wider">Teacher</span>
+                        </div>
+                        <button
+                            onClick={() => setIsSidebarOpen(false)}
+                            className="md:hidden ml-auto p-1 text-slate-400 hover:text-slate-600"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
                     </div>
-                    {/* Close button for mobile */}
-                    <button
-                        onClick={() => setIsSidebarOpen(false)}
-                        className="md:hidden text-gray-500 hover:text-gray-700 absolute top-4 right-4"
-                    >
-                        <X className="w-6 h-6" />
-                    </button>
                 </div>
 
-                <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
-                    {navItems.map((item) => {
-                        const Icon = item.icon;
-                        const isActive = pathname === item.href;
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={cn(
-                                    "flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors",
-                                    isActive
-                                        ? "bg-green-50 text-green-700"
-                                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                                )}
-                            >
-                                <Icon className="w-5 h-5 mr-3" />
-                                {item.label}
-                            </Link>
-                        )
-                    })}
-                </nav>
+                <div className="px-4 py-2">
+                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider px-4 mb-2">Main Menu</div>
+                    <nav className="space-y-1">
+                        {navItems.map((item) => {
+                            const Icon = item.icon;
+                            const isActive = pathname === item.href;
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className={cn(
+                                        "group flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200",
+                                        isActive
+                                            ? "bg-green-50 text-green-700 font-bold shadow-sm ring-1 ring-green-100"
+                                            : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 font-medium"
+                                    )}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <Icon className={cn("w-5 h-5 transition-colors", isActive ? "text-green-600" : "text-slate-400 group-hover:text-slate-600")} />
+                                        <span>{item.label}</span>
+                                    </div>
+                                    {isActive && <ChevronRight className="w-4 h-4 text-green-500" />}
+                                </Link>
+                            )
+                        })}
+                    </nav>
+                </div>
 
-                <div className="p-4 border-t">
-                    <div className="flex items-center mb-4">
-                        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold">
-                            {(user?.fullName || 'U').charAt(0)}
-                        </div>
-                        <div className="ml-3">
-                            <p className="text-sm font-medium text-gray-900">{user?.fullName || 'User'}</p>
-                            <p className="text-xs text-gray-500">Teacher</p>
+                <div className="mt-auto p-4 border-t border-slate-100 bg-slate-50/50">
+                    <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm mb-3">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-linear-to-br from-green-500 to-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-green-500/20">
+                                {(user?.fullName || 'T').charAt(0)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold text-slate-900 truncate">{user?.fullName}</p>
+                                <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+                            </div>
                         </div>
                     </div>
                     <button
                         onClick={async () => {
-                            try {
-                                await api.post('/auth/logout');
-                            } catch (e) {
-                                console.error('Logout failed', e);
-                            }
+                            try { await api.post('/auth/logout'); } catch { }
                             logout();
                             router.push('/login');
                         }}
-                        className="w-full flex items-center justify-center px-4 py-2 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-red-600 bg-white border border-red-100 hover:bg-red-50 hover:border-red-200 rounded-xl transition-all shadow-sm"
                     >
-                        <LogOut className="w-4 h-4 mr-2" />
-                        Logout
+                        <LogOut className="w-4 h-4" />
+                        Sign Out
                     </button>
                 </div>
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-auto flex flex-col w-full">
+            <main className="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-hidden">
                 {/* Mobile Header */}
-                <div className="md:hidden bg-white border-b p-4 flex items-center justify-between sticky top-0 z-30">
-                    <div className="flex items-center">
-                        <div className="relative mr-2 w-8 h-8">
-                            <Image src="/Logo2.png" alt="School Logo" fill sizes="32px" className="object-contain" priority />
+                <header className="md:hidden bg-white border-b border-slate-200 p-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="relative w-8 h-8">
+                            <Image src="/Logo2.png" alt="Logo" fill className="object-contain" sizes="32px" priority />
                         </div>
-                        <span className="font-bold text-gray-800 text-sm">Oxford Grammar & Cambridge EdTech School</span>
+                        <span className="font-bold text-slate-900 text-sm">Teacher Portal</span>
                     </div>
                     <button
                         onClick={() => setIsSidebarOpen(true)}
-                        className="p-2 -mr-2 text-gray-600 hover:bg-gray-100 rounded-full"
+                        className="p-2 -mr-2 text-slate-600 hover:bg-slate-100 rounded-full active:scale-95 transition-transform"
                     >
                         <Menu className="w-6 h-6" />
                     </button>
-                </div>
+                </header>
 
-                <div className="p-4 md:p-8 flex-1 w-full max-w-[100vw]">
-                    {children}
+                <div className="flex-1 overflow-auto p-4 md:p-8 scroll-smooth">
+                    <div className="max-w-7xl mx-auto w-full">
+                        {children}
+                    </div>
                 </div>
             </main>
         </div>

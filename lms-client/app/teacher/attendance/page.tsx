@@ -1,32 +1,23 @@
 "use client"
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { Loader2, Save, Calendar, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, Save, Calendar, CheckCircle, AlertCircle, ArrowLeft, Users, Clock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Assignment {
     _id: string;
     classId: { _id: string; name: string };
     sectionId: { _id: string; name: string };
     subjectId: { _id: string; name: string };
-    timeSlot: string;
+    timeSlotId: { day: string; startTime: string; endTime: string };
 }
 
 interface Student {
     _id: string;
     registrationNumber: string;
     fullName: string;
+    fatherName: string;
 }
-
-interface AxiosErrorLike {
-    response?: {
-        data?: {
-            message?: string;
-        };
-    };
-}
-
-
-
 
 export default function MarkAttendancePage() {
     const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -35,53 +26,40 @@ export default function MarkAttendancePage() {
     const [loadingStudents, setLoadingStudents] = useState(false);
 
     // Selection state
-    const [selectedAssignment, setSelectedAssignment] = useState<string>('');
+    const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
     const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
     const [marks, setMarks] = useState<Record<string, string>>({}); // studentId -> status
 
     const [msg, setMsg] = useState({ type: '', text: '' });
 
     useEffect(() => {
+        const fetchAssignments = async () => {
+            try {
+                const res = await api.get('/teacher/assignments'); // Adjusted URL to match dashboard logic which worked
+                setAssignments(res.data);
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
+        };
         fetchAssignments();
     }, []);
 
-    const fetchAssignments = async () => {
-        try {
-            // Fetch logged-in teacher's assignments
-            const res = await api.get('/teacher/assignments');
-            setAssignments(res.data);
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleAssignmentChange = async (assignmentId: string) => {
-        setSelectedAssignment(assignmentId);
+    const handleClassSelect = async (assignment: Assignment) => {
+        setSelectedAssignment(assignment);
         setMsg({ type: '', text: '' });
-        if (!assignmentId) {
-            setStudents([]);
-            return;
-        }
-
-        const assignment = assignments.find(a => a._id === assignmentId);
-        if (!assignment) return;
-
         setLoadingStudents(true);
         try {
-            // Fetch Students for this class/section
             const res = await api.get(`/teacher/students?classId=${assignment.classId._id}&sectionId=${assignment.sectionId._id}`);
             const studList: Student[] = res.data;
             setStudents(studList);
 
-            // Initialize marks (default Present)
+            // Fetch existing attendance ?? optional
+            // Default to Present
             const initialMarks: Record<string, string> = {};
-            studList.forEach((s: Student) => initialMarks[s._id] = 'Present');
+            studList.forEach(s => initialMarks[s._id] = 'Present');
             setMarks(initialMarks);
-
-            // Fetch existing attendance if any?
-            // Optional: Check if already marked for today
         } catch (error) {
             console.error(error);
         } finally {
@@ -93,14 +71,11 @@ export default function MarkAttendancePage() {
         setMsg({ type: '', text: '' });
         if (!selectedAssignment || students.length === 0) return;
 
-        const assignment = assignments.find(a => a._id === selectedAssignment);
-        if (!assignment) return;
-
         const payload = {
             date: attendanceDate,
-            classId: assignment.classId._id,
-            sectionId: assignment.sectionId._id,
-            subjectId: assignment.subjectId._id, // Recording Subject-wise
+            classId: selectedAssignment.classId._id,
+            sectionId: selectedAssignment.sectionId._id,
+            subjectId: selectedAssignment.subjectId._id,
             records: Object.entries(marks).map(([studentId, status]) => ({
                 studentId,
                 status
@@ -110,119 +85,179 @@ export default function MarkAttendancePage() {
         try {
             await api.post('/attendance', payload);
             setMsg({ type: 'success', text: 'Attendance marked successfully' });
-
-
-        } catch (error) {
-            const err = error as AxiosErrorLike;
+            // Scroll to top or show toast
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } } };
             setMsg({ type: 'error', text: err.response?.data?.message || 'Failed to mark' });
         }
     };
 
+    const stats = {
+        present: Object.values(marks).filter(s => s === 'Present').length,
+        absent: Object.values(marks).filter(s => s === 'Absent').length,
+        leave: Object.values(marks).filter(s => s === 'Leave').length,
+        late: Object.values(marks).filter(s => s === 'Late').length,
+    };
+
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
-            <h1 className="text-2xl font-bold text-gray-800 flex items-center">
-                <Calendar className="w-6 h-6 mr-2 text-green-600" />
-                Mark Attendance
-            </h1>
-
-            {loading ? (
-                <div className="flex justify-center p-10"><Loader2 className="animate-spin text-blue-600" /></div>
-            ) : (
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Select Class & Subject</label>
-                            <select
-                                className="w-full border rounded-lg p-2"
-                                value={selectedAssignment}
-                                onChange={(e) => handleAssignmentChange(e.target.value)}
-                            >
-                                <option value="">-- Choose Class --</option>
-                                {assignments.map(a => (
-                                    <option key={a._id} value={a._id}>
-                                        {a.classId.name}-{a.sectionId.name} ({a.subjectId.name}) - {a.timeSlot}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="space-y-1">
-                            <label htmlFor="attendanceDate" className="block text-sm font-medium text-gray-700">Date</label>
-                            <input
-                                id="attendanceDate"
-                                name="attendanceDate"
-                                type="date"
-                                className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                value={attendanceDate}
-                                onChange={(e) => setAttendanceDate(e.target.value)}
-                                aria-required="true"
-                            />
-                        </div>
-                    </div>
-
-                    {msg.text && (
-                        <div className={`p-4 mb-6 rounded-lg flex items-center ${msg.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
-                            {msg.type === 'error' ? <AlertCircle className="w-5 h-5 mr-3" /> : <CheckCircle className="w-5 h-5 mr-3" />}
-                            {msg.text}
-                        </div>
-                    )}
-
-                    {loadingStudents ? (
-                        <div className="flex justify-center p-10"><Loader2 className="animate-spin text-green-600" /></div>
-                    ) : students.length > 0 ? (
-                        <>
-                            <div className="overflow-hidden border rounded-lg mb-6">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reg No</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {students.map(student => (
-                                            <tr key={student._id}>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.registrationNumber}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{student.fullName}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                    <div className="flex justify-center space-x-2">
-                                                        {['Present', 'Absent', 'Leave', 'Late'].map(status => (
-                                                            <button
-                                                                key={status}
-                                                                onClick={() => setMarks({ ...marks, [student._id]: status })}
-                                                                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${marks[student._id] === status
-                                                                    ? status === 'Present' ? 'bg-green-600 text-white'
-                                                                        : status === 'Absent' ? 'bg-red-600 text-white'
-                                                                            : status === 'Leave' ? 'bg-yellow-500 text-white'
-                                                                                : 'bg-orange-500 text-white'
-                                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                                                    }`}
-                                                            >
-                                                                {status}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+        <div className="space-y-6">
+            <AnimatePresence mode="wait">
+                {!selectedAssignment ? (
+                    <motion.div
+                        key="selection"
+                        initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+                        className="space-y-6"
+                    >
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <h1 className="text-2xl font-bold text-slate-900">Mark Attendance</h1>
+                                <p className="text-slate-500">Select a class to start marking attendance.</p>
                             </div>
-                            <div className="flex justify-end">
+                            <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2">
+                                <Calendar className="w-5 h-5 text-green-600" />
+                                <input
+                                    type="date"
+                                    value={attendanceDate}
+                                    onChange={(e) => setAttendanceDate(e.target.value)}
+                                    className="bg-transparent border-none outline-none text-sm font-bold text-slate-700 cursor-pointer"
+                                />
+                            </div>
+                        </div>
+
+                        {loading ? (
+                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {[1, 2, 3].map(i => <div key={i} className="h-40 bg-slate-100 animate-pulse rounded-2xl" />)}
+                            </div>
+                        ) : assignments.length === 0 ? (
+                            <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
+                                <p className="text-slate-500">No classes assigned to you.</p>
+                            </div>
+                        ) : (
+                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {assignments.map((assignment) => (
+                                    <div
+                                        key={assignment._id}
+                                        onClick={() => handleClassSelect(assignment)}
+                                        className="group bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:border-green-500 hover:shadow-md transition-all cursor-pointer relative overflow-hidden"
+                                    >
+                                        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                                            <Users className="w-24 h-24 text-green-600" />
+                                        </div>
+                                        <div className="relative z-10">
+                                            <div className="bg-green-50 text-green-700 w-fit px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-4">
+                                                {assignment.subjectId.name}
+                                            </div>
+                                            <h3 className="text-xl font-bold text-slate-900 mb-1">
+                                                Class {assignment.classId.name} - {assignment.sectionId.name}
+                                            </h3>
+                                            <div className="flex items-center gap-2 text-slate-500 text-sm mb-4">
+                                                <Clock className="w-4 h-4" />
+                                                <span>{assignment.timeSlotId?.startTime || 'N/A'} - {assignment.timeSlotId?.endTime || 'N/A'}</span>
+                                            </div>
+                                            <div className="flex items-center text-green-600 font-bold text-sm group-hover:gap-2 transition-all">
+                                                Select Class <ArrowLeft className="w-4 h-4 rotate-180" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key="marking"
+                        initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
+                        className="space-y-6"
+                    >
+                        {/* Header Bar */}
+                        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 sticky top-4 z-20">
+                            <div className="flex items-center gap-4 w-full md:w-auto">
+                                <button
+                                    onClick={() => setSelectedAssignment(null)}
+                                    className="p-2 hover:bg-slate-50 rounded-full text-slate-500 transition-colors"
+                                >
+                                    <ArrowLeft className="w-6 h-6" />
+                                </button>
+                                <div>
+                                    <h2 className="font-bold text-slate-900">Class {selectedAssignment.classId.name} - {selectedAssignment.sectionId.name}</h2>
+                                    <p className="text-xs text-slate-500 font-medium">{selectedAssignment.subjectId.name} • {new Date(attendanceDate).toDateString()}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+                                <div className="hidden md:flex gap-2 mr-4 text-xs font-bold text-slate-500">
+                                    <span className="text-green-600">P: {stats.present}</span>
+                                    <span className="text-red-600">A: {stats.absent}</span>
+                                    <span className="text-amber-500">L: {stats.leave}</span>
+                                </div>
                                 <button
                                     onClick={handleSubmit}
-                                    className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold shadow-md flex items-center"
+                                    disabled={loadingStudents}
+                                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-xl font-bold text-sm shadow-md shadow-green-600/20 disabled:opacity-50 flex items-center gap-2 transition-all active:scale-95"
                                 >
-                                    <Save className="w-5 h-5 mr-2" />
-                                    Save Attendance
+                                    {loadingStudents ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                    Submit
                                 </button>
                             </div>
-                        </>
-                    ) : selectedAssignment && (
-                        <div className="text-center p-10 text-gray-500">No students found in this class.</div>
-                    )}
-                </div>
-            )}
+                        </div>
+
+                        {msg.text && (
+                            <div className={`p-4 rounded-xl flex items-center gap-3 ${msg.type === 'error' ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-green-50 text-green-700 border border-green-100'}`}>
+                                {msg.type === 'error' ? <AlertCircle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
+                                <span className="font-medium">{msg.text}</span>
+                            </div>
+                        )}
+
+                        {loadingStudents ? (
+                            <div className="flex justify-center p-20"><Loader2 className="animate-spin text-green-600 w-8 h-8" /></div>
+                        ) : (
+                            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                                <div className="grid grid-cols-12 bg-slate-50 p-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                                    <div className="col-span-1">Reg #</div>
+                                    <div className="col-span-4 pl-4">Student Name</div>
+                                    <div className="col-span-7 flex justify-center">Attendance Status</div>
+                                </div>
+                                <div className="divide-y divide-slate-100">
+                                    {students.map((student) => (
+                                        <div key={student._id} className="grid grid-cols-12 p-4 items-center hover:bg-slate-50/50 transition-colors">
+                                            <div className="col-span-1 font-mono text-xs font-bold text-slate-400">{student.registrationNumber}</div>
+                                            <div className="col-span-4 pl-4">
+                                                <p className="font-bold text-slate-900 text-sm">{student.fullName}</p>
+                                                <p className="text-[10px] text-slate-400">{student.fatherName}</p>
+                                            </div>
+                                            <div className="col-span-7 flex justify-center gap-2">
+                                                {['Present', 'Absent', 'Leave', 'Late'].map((status) => {
+                                                    const isActive = marks[student._id] === status;
+                                                    let activeClass = "";
+                                                    if (status === 'Present') activeClass = "bg-green-500 text-white border-green-500 shadow-green-500/30";
+                                                    if (status === 'Absent') activeClass = "bg-red-500 text-white border-red-500 shadow-red-500/30";
+                                                    if (status === 'Leave') activeClass = "bg-amber-400 text-white border-amber-400 shadow-amber-400/30";
+                                                    if (status === 'Late') activeClass = "bg-slate-500 text-white border-slate-500 shadow-slate-500/30";
+
+                                                    return (
+                                                        <button
+                                                            key={status}
+                                                            onClick={() => setMarks({ ...marks, [student._id]: status })}
+                                                            className={`
+                                                                w-9 h-9 sm:w-24 sm:h-9 rounded-lg border flex items-center justify-center font-bold text-xs transition-all duration-200 shadow-sm
+                                                                ${isActive ? `${activeClass} shadow-md scale-105` : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300"}
+                                                            `}
+                                                            title={status}
+                                                        >
+                                                            <span className="hidden sm:inline">{status}</span>
+                                                            <span className="sm:hidden">{status.charAt(0)}</span>
+                                                        </button>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
