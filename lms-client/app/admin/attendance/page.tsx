@@ -156,8 +156,10 @@ export default function AdminAttendancePage() {
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                 <div className="flex items-center gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                        <label htmlFor="filterDate" className="block text-sm font-medium text-gray-700 mb-1">Date</label>
                         <input
+                            id="filterDate"
+                            name="filterDate"
                             type="date"
                             className="border rounded-lg p-2"
                             value={date}
@@ -168,8 +170,10 @@ export default function AdminAttendancePage() {
                     {activeTab === 'STUDENT' && (
                         <>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
+                                <label htmlFor="filterClass" className="block text-sm font-medium text-gray-700 mb-1">Class</label>
                                 <select
+                                    id="filterClass"
+                                    name="filterClass"
                                     className="border rounded-lg p-2 min-w-[150px]"
                                     value={classId}
                                     onChange={(e) => setClassId(e.target.value)}
@@ -181,8 +185,10 @@ export default function AdminAttendancePage() {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
+                                <label htmlFor="filterSection" className="block text-sm font-medium text-gray-700 mb-1">Section</label>
                                 <select
+                                    id="filterSection"
+                                    name="filterSection"
                                     className="border rounded-lg p-2 min-w-[150px]"
                                     value={sectionId}
                                     onChange={(e) => setSectionId(e.target.value)}

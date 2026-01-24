@@ -108,8 +108,10 @@ export default function AssignmentsPage() {
                 )}
                 <form onSubmit={handleAssign} className="grid gap-4 md:grid-cols-3 lg:grid-cols-6 items-end">
                     <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Teacher</label>
+                        <label htmlFor="teacherId" className="block text-sm font-medium text-gray-700 mb-1">Teacher</label>
                         <select
+                            id="teacherId"
+                            name="teacherId"
                             className="w-full border rounded-lg p-2"
                             value={formData.teacherId}
                             onChange={e => setFormData({ ...formData, teacherId: e.target.value })}
@@ -123,8 +125,10 @@ export default function AssignmentsPage() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
+                        <label htmlFor="classId" className="block text-sm font-medium text-gray-700 mb-1">Class</label>
                         <select
+                            id="classId"
+                            name="classId"
                             className="w-full border rounded-lg p-2"
                             value={formData.classId}
                             onChange={e => setFormData({ ...formData, classId: e.target.value })}
@@ -138,8 +142,10 @@ export default function AssignmentsPage() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
+                        <label htmlFor="sectionId" className="block text-sm font-medium text-gray-700 mb-1">Section</label>
                         <select
+                            id="sectionId"
+                            name="sectionId"
                             className="w-full border rounded-lg p-2"
                             value={formData.sectionId}
                             onChange={e => setFormData({ ...formData, sectionId: e.target.value })}
@@ -153,8 +159,10 @@ export default function AssignmentsPage() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                        <label htmlFor="subjectId" className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
                         <select
+                            id="subjectId"
+                            name="subjectId"
                             className="w-full border rounded-lg p-2"
                             value={formData.subjectId}
                             onChange={e => setFormData({ ...formData, subjectId: e.target.value })}
@@ -168,8 +176,10 @@ export default function AssignmentsPage() {
                     </div>
 
                     <div className="col-span-2 lg:col-span-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Time Slot</label>
+                        <label htmlFor="timeSlotId" className="block text-sm font-medium text-gray-700 mb-1">Time Slot</label>
                         <select
+                            id="timeSlotId"
+                            name="timeSlotId"
                             className="w-full border rounded-lg p-2"
                             value={formData.timeSlotId}
                             onChange={e => setFormData({ ...formData, timeSlotId: e.target.value })}

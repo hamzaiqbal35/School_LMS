@@ -135,8 +135,11 @@ export default function FeesPage() {
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 space-y-4 md:space-y-0 md:flex md:items-center md:gap-4">
                 <div className="flex-1">
                     <input
+                        id="searchStudent"
+                        name="searchStudent"
                         type="text"
                         placeholder="Search Student..."
+                        aria-label="Search Student"
                         className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none"
                         value={filters.search}
                         onChange={e => setFilters({ ...filters, search: e.target.value })}
@@ -144,6 +147,9 @@ export default function FeesPage() {
                 </div>
                 <div>
                     <select
+                        id="filterClass"
+                        name="filterClass"
+                        aria-label="Filter by Class"
                         className="border rounded-lg px-3 py-2 text-sm outline-none bg-white min-w-37.5"
                         value={filters.classId}
                         onChange={e => setFilters({ ...filters, classId: e.target.value })}
@@ -156,8 +162,11 @@ export default function FeesPage() {
                 </div>
                 <div>
                     <input
+                        id="filterMonth"
+                        name="filterMonth"
                         type="text"
                         placeholder="Month (e.g 2025-01)"
+                        aria-label="Filter by Month"
                         className="border rounded-lg px-3 py-2 text-sm outline-none"
                         value={filters.month}
                         onChange={e => setFilters({ ...filters, month: e.target.value })}

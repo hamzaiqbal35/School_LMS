@@ -88,13 +88,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             className="mb-4 w-22 h-22 bg-white rounded-full shadow-2xl shadow-cyan-500/20 flex items-center justify-center p-2 overflow-hidden border-4 border-slate-800"
                         >
                             <div className="relative w-16 h-16">
-                                <Image 
-                                    src="/Logo2.png" 
-                                    alt="School Logo" 
-                                    fill 
-                                    sizes="64px" 
-                                    className="object-contain" 
-                                    priority 
+                                <Image
+                                    src="/Logo2.png"
+                                    alt="School Logo"
+                                    fill
+                                    sizes="64px"
+                                    className="object-contain"
+                                    priority
                                     style={{ objectFit: 'contain' }}
                                 />
                             </div>
@@ -169,13 +169,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <div className="flex items-center gap-3">
                         <div className="p-2 rounded-xl">
                             <div className="relative w-12 h-10">
-                                <Image 
-                                    src="/Logo2.png" 
-                                    alt="School Logo" 
-                                    fill 
-                                    sizes="48px" 
-                                    className="object-contain brightness-100" 
-                                    priority
+                                <Image
+                                    src="/Logo2.png"
+                                    alt="School Logo"
+                                    fill
+                                    sizes="48px"
+                                    className="object-contain brightness-100"
                                     style={{ objectFit: 'contain' }}
                                 />
                             </div>

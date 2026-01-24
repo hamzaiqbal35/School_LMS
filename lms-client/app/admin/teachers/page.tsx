@@ -165,11 +165,11 @@ export default function TeachersPage() {
                             onChange={(e) => setSelectedSubject(e.target.value)}
                             aria-label="Filter by subject"
                         >
-                        <option value="">All Subjects</option>
-                        {subjects.map(s => (
-                            <option key={s._id} value={s._id}>{s.name}</option>
-                        ))}
-                    </select>
+                            <option value="">All Subjects</option>
+                            {subjects.map(s => (
+                                <option key={s._id} value={s._id}>{s.name}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
                 <button
@@ -275,38 +275,50 @@ export default function TeachersPage() {
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                                    <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                                     <input
+                                        id="fullName"
+                                        name="fullName"
                                         type="text" required
+                                        autoComplete="name"
                                         className="w-full border rounded p-2"
                                         value={formData.fullName}
                                         onChange={e => setFormData({ ...formData, fullName: e.target.value })}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                                     <input
+                                        id="email"
+                                        name="email"
                                         type="email" required
+                                        autoComplete="email"
                                         className="w-full border rounded p-2"
                                         value={formData.email}
                                         onChange={e => setFormData({ ...formData, email: e.target.value })}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                                    <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                                     <input
+                                        id="phoneNumber"
+                                        name="phoneNumber"
                                         type="text"
+                                        autoComplete="tel"
                                         className="w-full border rounded p-2"
                                         value={formData.phoneNumber}
                                         onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                                         Password {editingId && <span className="text-gray-400 font-normal">(Leave blank to keep current)</span>}
                                     </label>
                                     <input
+                                        id="password"
+                                        name="password"
                                         type="password"
+                                        autoComplete="new-password"
                                         required={!editingId}
                                         className="w-full border rounded p-2"
                                         value={formData.password}
@@ -316,8 +328,10 @@ export default function TeachersPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Qualifications (Comma separated)</label>
+                                <label htmlFor="qualifications" className="block text-sm font-medium text-gray-700 mb-1">Qualifications (Comma separated)</label>
                                 <input
+                                    id="qualifications"
+                                    name="qualifications"
                                     type="text"
                                     className="w-full border rounded p-2"
                                     placeholder="e.g. MSc Physics, B.Ed"
@@ -327,7 +341,7 @@ export default function TeachersPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Qualified Subjects</label>
+                                <p className="block text-sm font-medium text-gray-700 mb-2">Qualified Subjects</p>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2 border p-3 rounded-lg max-h-40 overflow-y-auto">
                                     {subjects.length === 0 && (
                                         <div className="col-span-3 text-center text-sm text-gray-500 py-4">

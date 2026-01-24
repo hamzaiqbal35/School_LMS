@@ -247,7 +247,7 @@ export default function MasterDataPage() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Applicable Classes</label>
+                                        <p className="block text-sm font-medium text-gray-700 mb-2">Applicable Classes</p>
                                         <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border p-2 rounded">
                                             {data.classes.map((cls: ClassItem) => (
                                                 <label key={cls._id} className="flex items-center space-x-2 text-sm">
@@ -338,20 +338,20 @@ export default function MasterDataPage() {
                             <form onSubmit={handleSaveFee} className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-700">Admission Fee</label>
-                                        <input type="number" className="w-full border rounded p-2" value={feeStructure.admissionFee} onChange={e => setFeeStructure({ ...feeStructure, admissionFee: Number(e.target.value) })} />
+                                        <label htmlFor="admissionFee" className="block text-xs font-medium text-gray-700">Admission Fee</label>
+                                        <input id="admissionFee" name="admissionFee" type="number" className="w-full border rounded p-2" value={feeStructure.admissionFee} onChange={e => setFeeStructure({ ...feeStructure, admissionFee: Number(e.target.value) })} />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-700">Monthly Tuition</label>
-                                        <input type="number" required className="w-full border rounded p-2" value={feeStructure.monthlyTuition} onChange={e => setFeeStructure({ ...feeStructure, monthlyTuition: Number(e.target.value) })} />
+                                        <label htmlFor="monthlyTuition" className="block text-xs font-medium text-gray-700">Monthly Tuition</label>
+                                        <input id="monthlyTuition" name="monthlyTuition" type="number" required className="w-full border rounded p-2" value={feeStructure.monthlyTuition} onChange={e => setFeeStructure({ ...feeStructure, monthlyTuition: Number(e.target.value) })} />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-700">Exam Fee</label>
-                                        <input type="number" className="w-full border rounded p-2" value={feeStructure.examFee} onChange={e => setFeeStructure({ ...feeStructure, examFee: Number(e.target.value) })} />
+                                        <label htmlFor="examFee" className="block text-xs font-medium text-gray-700">Exam Fee</label>
+                                        <input id="examFee" name="examFee" type="number" className="w-full border rounded p-2" value={feeStructure.examFee} onChange={e => setFeeStructure({ ...feeStructure, examFee: Number(e.target.value) })} />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-700">Misc Charges</label>
-                                        <input type="number" className="w-full border rounded p-2" value={feeStructure.miscCharges} onChange={e => setFeeStructure({ ...feeStructure, miscCharges: Number(e.target.value) })} />
+                                        <label htmlFor="miscCharges" className="block text-xs font-medium text-gray-700">Misc Charges</label>
+                                        <input id="miscCharges" name="miscCharges" type="number" className="w-full border rounded p-2" value={feeStructure.miscCharges} onChange={e => setFeeStructure({ ...feeStructure, miscCharges: Number(e.target.value) })} />
                                     </div>
                                 </div>
                                 <div className="pt-4 flex justify-end gap-2">

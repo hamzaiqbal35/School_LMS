@@ -115,8 +115,11 @@ export default function AdminSubstitutionPage() {
 
             {/* Date Picker */}
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
-                <Calendar className="w-5 h-5 text-gray-500" />
+                <label htmlFor="substitutionDate" className="sr-only">Substitution Date</label>
+                <Calendar className="w-5 h-5 text-gray-500" aria-hidden="true" />
                 <input
+                    id="substitutionDate"
+                    name="substitutionDate"
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}

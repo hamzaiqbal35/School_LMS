@@ -21,6 +21,7 @@ interface AxiosErrorLike {
 interface InputGroupProps {
     label: string;
     name: string;
+    id?: string;
     type?: string;
     value: string;
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
@@ -30,6 +31,7 @@ interface InputGroupProps {
 interface SelectGroupProps {
     label: string;
     name: string;
+    id?: string;
     value: string;
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
     options: { label: string; value: string }[];
@@ -37,37 +39,45 @@ interface SelectGroupProps {
 }
 
 // Reusable Input Component (internal)
-const InputGroup = ({ label, name, type = "text", value, onChange, required = false }: InputGroupProps) => (
-    <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-        <input
-            type={type}
-            name={name}
-            value={value}
-            onChange={onChange}
-            required={required}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-        />
-    </div>
-);
+const InputGroup = ({ label, name, id, type = "text", value, onChange, required = false }: InputGroupProps) => {
+    const inputId = id || name;
+    return (
+        <div>
+            <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+            <input
+                id={inputId}
+                type={type}
+                name={name}
+                value={value}
+                onChange={onChange}
+                required={required}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+            />
+        </div>
+    );
+};
 
-const SelectGroup = ({ label, name, value, onChange, options, required = false }: SelectGroupProps) => (
-    <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-        <select
-            name={name}
-            value={value}
-            onChange={onChange}
-            required={required}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-        >
-            <option value="">Select...</option>
-            {options.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-        </select>
-    </div>
-);
+const SelectGroup = ({ label, name, id, value, onChange, options, required = false }: SelectGroupProps) => {
+    const selectId = id || name;
+    return (
+        <div>
+            <label htmlFor={selectId} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+            <select
+                id={selectId}
+                name={name}
+                value={value}
+                onChange={onChange}
+                required={required}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+            >
+                <option value="">Select...</option>
+                {options.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+            </select>
+        </div>
+    );
+};
 
 export default function EditStudentPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
@@ -241,7 +251,7 @@ export default function EditStudentPage({ params }: { params: Promise<{ id: stri
                         <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Fee Structure</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Tuition (Class Based)</label>
+                                <p className="block text-sm font-medium text-gray-700 mb-1">Monthly Tuition (Class Based)</p>
                                 <div className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 font-medium">
                                     PKR {classFee.toLocaleString()}
                                 </div>
