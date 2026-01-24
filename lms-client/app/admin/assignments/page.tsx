@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { AlertCircle, CheckCircle, Loader2, Trash2, Calendar, Clock, BookOpen, Check } from 'lucide-react';
+import { AlertCircle, CheckCircle, Loader2, Trash2, Calendar, Clock, BookOpen, Check, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 
@@ -46,6 +46,12 @@ export default function AssignmentsPage() {
     });
     const [msg, setMsg] = useState({ type: '', text: '' });
     const [submitting, setSubmitting] = useState(false);
+
+    // Filter State
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterClass, setFilterClass] = useState('');
+    const [filterSubject, setFilterSubject] = useState('');
+    const [filterTeacher, setFilterTeacher] = useState('');
 
     useEffect(() => {
         fetchData();
@@ -138,6 +144,28 @@ export default function AssignmentsPage() {
 
     // Days order
     const daysOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+
+    // Filter Logic
+    const filteredAssignments = assignments.filter(assignment => {
+        const matchesSearch = searchTerm === '' ||
+            assignment.teacherId?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            assignment.subjectId?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            assignment.classId?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesClass = filterClass === '' || assignment.classId?._id === filterClass;
+        const matchesSubject = filterSubject === '' || assignment.subjectId?._id === filterSubject;
+        const matchesTeacher = filterTeacher === '' || assignment.teacherId?._id === filterTeacher;
+
+        return matchesSearch && matchesClass && matchesSubject && matchesTeacher;
+    });
+
+    const clearFilters = () => {
+        setSearchTerm('');
+        setFilterClass('');
+        setFilterSubject('');
+        setFilterTeacher('');
+    };
 
 
     if (loading) return <div className="flex justify-center items-center h-96"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
@@ -302,9 +330,64 @@ export default function AssignmentsPage() {
                 {/* Assignments List */}
                 <div className="lg:col-span-2">
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                        <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <h3 className="font-bold text-slate-900">Current Assignments</h3>
-                            <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold">{assignments.length} Total</span>
+                            <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold">{filteredAssignments.length} Found</span>
+                        </div>
+
+                        {/* Filters */}
+                        <div className="p-4 border-b border-slate-100 bg-slate-50/50 space-y-4">
+                            <div className="flex flex-col md:flex-row gap-4">
+                                <div className="flex-1 relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search teacher, subject or class..."
+                                        className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                    {searchTerm && (
+                                        <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
+                                    <select
+                                        className="px-3 py-2 border border-slate-200 rounded-lg bg-white text-sm text-slate-700 outline-none focus:border-blue-500 min-w-[140px]"
+                                        value={filterClass}
+                                        onChange={(e) => setFilterClass(e.target.value)}
+                                    >
+                                        <option value="">All Classes</option>
+                                        {data.classes.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+                                    </select>
+                                    <select
+                                        className="px-3 py-2 border border-slate-200 rounded-lg bg-white text-sm text-slate-700 outline-none focus:border-blue-500 min-w-[140px]"
+                                        value={filterSubject}
+                                        onChange={(e) => setFilterSubject(e.target.value)}
+                                    >
+                                        <option value="">All Subjects</option>
+                                        {data.subjects.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+                                    </select>
+                                    <select
+                                        className="px-3 py-2 border border-slate-200 rounded-lg bg-white text-sm text-slate-700 outline-none focus:border-blue-500 min-w-[140px]"
+                                        value={filterTeacher}
+                                        onChange={(e) => setFilterTeacher(e.target.value)}
+                                    >
+                                        <option value="">All Teachers</option>
+                                        {data.teachers.map(t => <option key={t._id} value={t._id}>{t.fullName}</option>)}
+                                    </select>
+                                    {(searchTerm || filterClass || filterSubject || filterTeacher) && (
+                                        <button
+                                            onClick={clearFilters}
+                                            className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm font-bold transition-colors whitespace-nowrap"
+                                        >
+                                            Clear
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-slate-100">
@@ -318,7 +401,7 @@ export default function AssignmentsPage() {
                                 </thead>
                                 <tbody className="bg-white divide-y divide-slate-100 h-96 overflow-y-auto">
                                     <AnimatePresence>
-                                        {assignments.map((assignment) => (
+                                        {filteredAssignments.map((assignment) => (
                                             <motion.tr
                                                 key={assignment._id}
                                                 initial={{ opacity: 0 }}
