@@ -163,10 +163,10 @@ export default function FeesPage() {
                         <div className="relative">
                             <Search className="absolute left-3 top-3 text-slate-400 w-4 h-4" />
                             <input
-                                id="searchStudent"
-                                name="searchStudent"
+                                id="searchChallans"
+                                name="searchChallans"
                                 type="text"
-                                placeholder="Name or Reg. Number..."
+                                placeholder="Search by student name, class, or month..."
                                 className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 outline-none transition-all"
                                 value={filters.search}
                                 onChange={e => setFilters({ ...filters, search: e.target.value })}
