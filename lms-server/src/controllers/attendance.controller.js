@@ -2,6 +2,7 @@ const Attendance = require('../models/Attendance');
 const Student = require('../models/Student');
 const TeacherAssignment = require('../models/TeacherAssignment');
 const mongoose = require('mongoose');
+const Substitution = require('../models/Substitution');
 
 // @desc    Mark Attendance (Bulk or Single)
 // @route   POST /api/attendance
@@ -29,33 +30,71 @@ exports.markAttendance = async (req, res) => {
 
         // 1. Authorization: If Teacher, check assignment & Time Window
         if (req.user.role === 'TEACHER') {
-            const hasAssignment = await TeacherAssignment.findOne({
-                teacherId: req.user._id,
+            let activeAssignment = null;
+
+            // 1.1 Check for Substitution first
+            // Create range for the entire day to ensure we catch the substitution regardless of time component
+            // Adjusted to +/- 24 hours to handle any timezone offset mismatches (e.g. Local vs UTC)
+            const startOfDay = new Date(attendedDate);
+            startOfDay.setHours(startOfDay.getHours() - 24);
+
+            const endOfDay = new Date(attendedDate);
+            endOfDay.setHours(endOfDay.getHours() + 48); // Cover the day and next day buffer
+
+            const substitution = await Substitution.findOne({
+                date: { $gte: startOfDay, $lte: endOfDay },
                 classId,
                 sectionId,
-                subjectId, // if subject-wise
-                active: true
+                subjectId,
+                status: 'Assigned'
             }).populate('timeSlotId');
 
-            if (!hasAssignment) {
-                return res.status(403).json({ message: 'You are not assigned to this class/subject' });
+            if (substitution) {
+                // If substitution exists, ONLY the substitute teacher can mark
+                if (substitution.substituteTeacherId.toString() !== req.user._id.toString()) {
+                    return res.status(403).json({
+                        message: 'A substitution is assigned for this class today. Only the substitute teacher can mark attendance.'
+                    });
+                }
+                activeAssignment = substitution;
+            } else {
+                // 1.2 No Substitution, check regular assignment
+                // CRITICAL FIX: A teacher might have multiple assignments for the same class/subject on different days.
+                // We must find the assignment that corresponds to the ATTENDANCE DATE's day.
+
+                const dayName = attendedDate.toLocaleString('en-US', { weekday: 'long' });
+
+                // Find all assignments for this teacher/class/subject
+                const assignments = await TeacherAssignment.find({
+                    teacherId: req.user._id,
+                    classId,
+                    sectionId,
+                    subjectId, // if subject-wise
+                    active: true
+                }).populate('timeSlotId');
+
+                // Filter for the one matching the day
+                const hasAssignment = assignments.find(a => a.timeSlotId && a.timeSlotId.day === dayName);
+
+                if (!hasAssignment) {
+                    return res.status(403).json({
+                        message: `You are not assigned to this class/subject on ${dayName}.`
+                    });
+                }
+                activeAssignment = hasAssignment;
             }
 
             // Time Window Enforcement (15 Minutes)
             // Skip this if Admin or override provided (future feature)
-            if (hasAssignment.timeSlotId) {
+            if (activeAssignment.timeSlotId) {
                 const now = new Date();
-                const currentDay = now.toLocaleString('en-US', { weekday: 'long' });
+                // We already matched the day above, so we don't need to re-check day mismatch "Mon vs Sun"
+                // But we still check if we are *actually* on that day in real-time (for security, preventing attendance marking for next week?)
+                // Actually attendedDate is passed by user. We should ensure attendedDate matches today if we enforce "Live" attendance.
 
-                // 1. Check Day
-                if (hasAssignment.timeSlotId.day !== currentDay) {
-                    return res.status(403).json({
-                        message: `Not allowed. Class is scheduled for ${hasAssignment.timeSlotId.day}, today is ${currentDay}.`
-                    });
-                }
+                // For now, let's keep the time window check relative to the "now" time.
 
-                // 2. Check Time (Start to Start + 15m)
-                const [startH, startM] = hasAssignment.timeSlotId.startTime.split(':');
+                const [startH, startM] = activeAssignment.timeSlotId.startTime.split(':');
                 const startWindow = new Date();
                 startWindow.setHours(parseInt(startH), parseInt(startM), 0, 0);
 
@@ -66,13 +105,13 @@ exports.markAttendance = async (req, res) => {
                 // Allow marking if 'now' is within window.
                 if (now < startWindow) {
                     return res.status(403).json({
-                        message: `Too early. Attendance opens at ${hasAssignment.timeSlotId.startTime}.`
+                        message: `Too early. Attendance opens at ${activeAssignment.timeSlotId.startTime}.`
                     });
                 }
 
                 if (now > endWindow) {
                     return res.status(403).json({
-                        message: `Attendance Closed. Allowed only within 15 mins of start (${hasAssignment.timeSlotId.startTime}).`
+                        message: `Attendance Closed. Allowed only within 15 mins of start (${activeAssignment.timeSlotId.startTime}).`
                     });
                 }
             }

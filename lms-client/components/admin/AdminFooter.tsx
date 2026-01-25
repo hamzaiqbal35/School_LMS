@@ -14,9 +14,9 @@ export default function AdminFooter() {
                     </div>
 
                     <div className="flex gap-6 text-sm font-medium text-gray-600">
-                        <Link href="/admin/help" className="hover:text-blue-600 transition-colors">Help Center</Link>
-                        <Link href="/admin/privacy" className="hover:text-blue-600 transition-colors">Privacy Policy</Link>
-                        <Link href="/admin/contact" className="hover:text-blue-600 transition-colors">Support</Link>
+                        <Link href="#" className="hover:text-blue-600 transition-colors">Help Center</Link>
+                        <Link href="#" className="hover:text-blue-600 transition-colors">Privacy Policy</Link>
+                        <Link href="#" className="hover:text-blue-600 transition-colors">Support</Link>
                     </div>
 
                     <div className="text-xs text-gray-400">
