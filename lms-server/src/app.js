@@ -2,16 +2,24 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
+const helmet = require('helmet');
+const hpp = require('hpp');
+const { limiter } = require('./middlewares/rateLimiter');
+const path = require('path');
+const cookieParser = require('cookie-parser');
 
 dotenv.config();
-
-const path = require('path');
 
 // Connect to database
 connectDB();
 
-const cookieParser = require('cookie-parser');
 const app = express();
+
+// Security Headers (Helmet)
+app.use(helmet());
+
+// Rate Limiting
+app.use('/api', limiter);
 
 // Middleware
 app.use(cors({
@@ -20,6 +28,26 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
+
+// Security Middleware (Must be after body parser)
+// Manual Mongo Sanitize to avoid "Cannot set property query" error
+app.use((req, res, next) => {
+    const sanitize = (obj) => {
+        if (!obj || typeof obj !== 'object') return;
+        for (const key in obj) {
+            if (key.startsWith('$')) {
+                delete obj[key];
+            } else {
+                sanitize(obj[key]);
+            }
+        }
+    };
+    sanitize(req.body);
+    sanitize(req.query);
+    sanitize(req.params);
+    next();
+});
+app.use(hpp());
 
 // Serve Static Files (PDFs)
 app.use('/challans', express.static(path.join(__dirname, '../public/challans')));

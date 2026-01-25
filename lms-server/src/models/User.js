@@ -5,6 +5,7 @@ const UserSchema = new mongoose.Schema({
     username: { // Kept for display/legacy, but strictly not for login if email is used
         type: String,
         required: true,
+        unique: true,
         trim: true
     },
     email: { // Now the primary login identifier

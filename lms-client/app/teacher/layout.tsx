@@ -91,7 +91,7 @@ export default function TeacherLayout({
                 <div className="p-6">
                     <div className="flex items-center gap-3 px-2">
                         <div className="relative w-10 h-10 shrink-0">
-                            <Image src="/Logo2.png" alt="Logo" fill className="object-contain" sizes="40px" priority loading="eager" />
+                            <Image src="/Logo2.png" alt="Logo" fill className="object-contain" sizes="40px" />
                         </div>
                         <div className="flex flex-col">
                             <span className="font-bold text-slate-900 text-sm leading-tight tracking-tight">OGCES Panel</span>
@@ -170,7 +170,7 @@ export default function TeacherLayout({
                 <header className="md:hidden bg-white border-b border-slate-200 p-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
                     <div className="flex items-center gap-3">
                         <div className="relative w-8 h-8">
-                            <Image src="/Logo2.png" alt="Logo" fill className="object-contain" sizes="32px" priority loading="eager" />
+                            <Image src="/Logo2.png" alt="Logo" fill className="object-contain" sizes="32px" />
                         </div>
                         <span className="font-bold text-slate-900 text-sm">Teacher Portal</span>
                     </div>

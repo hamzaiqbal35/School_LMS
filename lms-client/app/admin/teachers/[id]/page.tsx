@@ -37,12 +37,19 @@ interface Assignment {
     };
 }
 
+interface AttendanceRecord {
+    _id: string;
+    date: string;
+    status: string;
+    markedBy?: { fullName: string };
+}
+
 export default function TeacherDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
     const router = useRouter();
     const [teacher, setTeacher] = useState<Teacher | null>(null);
     const [assignments, setAssignments] = useState<Assignment[]>([]);
-    const [attendance, setAttendance] = useState<any[]>([]); // Using any for now or define interface
+    const [attendance, setAttendance] = useState<AttendanceRecord[]>([]); // Using strictly typed interface
     const [selectedMonth, setSelectedMonth] = useState<string>('');
     const [loading, setLoading] = useState(true);
 
@@ -268,6 +275,9 @@ export default function TeacherDetailsPage({ params }: { params: Promise<{ id: s
                             </h3>
                             <input
                                 type="month"
+                                id="attendanceMonth"
+                                name="attendanceMonth"
+                                aria-label="Filter by Month"
                                 value={selectedMonth}
                                 onChange={(e) => setSelectedMonth(e.target.value)}
                                 className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500 bg-gray-50"
@@ -285,7 +295,7 @@ export default function TeacherDetailsPage({ params }: { params: Promise<{ id: s
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
-                                        {attendance.map((record: any) => (
+                                        {attendance.map((record) => (
                                             <tr key={record._id} className="hover:bg-gray-50/50">
                                                 <td className="px-4 py-3 font-medium text-gray-900">
                                                     {new Date(record.date).toLocaleDateString(undefined, {

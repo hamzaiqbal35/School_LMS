@@ -218,11 +218,14 @@ export default function ProfileView() {
                                 <Camera className="w-5 h-5" />
                             </button>
                             <input
+                                id="avatarUpload"
+                                name="avatarUpload"
                                 type="file"
                                 ref={fileInputRef}
                                 className="hidden"
                                 accept="image/*"
                                 onChange={handleFileChange}
+                                aria-label="Upload Avatar"
                             />
                         </div>
 
@@ -253,11 +256,14 @@ export default function ProfileView() {
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="grid md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Full Name</label>
+                                    <label htmlFor="fullName" className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Full Name</label>
                                     <div className="relative">
                                         <User className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                         <input
+                                            id="fullName"
+                                            name="fullName"
                                             type="text"
+                                            autoComplete="name"
                                             value={formData.fullName}
                                             onChange={e => setFormData({ ...formData, fullName: e.target.value })}
                                             className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
@@ -267,11 +273,14 @@ export default function ProfileView() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Email Address</label>
+                                    <label htmlFor="email" className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Email Address</label>
                                     <div className="relative">
                                         <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                         <input
+                                            id="email"
+                                            name="email"
                                             type="email"
+                                            autoComplete="email"
                                             value={formData.email}
                                             onChange={e => setFormData({ ...formData, email: e.target.value })}
                                             disabled={user?.role !== 'ADMIN'}
@@ -284,11 +293,14 @@ export default function ProfileView() {
 
                             {(user?.role === 'ADMIN' && formData.email !== user?.email) && (
                                 <div className="bg-yellow-50 border border-yellow-100 p-4 rounded-xl space-y-2">
-                                    <label className="text-xs font-bold text-yellow-700 uppercase tracking-wider ml-1">Current Password (Required for Email Change)</label>
+                                    <label htmlFor="currentPassword" className="text-xs font-bold text-yellow-700 uppercase tracking-wider ml-1">Current Password (Required for Email Change)</label>
                                     <div className="relative">
                                         <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-yellow-500" />
                                         <input
+                                            id="currentPassword"
+                                            name="currentPassword"
                                             type={showCurrentPassword ? "text" : "password"}
+                                            autoComplete="current-password"
                                             value={formData.currentPassword}
                                             onChange={e => setFormData({ ...formData, currentPassword: e.target.value })}
                                             placeholder="Enter current password"
@@ -314,11 +326,14 @@ export default function ProfileView() {
                                 </h4>
                                 <div className="grid md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">New Password</label>
+                                        <label htmlFor="newPassword" className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">New Password</label>
                                         <div className="relative">
                                             <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                             <input
+                                                id="newPassword"
+                                                name="newPassword"
                                                 type={showNewPassword ? "text" : "password"}
+                                                autoComplete="new-password"
                                                 value={formData.password}
                                                 onChange={e => setFormData({ ...formData, password: e.target.value })}
                                                 placeholder="Leave blank to keep current"
@@ -334,11 +349,14 @@ export default function ProfileView() {
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Confirm Password</label>
+                                        <label htmlFor="confirmPassword" className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Confirm Password</label>
                                         <div className="relative">
                                             <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                             <input
+                                                id="confirmPassword"
+                                                name="confirmPassword"
                                                 type={showConfirmPassword ? "text" : "password"}
+                                                autoComplete="new-password"
                                                 value={formData.confirmPassword}
                                                 onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
                                                 placeholder="Confirm new password"

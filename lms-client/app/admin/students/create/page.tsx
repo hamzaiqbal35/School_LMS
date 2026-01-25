@@ -271,9 +271,9 @@ export default function StudentForm({ params }: { params: Promise<{ id?: string 
                                     type="checkbox"
                                     id="isAdmissionPaid"
                                     name="isAdmissionPaid"
+                                    className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                                     checked={formData.isAdmissionPaid}
                                     onChange={handleChange}
-                                    className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                                 />
                                 <label htmlFor="isAdmissionPaid" className="ml-2 block text-sm font-medium text-gray-700">
                                     Admission Fee Paid?

@@ -341,11 +341,14 @@ export default function AssignmentsPage() {
                                 <div className="flex-1 relative">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                                     <input
+                                        id="searchAssignments"
+                                        name="searchAssignments"
                                         type="text"
                                         placeholder="Search teacher, subject or class..."
                                         className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
+                                        aria-label="Search Assignments"
                                     />
                                     {searchTerm && (
                                         <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
@@ -355,25 +358,34 @@ export default function AssignmentsPage() {
                                 </div>
                                 <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
                                     <select
+                                        id="filterClass"
+                                        name="filterClass"
                                         className="px-3 py-2 border border-slate-200 rounded-lg bg-white text-sm text-slate-700 outline-none focus:border-blue-500 min-w-[140px]"
                                         value={filterClass}
                                         onChange={(e) => setFilterClass(e.target.value)}
+                                        aria-label="Filter by Class"
                                     >
                                         <option value="">All Classes</option>
                                         {data.classes.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
                                     </select>
                                     <select
+                                        id="filterSubject"
+                                        name="filterSubject"
                                         className="px-3 py-2 border border-slate-200 rounded-lg bg-white text-sm text-slate-700 outline-none focus:border-blue-500 min-w-[140px]"
                                         value={filterSubject}
                                         onChange={(e) => setFilterSubject(e.target.value)}
+                                        aria-label="Filter by Subject"
                                     >
                                         <option value="">All Subjects</option>
                                         {data.subjects.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
                                     </select>
                                     <select
+                                        id="filterTeacher"
+                                        name="filterTeacher"
                                         className="px-3 py-2 border border-slate-200 rounded-lg bg-white text-sm text-slate-700 outline-none focus:border-blue-500 min-w-[140px]"
                                         value={filterTeacher}
                                         onChange={(e) => setFilterTeacher(e.target.value)}
+                                        aria-label="Filter by Teacher"
                                     >
                                         <option value="">All Teachers</option>
                                         {data.teachers.map(t => <option key={t._id} value={t._id}>{t.fullName}</option>)}

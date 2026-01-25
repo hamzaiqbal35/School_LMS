@@ -89,6 +89,9 @@ export default function AttendanceGraph() {
                     </div>
                     <div className="w-px h-4 bg-slate-200 mx-1"></div>
                     <select
+                        id="attendanceRange"
+                        name="attendanceRange"
+                        aria-label="Attendance Range"
                         value={range}
                         onChange={(e) => setRange(e.target.value as 'week' | 'month' | 'year')}
                         className="bg-transparent text-xs font-bold text-slate-700 hover:text-slate-900 outline-none cursor-pointer pr-2"

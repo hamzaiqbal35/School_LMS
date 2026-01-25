@@ -94,8 +94,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                     fill
                                     sizes="64px"
                                     className="object-contain"
-                                    priority
-                                    loading="eager"
                                     style={{ objectFit: 'contain' }}
                                 />
                             </div>
@@ -180,7 +178,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                     fill
                                     sizes="48px"
                                     className="object-contain brightness-100"
-                                    loading="eager"
                                     style={{ objectFit: 'contain' }}
                                 />
                             </div>

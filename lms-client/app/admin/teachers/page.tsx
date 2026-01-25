@@ -532,6 +532,7 @@ export default function TeachersPage() {
                                                 </div>
                                                 <input
                                                     type="checkbox"
+                                                    name="qualifiedSubjects"
                                                     className="hidden"
                                                     checked={formData.qualifiedSubjects.includes(subject._id)}
                                                     onChange={() => toggleSubject(subject._id)}

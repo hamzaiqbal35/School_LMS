@@ -3,7 +3,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { motion } from "framer-motion";
-import { Calendar, Clock, MapPin, BookOpen, GraduationCap, ChevronRight, MoreVertical, PieChart as PieIcon, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { Calendar, Clock, ChevronRight, PieChart as PieIcon, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
@@ -78,19 +78,6 @@ export default function TeacherDashboard() {
     const todayClasses = assignments
         .filter(a => a.timeSlotId && a.timeSlotId.day === todayDay)
         .sort((a, b) => a.timeSlotId.startTime.localeCompare(b.timeSlotId.startTime));
-
-    const container = {
-        hidden: { opacity: 0 },
-        show: {
-            opacity: 1,
-            transition: { staggerChildren: 0.1 }
-        }
-    };
-
-    const item = {
-        hidden: { y: 20, opacity: 0 },
-        show: { y: 0, opacity: 1 }
-    };
 
     // Chart Data
     const chartData = stats ? [
@@ -270,10 +257,13 @@ export default function TeacherDashboard() {
                         <div className="flex justify-between items-center mb-4 sticky top-0 bg-white z-10 pb-2 border-b border-slate-50">
                             <h2 className="text-lg font-bold text-slate-900">History</h2>
                             <input
+                                id="historyMonth"
+                                name="historyMonth"
                                 type="month"
                                 value={selectedMonth}
                                 onChange={(e) => setSelectedMonth(e.target.value)}
                                 className="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-500 focus:outline-none focus:border-green-500 bg-slate-50"
+                                aria-label="Filter History by Month"
                             />
                         </div>
                         <div className="space-y-4 overflow-y-auto custom-scrollbar flex-1 pr-1">

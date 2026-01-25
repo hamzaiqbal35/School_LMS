@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
 import { Loader2, Save, Calendar, CheckCircle, AlertCircle, ArrowLeft, Users, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -53,17 +53,8 @@ export default function MarkAttendancePage() {
         fetchAssignments();
     }, []);
 
-    // Auto-select based on query params
-    useEffect(() => {
-        if (assignments.length > 0 && classIdParam && sectionIdParam && !selectedAssignment) {
-            const target = assignments.find(a => a.classId._id === classIdParam && a.sectionId._id === sectionIdParam);
-            if (target) {
-                handleClassSelect(target);
-            }
-        }
-    }, [assignments, classIdParam, sectionIdParam]);
-
-    const handleClassSelect = async (assignment: Assignment) => {
+    // Wrap in useCallback to refer in useEffect
+    const handleClassSelect = useCallback(async (assignment: Assignment) => {
         setSelectedAssignment(assignment);
         setMsg({ type: '', text: '' });
         setLoadingStudents(true);
@@ -72,7 +63,6 @@ export default function MarkAttendancePage() {
             const studList: Student[] = res.data;
             setStudents(studList);
 
-            // Fetch existing attendance ?? optional
             // Default to Present
             const initialMarks: Record<string, string> = {};
             studList.forEach(s => initialMarks[s._id] = 'Present');
@@ -82,7 +72,17 @@ export default function MarkAttendancePage() {
         } finally {
             setLoadingStudents(false);
         }
-    };
+    }, []);
+
+    // Auto-select based on query params
+    useEffect(() => {
+        if (assignments.length > 0 && classIdParam && sectionIdParam && !selectedAssignment) {
+            const target = assignments.find(a => a.classId._id === classIdParam && a.sectionId._id === sectionIdParam);
+            if (target) {
+                handleClassSelect(target);
+            }
+        }
+    }, [assignments, classIdParam, sectionIdParam, selectedAssignment, handleClassSelect]);
 
     const handleSubmit = async () => {
         setMsg({ type: '', text: '' });
@@ -133,10 +133,13 @@ export default function MarkAttendancePage() {
                             <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2">
                                 <Calendar className="w-5 h-5 text-green-600" />
                                 <input
+                                    id="attendanceDate"
+                                    name="attendanceDate"
                                     type="date"
                                     value={attendanceDate}
                                     onChange={(e) => setAttendanceDate(e.target.value)}
                                     className="bg-transparent border-none outline-none text-sm font-bold text-slate-700 cursor-pointer"
+                                    aria-label="Attendance Date"
                                 />
                             </div>
                         </div>

@@ -159,7 +159,7 @@ export default function FeesPage() {
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                 <div className="grid md:grid-cols-12 gap-4 items-end">
                     <div className="md:col-span-4">
-                        <label htmlFor="searchStudent" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Search Student</label>
+                        <label htmlFor="searchChallans" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Search Student</label>
                         <div className="relative">
                             <Search className="absolute left-3 top-3 text-slate-400 w-4 h-4" />
                             <input
@@ -417,6 +417,8 @@ export default function FeesPage() {
                                             <div className="relative flex items-center">
                                                 <input
                                                     type="checkbox"
+                                                    id="includeExamFee"
+                                                    name="includeExamFee"
                                                     className="peer sr-only"
                                                     checked={genData.includeExamFee}
                                                     onChange={e => setGenData({ ...genData, includeExamFee: e.target.checked })}
@@ -430,6 +432,8 @@ export default function FeesPage() {
                                             <div className="relative flex items-center">
                                                 <input
                                                     type="checkbox"
+                                                    id="includeMisc"
+                                                    name="includeMisc"
                                                     className="peer sr-only"
                                                     checked={genData.includeMisc}
                                                     onChange={e => setGenData({ ...genData, includeMisc: e.target.checked })}
