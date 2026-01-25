@@ -222,10 +222,10 @@ export default function MarkAttendancePage() {
                             </div>
 
                             <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-                                <div className="hidden md:flex gap-2 mr-4 text-xs font-bold text-slate-500">
-                                    <span className="text-green-600">P: {stats.present}</span>
-                                    <span className="text-red-600">A: {stats.absent}</span>
-                                    <span className="text-amber-500">L: {stats.leave}</span>
+                                <div className="flex gap-2 mr-2 md:mr-4 text-[10px] md:text-xs font-bold text-slate-500">
+                                    <span className="text-green-600 bg-green-50 px-1.5 py-0.5 rounded border border-green-100">P: {stats.present}</span>
+                                    <span className="text-red-600 bg-red-50 px-1.5 py-0.5 rounded border border-red-100">A: {stats.absent}</span>
+                                    <span className="text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">L: {stats.leave}</span>
                                 </div>
                                 <button
                                     onClick={handleSubmit}
@@ -250,19 +250,20 @@ export default function MarkAttendancePage() {
                         ) : (
                             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                                 <div className="grid grid-cols-12 bg-slate-50 p-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                                    <div className="col-span-1">Reg #</div>
-                                    <div className="col-span-4 pl-4">Student Name</div>
+                                    <div className="hidden md:block md:col-span-1">Reg #</div>
+                                    <div className="col-span-5 md:col-span-4 pl-0 md:pl-4">Student Name</div>
                                     <div className="col-span-7 flex justify-center">Attendance Status</div>
                                 </div>
                                 <div className="divide-y divide-slate-100">
                                     {students.map((student) => (
                                         <div key={student._id} className="grid grid-cols-12 p-4 items-center hover:bg-slate-50/50 transition-colors">
-                                            <div className="col-span-1 font-mono text-xs font-bold text-slate-400">{student.registrationNumber}</div>
-                                            <div className="col-span-4 pl-4">
-                                                <p className="font-bold text-slate-900 text-sm">{student.fullName}</p>
-                                                <p className="text-[10px] text-slate-400">{student.fatherName}</p>
+                                            <div className="hidden md:block md:col-span-1 font-mono text-xs font-bold text-slate-400">{student.registrationNumber}</div>
+                                            <div className="col-span-5 md:col-span-4 pl-0 md:pl-4">
+                                                <p className="font-bold text-slate-900 text-sm truncate">{student.fullName}</p>
+                                                <p className="text-[10px] text-slate-400 truncate">{student.fatherName}</p>
+                                                <p className="md:hidden text-[10px] text-slate-400 font-mono mt-0.5">#{student.registrationNumber}</p>
                                             </div>
-                                            <div className="col-span-7 flex justify-center gap-2">
+                                            <div className="col-span-7 flex justify-center gap-1 sm:gap-2">
                                                 {['Present', 'Absent', 'Leave', 'Late'].map((status) => {
                                                     const isActive = marks[student._id] === status;
                                                     let activeClass = "";
@@ -276,7 +277,7 @@ export default function MarkAttendancePage() {
                                                             key={status}
                                                             onClick={() => setMarks({ ...marks, [student._id]: status })}
                                                             className={`
-                                                                w-9 h-9 sm:w-24 sm:h-9 rounded-lg border flex items-center justify-center font-bold text-xs transition-all duration-200 shadow-sm
+                                                                w-8 h-8 sm:w-24 sm:h-9 rounded-lg border flex items-center justify-center font-bold text-xs transition-all duration-200 shadow-sm
                                                                 ${isActive ? `${activeClass} shadow-md scale-105` : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300"}
                                                             `}
                                                             title={status}

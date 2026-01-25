@@ -11,4 +11,7 @@ router.get('/', teacherAttendanceController.getAttendance);
 // POST Mark (Admin only usually, or maybe Teacher self-checkin if allowed)
 router.post('/', adminOnly, teacherAttendanceController.markAttendance);
 
+// GET Stats for Dashboard
+router.get('/stats', teacherAttendanceController.getTeacherStats);
+
 module.exports = router;

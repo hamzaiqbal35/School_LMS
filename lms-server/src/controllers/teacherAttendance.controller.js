@@ -85,3 +85,67 @@ exports.getAttendance = async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 };
+// @desc    Get Teacher Stats (Donut Chart & Today's Status)
+// @route   GET /api/teacher-attendance/stats
+exports.getTeacherStats = async (req, res) => {
+    try {
+        const teacherId = req.user._id;
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        endOfMonth.setHours(23, 59, 59, 999);
+
+        // 1. Attendance Stats (Present vs Absent/Leave/Late) for this month
+        const attendanceRecords = await TeacherAttendance.find({
+            teacherId,
+            date: { $gte: startOfMonth, $lte: endOfMonth }
+        });
+
+        let present = 0;
+        let absent = 0;
+        let leave = 0;
+        let late = 0;
+
+        attendanceRecords.forEach(r => {
+            if (r.status === 'Present') present++;
+            else if (r.status === 'Absent') absent++;
+            else if (r.status === 'Leave') leave++;
+            else if (r.status === 'Late') late++;
+        });
+
+        // 2. Substitution Stats (Count where I was result of substitution)
+        // actually user asked: "how many he miss and how many he take of other (substitution)"
+        // "miss" is covered by Absent/Leave above.
+        // "take of other" is being the substituteTeacher.
+
+        const Substitution = require('../models/Substitution');
+        const substitutionCount = await Substitution.countDocuments({
+            substituteTeacherId: teacherId,
+            date: { $gte: startOfMonth, $lte: endOfMonth },
+            status: { $ne: 'Cancelled' }
+        });
+
+        // 3. Today's Status
+        const todayStart = new Date();
+        todayStart.setUTCHours(0, 0, 0, 0); // Match markAttendance storing UTC midnight
+        const todayRecord = await TeacherAttendance.findOne({
+            teacherId,
+            date: todayStart
+        });
+
+        res.json({
+            stats: {
+                present,
+                absent,
+                leave,
+                late,
+                substitutions: substitutionCount
+            },
+            todayStatus: todayRecord ? todayRecord.status : 'Not Marked'
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};

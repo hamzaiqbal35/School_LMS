@@ -42,22 +42,30 @@ export default function TeacherDetailsPage({ params }: { params: Promise<{ id: s
     const router = useRouter();
     const [teacher, setTeacher] = useState<Teacher | null>(null);
     const [assignments, setAssignments] = useState<Assignment[]>([]);
+    const [attendance, setAttendance] = useState<any[]>([]); // Using any for now or define interface
+    const [selectedMonth, setSelectedMonth] = useState<string>('');
     const [loading, setLoading] = useState(true);
 
     const fetchData = useCallback(async () => {
         try {
-            const [teacherRes, assignRes] = await Promise.all([
+            const historyQuery = selectedMonth
+                ? `/teacher-attendance?teacherId=${resolvedParams.id}&month=${selectedMonth}`
+                : `/teacher-attendance?teacherId=${resolvedParams.id}&limit=10`;
+
+            const [teacherRes, assignRes, attendanceRes] = await Promise.all([
                 api.get(`/admin/teachers/${resolvedParams.id}`),
-                api.get(`/admin/assignments?teacherId=${resolvedParams.id}`)
+                api.get(`/admin/assignments?teacherId=${resolvedParams.id}`),
+                api.get(historyQuery)
             ]);
             setTeacher(teacherRes.data);
             setAssignments(assignRes.data);
+            setAttendance(attendanceRes.data);
         } catch (error) {
             console.error(error);
         } finally {
             setLoading(false);
         }
-    }, [resolvedParams.id]);
+    }, [resolvedParams.id, selectedMonth]);
 
     useEffect(() => {
         if (resolvedParams.id) {
@@ -68,6 +76,10 @@ export default function TeacherDetailsPage({ params }: { params: Promise<{ id: s
     if (loading) return <div className="flex justify-center p-20"><Loader2 className="w-10 h-10 animate-spin text-blue-600" /></div>;
     if (!teacher) return <div className="p-10 text-center">Teacher not found</div>;
 
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    // Find assignments that don't match any known day
+    const otherAssignments = assignments.filter(a => a.active && !days.includes(a.timeSlotId?.day));
+
     return (
         <div className="max-w-5xl mx-auto space-y-6">
             {/* Header */}
@@ -75,10 +87,6 @@ export default function TeacherDetailsPage({ params }: { params: Promise<{ id: s
                 <button onClick={() => router.back()} className="text-gray-500 hover:text-gray-800 flex items-center mb-4 transition-colors bg-white/50 p-2 rounded-lg shadow-sm hover:bg-white">
                     <ArrowLeft className="w-4 h-4 mr-2" /> Back to Teachers
                 </button>
-                <div className="flex gap-2">
-                    {/* Placeholder for future specific Edit Page if needed, currently reusing modal in parent is hard from here without context/url param state. for now just View. */}
-                    {/* We can implement Edit by navigating back with a query param? For now simplified to just View or future Edit page */}
-                </div>
             </div>
 
             {/* Profile Hero */}
@@ -154,8 +162,9 @@ export default function TeacherDetailsPage({ params }: { params: Promise<{ id: s
                     </div>
                 </div>
 
-                {/* Right Column: Workload/Schedule */}
+                {/* Right Column: Workload/Schedule & History */}
                 <div className="md:col-span-2 space-y-6">
+                    {/* Schedule */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                         <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center justify-between pb-3 border-b">
                             <div className="flex items-center">
@@ -168,7 +177,7 @@ export default function TeacherDetailsPage({ params }: { params: Promise<{ id: s
 
                         {assignments.length > 0 ? (
                             <div className="grid gap-4">
-                                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => {
+                                {days.map(day => {
                                     const dayAssignments = assignments.filter(a => a.active && a.timeSlotId?.day === day);
                                     if (dayAssignments.length === 0) return null;
 
@@ -207,11 +216,102 @@ export default function TeacherDetailsPage({ params }: { params: Promise<{ id: s
                                         </div>
                                     )
                                 })}
+
+                                {otherAssignments.length > 0 && (
+                                    <div className="border rounded-lg overflow-hidden border-yellow-200">
+                                        <div className="bg-yellow-50 px-4 py-2 font-semibold text-yellow-800 border-b border-yellow-100 flex justify-between">
+                                            <span>Unscheduled / Other</span>
+                                        </div>
+                                        <div className="divide-y">
+                                            {otherAssignments.map(assign => (
+                                                <div key={assign._id} className="p-3 flex items-center justify-between hover:bg-yellow-50/50 transition-colors">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="text-center w-24">
+                                                            <p className="text-sm font-bold text-gray-800">
+                                                                {assign.timeSlotId?.startTime || 'N/A'}
+                                                            </p>
+                                                            <p className="text-xs text-gray-500">
+                                                                {assign.timeSlotId?.endTime}
+                                                            </p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-medium text-gray-900">
+                                                                {assign.subjectId?.name}
+                                                            </p>
+                                                            <p className="text-sm text-gray-500">
+                                                                Class {assign.classId?.name} - {assign.sectionId?.name}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
+                                                        {assign.timeSlotId?.day || 'Unknown'}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="text-center py-10 text-gray-400">
                                 <BookOpen className="w-12 h-12 mx-auto mb-2 opacity-20" />
                                 <p>No classes assigned yet.</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Attendance History */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <div className="flex justify-between items-center mb-6 border-b pb-3">
+                            <h3 className="text-lg font-bold text-gray-800 flex items-center">
+                                <Calendar className="w-5 h-5 mr-2 text-green-600" /> Attendance History
+                            </h3>
+                            <input
+                                type="month"
+                                value={selectedMonth}
+                                onChange={(e) => setSelectedMonth(e.target.value)}
+                                className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500 bg-gray-50"
+                            />
+                        </div>
+
+                        {attendance.length > 0 ? (
+                            <div className="overflow-hidden rounded-lg border border-gray-200">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-gray-50 text-gray-500 font-semibold uppercase text-xs">
+                                        <tr>
+                                            <th className="px-4 py-3">Date</th>
+                                            <th className="px-4 py-3">Status</th>
+                                            <th className="px-4 py-3">Marked By</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {attendance.map((record: any) => (
+                                            <tr key={record._id} className="hover:bg-gray-50/50">
+                                                <td className="px-4 py-3 font-medium text-gray-900">
+                                                    {new Date(record.date).toLocaleDateString(undefined, {
+                                                        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
+                                                    })}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className={`px-2 py-1 rounded text-xs font-bold uppercase
+                                                        ${record.status === 'Present' ? 'bg-green-100 text-green-700' :
+                                                            record.status === 'Absent' ? 'bg-red-100 text-red-700' :
+                                                                record.status === 'Leave' ? 'bg-yellow-100 text-yellow-700' :
+                                                                    'bg-gray-100 text-gray-700'}`}>
+                                                        {record.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-gray-500">
+                                                    {record.markedBy?.fullName || 'System'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div className="text-center py-10 text-gray-400 border border-dashed rounded-lg">
+                                <p>No attendance records found for this period.</p>
                             </div>
                         )}
                     </div>
