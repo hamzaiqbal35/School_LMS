@@ -21,16 +21,28 @@ app.use(helmet());
 // Rate Limiting
 app.use('/api', limiter);
 
-// Middleware
+// Middleware: CORS
+const allowedOrigins = [process.env.CLIENT_URL.replace(/\/$/, '')]; // remove trailing slash if any
 app.use(cors({
-    origin: process.env.CLIENT_URL, // Must specify in .env
-    credentials: true
+    origin: function (origin, callback) {
+        // allow requests with no origin (like mobile apps, curl)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) === -1) {
+            const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+            return callback(new Error(msg), false);
+        }
+        return callback(null, true);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Parse JSON
 app.use(express.json());
 app.use(cookieParser());
 
-// Security Middleware (Must be after body parser)
-// Manual Mongo Sanitize to avoid "Cannot set property query" error
+// Security Middleware (Mongo Sanitize)
 app.use((req, res, next) => {
     const sanitize = (obj) => {
         if (!obj || typeof obj !== 'object') return;
@@ -47,6 +59,7 @@ app.use((req, res, next) => {
     sanitize(req.params);
     next();
 });
+
 app.use(hpp());
 
 // Serve Static Files (PDFs)
