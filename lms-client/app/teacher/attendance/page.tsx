@@ -10,6 +10,7 @@ interface Assignment {
     sectionId: { _id: string; name: string };
     subjectId: { _id: string; name: string };
     timeSlotId: { day: string; startTime: string; endTime: string };
+    originalTeacherId?: { fullName: string }; // Added for substitution details
 }
 
 interface Student {
@@ -144,17 +145,37 @@ export default function MarkAttendancePage() {
                                             <Users className="w-24 h-24 text-green-600" />
                                         </div>
                                         <div className="relative z-10">
-                                            <div className="bg-green-50 text-green-700 w-fit px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-4">
-                                                {assignment.subjectId.name}
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className={`w-fit px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${assignment.originalTeacherId ? 'bg-amber-100 text-amber-700' : 'bg-green-50 text-green-700'}`}>
+                                                    {assignment.originalTeacherId ? 'Substitution' : assignment.subjectId.name}
+                                                </div>
+                                                {assignment.originalTeacherId && (
+                                                    <div className="bg-amber-50 text-amber-600 px-2 py-1 rounded text-[10px] font-bold border border-amber-100">
+                                                        Covering
+                                                    </div>
+                                                )}
                                             </div>
+
                                             <h3 className="text-xl font-bold text-slate-900 mb-1">
                                                 Class {assignment.classId.name} - {assignment.sectionId.name}
                                             </h3>
-                                            <div className="flex items-center gap-2 text-slate-500 text-sm mb-4">
-                                                <Clock className="w-4 h-4" />
+
+                                            {assignment.originalTeacherId ? (
+                                                <div className="mb-3 text-xs font-medium text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                                    For: <span className="font-bold text-slate-700">{assignment.originalTeacherId.fullName}</span> • {assignment.subjectId.name}
+                                                </div>
+                                            ) : (
+                                                <div className="text-sm text-slate-500 mb-3 font-medium">
+                                                    {assignment.subjectId.name}
+                                                </div>
+                                            )}
+
+                                            <div className="flex items-center gap-2 text-slate-400 text-xs mb-4 font-mono">
+                                                <Clock className="w-3.5 h-3.5" />
                                                 <span>{assignment.timeSlotId?.startTime || 'N/A'} - {assignment.timeSlotId?.endTime || 'N/A'}</span>
                                             </div>
-                                            <div className="flex items-center text-green-600 font-bold text-sm group-hover:gap-2 transition-all">
+
+                                            <div className="flex items-center text-green-600 font-bold text-sm group-hover:gap-2 transition-all mt-auto">
                                                 Select Class <ArrowLeft className="w-4 h-4 rotate-180" />
                                             </div>
                                         </div>

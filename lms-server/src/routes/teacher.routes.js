@@ -39,7 +39,8 @@ router.get('/assignments', async (req, res) => {
             .populate('classId', 'name')
             .populate('sectionId', 'name')
             .populate('subjectId', 'name')
-            .populate('timeSlotId', 'name day startTime endTime');
+            .populate('timeSlotId', 'name day startTime endTime')
+            .populate('originalTeacherId', 'fullName');
 
         // Merge results
         // Substitutions effectively act as assignments for the UI
