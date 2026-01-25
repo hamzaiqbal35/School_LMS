@@ -41,12 +41,14 @@ exports.loginUser = async (req, res) => {
             const token = generateToken(user._id);
 
             // Set Cookie
-            res.cookie('token', token, {
+            const options = {
+                expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict',
-                maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-            });
+                secure: true, // Always true for cross-site (Render -> Vercel)
+                sameSite: 'None' // Always None for cross-site
+            };
+
+            res.cookie('token', token, options);
 
             res.json({
                 _id: user._id,
@@ -70,9 +72,11 @@ exports.loginUser = async (req, res) => {
 // @route   POST /api/auth/logout
 // @access  Public
 exports.logoutUser = (req, res) => {
-    res.cookie('token', '', {
+    res.cookie('token', 'none', {
+        expires: new Date(Date.now() + 10 * 1000),
         httpOnly: true,
-        expires: new Date(0)
+        secure: true,
+        sameSite: 'None'
     });
     res.status(200).json({ message: 'Logged out successfully' });
 };
@@ -101,12 +105,14 @@ exports.registerAdmin = async (req, res) => {
             const token = generateToken(user._id);
 
             // Set Cookie
-            res.cookie('token', token, {
+            const options = {
+                expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict',
-                maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-            });
+                secure: true, // Always true for cross-site (Render -> Vercel)
+                sameSite: 'None' // Always None for cross-site
+            };
+
+            res.cookie('token', token, options);
 
             res.json({
                 _id: user._id,
