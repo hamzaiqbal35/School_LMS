@@ -184,10 +184,7 @@ export default function TeacherDashboard() {
                                                 Class {cls.classId.name} - {cls.sectionId.name}
                                             </h3>
                                             <div className="flex items-center gap-4 text-sm text-slate-500 mt-4">
-                                                <div className="flex items-center gap-1.5">
-                                                    <MapPin className="w-4 h-4 text-slate-400" />
-                                                    <span>Room 101</span>
-                                                </div>
+
                                                 <div className="flex items-center gap-1.5">
                                                     <Clock className="w-4 h-4 text-slate-400" />
                                                     <span>{cls.timeSlotId.startTime} - {cls.timeSlotId.endTime}</span>

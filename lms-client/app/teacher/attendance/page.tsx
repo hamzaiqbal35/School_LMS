@@ -20,7 +20,13 @@ interface Student {
     fatherName: string;
 }
 
+import { useSearchParams } from 'next/navigation';
+
 export default function MarkAttendancePage() {
+    const searchParams = useSearchParams();
+    const classIdParam = searchParams.get('classId');
+    const sectionIdParam = searchParams.get('sectionId');
+
     const [assignments, setAssignments] = useState<Assignment[]>([]);
     const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
@@ -46,6 +52,16 @@ export default function MarkAttendancePage() {
         };
         fetchAssignments();
     }, []);
+
+    // Auto-select based on query params
+    useEffect(() => {
+        if (assignments.length > 0 && classIdParam && sectionIdParam && !selectedAssignment) {
+            const target = assignments.find(a => a.classId._id === classIdParam && a.sectionId._id === sectionIdParam);
+            if (target) {
+                handleClassSelect(target);
+            }
+        }
+    }, [assignments, classIdParam, sectionIdParam]);
 
     const handleClassSelect = async (assignment: Assignment) => {
         setSelectedAssignment(assignment);
