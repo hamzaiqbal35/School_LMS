@@ -98,8 +98,9 @@ exports.markAttendance = async (req, res) => {
                 const startWindow = new Date();
                 startWindow.setHours(parseInt(startH), parseInt(startM), 0, 0);
 
-                const endWindow = new Date(startWindow);
-                endWindow.setMinutes(endWindow.getMinutes() + 15);
+                const [endH, endM] = activeAssignment.timeSlotId.endTime.split(':');
+                const endWindow = new Date(startWindow); // Use same date basis
+                endWindow.setHours(parseInt(endH), parseInt(endM), 0, 0);
 
                 // Allow marking slightly before? No, strict "not before start".
                 // Allow marking if 'now' is within window.
@@ -111,7 +112,7 @@ exports.markAttendance = async (req, res) => {
 
                 if (now > endWindow) {
                     return res.status(403).json({
-                        message: `Attendance Closed. Allowed only within 15 mins of start (${activeAssignment.timeSlotId.startTime}).`
+                        message: `Attendance Closed. Allowed only between ${activeAssignment.timeSlotId.startTime} and ${activeAssignment.timeSlotId.endTime}.`
                     });
                 }
             }

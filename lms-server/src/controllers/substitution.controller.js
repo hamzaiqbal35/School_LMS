@@ -48,7 +48,7 @@ exports.getNeededSubstitutions = async (req, res) => {
         // 4. Check for existing substitutions
         const substitutions = await Substitution.find({
             date: date
-        });
+        }).populate('substituteTeacherId', 'fullName');
 
         // 5. Build Result
         const result = relevantAssignments.map(assignment => {
@@ -134,12 +134,13 @@ exports.getAvailableTeachers = async (req, res) => {
         });
 
         // Sort: Free first, then by name
-        teachersWithStatus.sort((a, b) => {
-            if (a.isFree === b.isFree) return a.fullName.localeCompare(b.fullName);
-            return a.isFree ? -1 : 1;
-        });
+        // Filter: Only show free teachers
+        const freeTeachers = teachersWithStatus.filter(t => t.isFree);
 
-        res.json(teachersWithStatus);
+        // Sort by name
+        freeTeachers.sort((a, b) => a.fullName.localeCompare(b.fullName));
+
+        res.json(freeTeachers);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
