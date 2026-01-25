@@ -15,28 +15,43 @@ connectDB();
 
 const app = express();
 
+// Middleware: CORS (MUST BE TOP)
+const clientUrl = process.env.CLIENT_URL;
+const allowedOrigins = [
+    clientUrl,
+    clientUrl ? clientUrl.replace(/\/$/, '') : '',
+    clientUrl ? (clientUrl.endsWith('/') ? clientUrl : clientUrl + '/') : ''
+].filter(Boolean); // Remove empty strings
+
+app.use(cors({
+    origin: function (origin, callback) {
+        // allow requests with no origin (like mobile apps, curl)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.some(o => o === origin)) {
+            return callback(null, true);
+        }
+        // Check for matching protocol and domain but ignore mismatching trailing slash if needed
+        const originWithSlash = origin.endsWith('/') ? origin : origin + '/';
+        const originWithoutSlash = origin.replace(/\/$/, '');
+
+        if (allowedOrigins.includes(originWithSlash) || allowedOrigins.includes(originWithoutSlash)) {
+            return callback(null, true);
+        }
+
+        const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+        return callback(new Error(msg), false);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+}));
+
 // Security Headers (Helmet)
 app.use(helmet());
 
 // Rate Limiting
 app.use('/api', limiter);
-
-// Middleware: CORS
-const allowedOrigins = [process.env.CLIENT_URL.replace(/\/$/, '')]; // remove trailing slash if any
-app.use(cors({
-    origin: function (origin, callback) {
-        // allow requests with no origin (like mobile apps, curl)
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) === -1) {
-            const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
-            return callback(new Error(msg), false);
-        }
-        return callback(null, true);
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
 
 // Parse JSON
 app.use(express.json());
