@@ -1,7 +1,3 @@
-const puppeteer = require('puppeteer');
-const puppeteerCore = require('puppeteer-core');
-const chromium = require('@sparticuz/chromium');
-
 /**
  * Launch a browser instance suitable for the current environment.
  * @returns {Promise<import('puppeteer').Browser>}
@@ -10,6 +6,9 @@ const getBrowser = async () => {
     let browser;
 
     if (process.env.NODE_ENV === 'production') {
+        const puppeteerCore = require('puppeteer-core');
+        const chromium = require('@sparticuz/chromium');
+
         // Production: Use @sparticuz/chromium with puppeteer-core
         // This is optimized for serverless/container environments
         try {
@@ -26,6 +25,8 @@ const getBrowser = async () => {
             throw error;
         }
     } else {
+        const puppeteer = require('puppeteer');
+
         // Development: Use standard local puppeteer
         try {
             console.log('Launching Local Browser (Puppeteer)...');
