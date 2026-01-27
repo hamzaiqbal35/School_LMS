@@ -8,7 +8,8 @@ const limiter = rateLimit({
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
     message: {
         message: 'Too many requests from this IP, please try again after 15 minutes'
-    }
+    },
+    skip: (req) => req.method === 'OPTIONS'
 });
 
 // Strict Limiter for Auth: 10 requests per hour
@@ -21,7 +22,8 @@ const authLimiter = rateLimit({
     legacyHeaders: false,
     message: {
         message: 'Too many login attempts from this IP, please try again after 15 minutes'
-    }
+    },
+    skip: (req) => req.method === 'OPTIONS'
 });
 
 module.exports = { limiter, authLimiter };

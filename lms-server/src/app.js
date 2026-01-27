@@ -4,7 +4,6 @@ const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const helmet = require('helmet');
 const hpp = require('hpp');
-const { limiter } = require('./middlewares/rateLimiter');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 
@@ -14,6 +13,9 @@ dotenv.config();
 connectDB();
 
 const app = express();
+
+// Trust Proxy for Render/Heroku
+app.set('trust proxy', 1);
 
 // Middleware: CORS (MUST BE TOP)
 const clientUrl = process.env.CLIENT_URL;
@@ -49,9 +51,6 @@ app.use(cors({
 
 // Security Headers (Helmet)
 app.use(helmet());
-
-// Rate Limiting
-app.use('/api', limiter);
 
 // Parse JSON
 app.use(express.json());
