@@ -173,7 +173,8 @@ exports.generateChallan = async (req, res) => {
 
     } catch (error) {
         console.error('Generate Challan Error:', error);
-        res.status(500).json({ message: 'Server Error' });
+        console.error('Stack Trace:', error.stack);
+        res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
 
