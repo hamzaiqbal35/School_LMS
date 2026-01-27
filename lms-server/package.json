@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "build": "node render-build.js",
     "seed:admin": "node src/scripts/seedAdmin.js"
   },
   "keywords": [],
@@ -29,6 +28,8 @@
     "mongoose": "^9.1.4",
     "multer": "^2.0.2",
     "puppeteer": "^24.35.0",
+    "puppeteer-core": "^24.35.0",
+    "@sparticuz/chromium": "^133.0.0",
     "qrcode": "^1.5.4",
     "uuid": "^13.0.0",
     "winston": "^3.19.0",

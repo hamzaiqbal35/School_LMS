@@ -5,7 +5,7 @@ const ClassFeeStructure = require('../models/ClassFeeStructure');
 const StudentFeeStatus = require('../models/StudentFeeStatus');
 const { generateChallanPDF } = require('../utils/pdfGenerator');
 const cloudinary = require('../config/cloudinary');
-const puppeteer = require('puppeteer');
+const { getBrowser } = require('../utils/browserClient');
 
 // Helper: Generate Challan No (Deterministic-ish but unique enough)
 // CH-YEARMONTH-STUDENTID_LAST4
@@ -135,16 +135,18 @@ exports.generateChallan = async (req, res) => {
         const BATCH_SIZE = 5;
         let browser;
 
+        const { getBrowser } = require('../utils/browserClient');
+
+        // ... imports remain the same, just remove puppeteer if not used elsewhere (it's not used elsewhere in this file except launch)
+        // Wait, I need to replace the imports too. But imports are at top. I will do two replacements in one call if possible, or just one call for the launch and assume imports cleanup later?
+        // replace_file_content does single contiguous block.
+        // I'll start with the launch logic since that's critical.
+
+        // In generateChallan function:
         try {
-            browser = await puppeteer.launch({
-                headless: 'new',
-                args: [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage', // Critical for Render/Docker
-                    '--disable-gpu'
-                ]
-            });
+            browser = await getBrowser();
+
+            // Loop remains...
 
             for (let i = 0; i < targets.length; i += BATCH_SIZE) {
                 const batch = targets.slice(i, i + BATCH_SIZE);

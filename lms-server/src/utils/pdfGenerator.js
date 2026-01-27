@@ -1,4 +1,4 @@
-const puppeteer = require('puppeteer');
+const { getBrowser } = require('./browserClient');
 const path = require('path');
 const fs = require('fs');
 const cloudinary = require('../config/cloudinary');
@@ -9,15 +9,7 @@ const generateChallanPDF = async (challanData, studentData, browserInstance = nu
 
     try {
         if (!browser) {
-            browser = await puppeteer.launch({
-                headless: 'new',
-                args: [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-gpu'
-                ]
-            });
+            browser = await getBrowser();
             ownBrowser = true;
         }
 
