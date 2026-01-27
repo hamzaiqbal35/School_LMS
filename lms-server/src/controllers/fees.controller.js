@@ -138,7 +138,12 @@ exports.generateChallan = async (req, res) => {
         try {
             browser = await puppeteer.launch({
                 headless: 'new',
-                args: ['--no-sandbox', '--disable-setuid-sandbox']
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage', // Critical for Render/Docker
+                    '--disable-gpu'
+                ]
             });
 
             for (let i = 0; i < targets.length; i += BATCH_SIZE) {
