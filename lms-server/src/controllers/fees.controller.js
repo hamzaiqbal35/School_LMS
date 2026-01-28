@@ -325,25 +325,29 @@ exports.downloadChallan = async (req, res) => {
         // 2. Try Cloudinary (Network)
         if (challan.pdfPublicId) {
             // Generate Signed URL (Backend Only)
+            // Explicitly pass config just in case, though usually not needed if configured globally
             const url = cloudinary.url(challan.pdfPublicId, {
-                resource_type: 'image', // Must match upload type
-                type: 'authenticated',
+                resource_type: 'image',
+                type: 'authenticated', // matches upload
                 sign_url: true,
-                secure: true, // Force HTTPS
-                format: 'pdf' // Ensure PDF extension
+                secure: true,
+                format: 'pdf',
+                // Ensure auth is picked up
+                api_key: process.env.CLOUDINARY_API_KEY,
+                api_secret: process.env.CLOUDINARY_API_SECRET
             });
 
-            console.log(`[Download] Fetching Cloudinary URL: ${url}`);
+            console.log(`[Download] Fetching Cloudinary URL for ID: ${challan.pdfPublicId}`);
+            // Do NOT log the full URL in production logs as it contains the signature
 
             // Fetch and Stream
-            // We need 'https' to get the stream
             const https = require('https');
 
             https.get(url, (stream) => {
                 if (stream.statusCode !== 200) {
-                    console.error('Cloudinary Stream Error:', stream.statusCode, stream.statusMessage);
-
-                    // consume response data to free up memory
+                    console.error(`[Download] Cloudinary Stream Failed. Status: ${stream.statusCode} ${stream.statusMessage}`);
+                    console.error(`[Download] Public ID was: ${challan.pdfPublicId}`);
+                    // consume response data
                     stream.resume();
 
                     return res.status(stream.statusCode).send(`Failed to fetch from cloud. Status: ${stream.statusCode}`);
