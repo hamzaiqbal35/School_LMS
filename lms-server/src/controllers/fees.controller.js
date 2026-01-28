@@ -324,6 +324,12 @@ exports.downloadChallan = async (req, res) => {
 
         // 2. Try Cloudinary (Network)
         if (challan.pdfPublicId) {
+            // Check for credentials
+            if (!process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+                console.error('[Download] Critical: CLOUDINARY_API_KEY or CLOUDINARY_API_SECRET is missing in environment variables.');
+                return res.status(500).json({ message: 'Server Configuration Error: Missing Cloudinary Credentials' });
+            }
+
             // Generate Signed URL (Backend Only)
             // Explicitly pass config just in case, though usually not needed if configured globally
             const url = cloudinary.url(challan.pdfPublicId, {
@@ -337,29 +343,10 @@ exports.downloadChallan = async (req, res) => {
                 api_secret: process.env.CLOUDINARY_API_SECRET
             });
 
-            console.log(`[Download] Fetching Cloudinary URL for ID: ${challan.pdfPublicId}`);
-            // Do NOT log the full URL in production logs as it contains the signature
+            console.log(`[Download] Redirecting to Cloudinary URL for ID: ${challan.pdfPublicId}`);
 
-            // Fetch and Stream
-            const https = require('https');
-
-            https.get(url, (stream) => {
-                if (stream.statusCode !== 200) {
-                    console.error(`[Download] Cloudinary Stream Failed. Status: ${stream.statusCode} ${stream.statusMessage}`);
-                    console.error(`[Download] Public ID was: ${challan.pdfPublicId}`);
-                    // consume response data
-                    stream.resume();
-
-                    return res.status(stream.statusCode).send(`Failed to fetch from cloud. Status: ${stream.statusCode}`);
-                }
-                res.setHeader('Content-Type', 'application/pdf');
-                res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-                stream.pipe(res);
-            }).on('error', (err) => {
-                console.error('Stream Request Error:', err);
-                res.status(500).send('Stream Error');
-            });
-            return;
+            // Redirect client to the signed URL
+            return res.redirect(url);
         }
 
         res.status(404).json({ message: 'PDF not found locally or on cloud' });
