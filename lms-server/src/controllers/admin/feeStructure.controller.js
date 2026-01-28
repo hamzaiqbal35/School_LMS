@@ -34,35 +34,24 @@ exports.saveFeeStructure = async (req, res) => {
     const { classId, admissionFee, monthlyTuition, examFee, miscCharges, lateFeeRule } = req.body;
 
     try {
-        let structure = await ClassFeeStructure.findOne({ classId });
+        // Use findOneAndUpdate with upsert to prevent race conditions (Duplicate Key Error)
+        const structure = await ClassFeeStructure.findOneAndUpdate(
+            { classId },
+            {
+                $set: {
+                    admissionFee,
+                    monthlyTuition,
+                    examFee,
+                    miscCharges,
+                    lateFeeRule,
+                    lastUpdatedBy: req.user._id,
+                    updatedAt: Date.now()
+                }
+            },
+            { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true }
+        );
 
-        if (structure) {
-            // Update
-            structure.admissionFee = admissionFee ?? structure.admissionFee;
-            structure.monthlyTuition = monthlyTuition ?? structure.monthlyTuition;
-            structure.examFee = examFee ?? structure.examFee;
-            structure.miscCharges = miscCharges ?? structure.miscCharges;
-            if (lateFeeRule) structure.lateFeeRule = lateFeeRule;
-
-            structure.lastUpdatedBy = req.user._id;
-            structure.updatedAt = Date.now();
-            await structure.save();
-            return res.json(structure);
-        }
-
-        // Create
-        structure = new ClassFeeStructure({
-            classId,
-            admissionFee,
-            monthlyTuition,
-            examFee,
-            miscCharges,
-            lateFeeRule,
-            lastUpdatedBy: req.user._id
-        });
-
-        await structure.save();
-        res.status(201).json(structure);
+        res.json(structure);
 
     } catch (error) {
         console.error(error);
