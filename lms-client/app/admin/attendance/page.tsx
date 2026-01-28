@@ -12,6 +12,8 @@ interface AttendanceRecord {
         fullName: string;
         registrationNumber: string;
     };
+    classId?: { _id: string; name: string };
+    sectionId?: { _id: string; name: string };
     status: string;
     markedBy?: { fullName: string; avatar?: string };
     markedAt: string;
@@ -44,6 +46,7 @@ export default function AdminAttendancePage() {
     const [studentRecords, setStudentRecords] = useState<AttendanceRecord[]>([]);
     const [masterData, setMasterData] = useState<MasterData>({ classes: [], sections: [] });
     const [isFrozen, setIsFrozen] = useState(false);
+    const [statusFilter, setStatusFilter] = useState('ALL');
 
     // Teacher State
     const [teachers, setTeachers] = useState<{ _id: string; fullName: string; email: string; avatar?: string }[]>([]);
@@ -85,7 +88,7 @@ export default function AdminAttendancePage() {
     }, [date]);
 
     useEffect(() => {
-        if (activeTab === 'STUDENT' && classId && sectionId) {
+        if (activeTab === 'STUDENT') {
             fetchStudentAttendance();
         } else if (activeTab === 'TEACHER') {
             fetchTeacherAttendance();
@@ -131,6 +134,17 @@ export default function AdminAttendancePage() {
             alert('Failed to update freeze status');
         }
     };
+
+    const filteredStudentRecords = studentRecords.filter(record => statusFilter === 'ALL' || record.status === statusFilter);
+
+    const filteredTeacherRecords = teachers.filter(teacher => {
+        if (statusFilter === 'ALL') return true;
+        const record = teacherRecords.find(r => r.teacherId._id === teacher._id);
+        const status = record ? record.status : 'Not Marked';
+        return status === statusFilter;
+    });
+
+    const currentCount = activeTab === 'STUDENT' ? filteredStudentRecords.length : filteredTeacherRecords.length;
 
     return (
         <div className="space-y-8">
@@ -187,7 +201,7 @@ export default function AdminAttendancePage() {
                                         value={classId}
                                         onChange={(e) => setClassId(e.target.value)}
                                     >
-                                        <option value="">Select Class</option>
+                                        <option value="">All Classes</option>
                                         {masterData.classes.map((c: { _id: string; name: string }) => (
                                             <option key={c._id} value={c._id}>{c.name}</option>
                                         ))}
@@ -205,7 +219,7 @@ export default function AdminAttendancePage() {
                                         value={sectionId}
                                         onChange={(e) => setSectionId(e.target.value)}
                                     >
-                                        <option value="">Select Section</option>
+                                        <option value="">All Sections</option>
                                         {masterData.sections.map((s: { _id: string; name: string }) => (
                                             <option key={s._id} value={s._id}>{s.name}</option>
                                         ))}
@@ -231,6 +245,29 @@ export default function AdminAttendancePage() {
                         </>
                     )}
                 </div>
+
+                {/* Status Filter */}
+                <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end">
+                    <div className="w-full md:w-auto flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 mr-2 shadow-sm">
+                            {currentCount} Records
+                        </span>
+                        <label htmlFor="statusFilter" className="text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Filter Status:</label>
+                        <select
+                            id="statusFilter"
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none font-medium cursor-pointer"
+                        >
+                            <option value="ALL">All Statuses</option>
+                            <option value="Not Marked">Not Marked</option>
+                            <option value="Present">Present</option>
+                            <option value="Absent">Absent</option>
+                            <option value="Leave">Leave</option>
+                            <option value="Late">Late</option>
+                        </select>
+                    </div>
+                </div>
             </div>
 
             {/* Data Table */}
@@ -247,6 +284,7 @@ export default function AdminAttendancePage() {
                                 <thead className="bg-slate-50/50">
                                     <tr>
                                         <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Student</th>
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Class</th>
                                         <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
                                         <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Marked By</th>
                                         <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">History</th>
@@ -254,7 +292,7 @@ export default function AdminAttendancePage() {
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 bg-white">
                                     <AnimatePresence>
-                                        {studentRecords.map(record => (
+                                        {filteredStudentRecords.map(record => (
                                             <motion.tr
                                                 key={record._id}
                                                 initial={{ opacity: 0 }}
@@ -272,20 +310,34 @@ export default function AdminAttendancePage() {
                                                         </div>
                                                     </div>
                                                 </td>
+                                                <td className="px-6 py-4 text-sm text-slate-600">
+                                                    {record.classId?.name} - {record.sectionId?.name}
+                                                </td>
                                                 <td className="px-6 py-4">
                                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border ${record.status === 'Present' ? 'bg-green-50 text-green-700 border-green-100' :
-                                                        record.status === 'Absent' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-yellow-50 text-yellow-700 border-yellow-100'
+                                                        record.status === 'Absent' ? 'bg-red-50 text-red-700 border-red-100' :
+                                                            record.status === 'Leave' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                                                                'bg-slate-50 text-slate-700 border-slate-200'
                                                         }`}>
                                                         {record.status === 'Present' && <UserCheck className="w-3 h-3 mr-1.5" />}
                                                         {record.status === 'Absent' && <UserX className="w-3 h-3 mr-1.5" />}
+                                                        {record.status === 'Leave' && <Calendar className="w-3 h-3 mr-1.5" />}
+                                                        {record.status === 'Late' && <Clock className="w-3 h-3 mr-1.5" />}
                                                         {record.status}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-sm text-slate-600">
-                                                    <div className="font-medium">{record.markedBy?.fullName || 'N/A'}</div>
+                                                    <div className="flex items-center gap-2">
+                                                        {record.markedBy?.avatar && (
+                                                            <div className="relative w-5 h-5 rounded-full overflow-hidden shrink-0 border border-slate-200">
+                                                                <Image src={record.markedBy.avatar} alt={record.markedBy.fullName} fill className="object-cover" sizes="20px" />
+                                                            </div>
+                                                        )}
+                                                        <div className="font-medium">{record.markedBy?.fullName || 'N/A'}</div>
+                                                    </div>
                                                     <div className="text-xs text-slate-400 flex items-center mt-0.5">
                                                         <Clock className="w-3 h-3 mr-1" />
-                                                        {new Date(record.markedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        {new Date(record.markedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -303,7 +355,7 @@ export default function AdminAttendancePage() {
                                                                         <div key={i} className="text-xs text-slate-600 border-b border-slate-50 pb-2 last:border-0 last:pb-0">
                                                                             <div className="flex justify-between items-center mb-1">
                                                                                 <span className={`font-bold px-1.5 py-0.5 rounded ${h.status === 'Present' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{h.status}</span>
-                                                                                <span className="text-slate-400 text-[10px]">{new Date(h.timestamp).toLocaleTimeString()}</span>
+                                                                                <span className="text-slate-400 text-[10px]">{new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
                                                                             </div>
                                                                             {h.reason && <div className="text-slate-500 italic bg-slate-50 p-1.5 rounded mt-1">&quot;{h.reason}&quot;</div>}
                                                                         </div>
@@ -316,9 +368,9 @@ export default function AdminAttendancePage() {
                                             </motion.tr>
                                         ))}
                                     </AnimatePresence>
-                                    {studentRecords.length === 0 && (
+                                    {filteredStudentRecords.length === 0 && (
                                         <tr>
-                                            <td colSpan={4} className="p-12 text-center text-slate-500">
+                                            <td colSpan={5} className="p-12 text-center text-slate-500">
                                                 <div className="flex flex-col items-center">
                                                     <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-3">
                                                         <Users className="w-8 h-8 text-slate-300" />
@@ -344,7 +396,7 @@ export default function AdminAttendancePage() {
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 bg-white">
                                     <AnimatePresence>
-                                        {teachers.map(teacher => {
+                                        {filteredTeacherRecords.map(teacher => {
                                             const record = teacherRecords.find(r => r.teacherId._id === teacher._id);
                                             const status = record ? record.status : null;
 
@@ -372,9 +424,12 @@ export default function AdminAttendancePage() {
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         {status ? (
-                                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${status === 'Present' ? 'bg-green-50 text-green-700 border-green-100' :
-                                                                status === 'Absent' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-yellow-50 text-yellow-700 border-yellow-100'
+                                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border ${status === 'Present' ? 'bg-green-50 text-green-700 border-green-100' :
+                                                                status === 'Absent' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-amber-50 text-amber-700 border-amber-100'
                                                                 }`}>
+                                                                {status === 'Present' && <UserCheck className="w-3 h-3 mr-1.5" />}
+                                                                {status === 'Absent' && <UserX className="w-3 h-3 mr-1.5" />}
+                                                                {status === 'Leave' && <Calendar className="w-3 h-3 mr-1.5" />}
                                                                 {status}
                                                             </span>
                                                         ) : (
@@ -384,32 +439,35 @@ export default function AdminAttendancePage() {
                                                         )}
                                                     </td>
                                                     <td className="px-6 py-4">
-                                                        <div className="flex bg-slate-100 rounded-lg p-1 w-fit">
+                                                        <div className="flex bg-slate-100/80 rounded-xl p-1 w-fit shadow-inner">
                                                             <button
                                                                 onClick={() => markTeacherStatus(teacher._id, 'Present')}
-                                                                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${status === 'Present'
-                                                                    ? 'bg-white text-green-600 shadow-sm ring-1 ring-black/5'
-                                                                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                                                                className={`px-3 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${status === 'Present'
+                                                                    ? 'bg-white text-green-600 shadow-sm ring-1 ring-black/5 transform scale-105'
+                                                                    : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
                                                                     }`}
                                                             >
+                                                                <UserCheck className={`w-3.5 h-3.5 ${status === 'Present' ? 'stroke-[2.5px]' : ''}`} />
                                                                 Present
                                                             </button>
                                                             <button
                                                                 onClick={() => markTeacherStatus(teacher._id, 'Absent')}
-                                                                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${status === 'Absent'
-                                                                    ? 'bg-white text-red-600 shadow-sm ring-1 ring-black/5'
-                                                                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                                                                className={`px-3 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${status === 'Absent'
+                                                                    ? 'bg-white text-red-600 shadow-sm ring-1 ring-black/5 transform scale-105'
+                                                                    : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
                                                                     }`}
                                                             >
+                                                                <UserX className={`w-3.5 h-3.5 ${status === 'Absent' ? 'stroke-[2.5px]' : ''}`} />
                                                                 Absent
                                                             </button>
                                                             <button
                                                                 onClick={() => markTeacherStatus(teacher._id, 'Leave')}
-                                                                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${status === 'Leave'
-                                                                    ? 'bg-white text-yellow-600 shadow-sm ring-1 ring-black/5'
-                                                                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                                                                className={`px-3 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${status === 'Leave'
+                                                                    ? 'bg-white text-amber-600 shadow-sm ring-1 ring-black/5 transform scale-105'
+                                                                    : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
                                                                     }`}
                                                             >
+                                                                <Calendar className={`w-3.5 h-3.5 ${status === 'Leave' ? 'stroke-[2.5px]' : ''}`} />
                                                                 Leave
                                                             </button>
                                                         </div>
@@ -418,8 +476,8 @@ export default function AdminAttendancePage() {
                                             );
                                         })}
                                     </AnimatePresence>
-                                    {teachers.length === 0 && (
-                                        <tr><td colSpan={3} className="p-12 text-center text-slate-500">No teachers found.</td></tr>
+                                    {filteredTeacherRecords.length === 0 && (
+                                        <tr><td colSpan={3} className="p-12 text-center text-slate-500">No teachers found matching criteria.</td></tr>
                                     )}
                                 </tbody>
                             </table>

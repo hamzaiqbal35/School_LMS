@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
+import { formatTime12Hour } from '@/lib/utils';
 import { Loader2, ArrowLeft, Mail, Phone, BookOpen, Calendar, User as UserIcon, Award } from 'lucide-react';
 import Image from 'next/image';
 import { use } from 'react';
@@ -199,10 +200,10 @@ export default function TeacherDetailsPage({ params }: { params: Promise<{ id: s
                                                         <div className="flex items-center gap-4">
                                                             <div className="text-center w-24">
                                                                 <p className="text-sm font-bold text-gray-800">
-                                                                    {assign.timeSlotId?.startTime}
+                                                                    {formatTime12Hour(assign.timeSlotId?.startTime)}
                                                                 </p>
                                                                 <p className="text-xs text-gray-500">
-                                                                    {assign.timeSlotId?.endTime}
+                                                                    {formatTime12Hour(assign.timeSlotId?.endTime)}
                                                                 </p>
                                                             </div>
                                                             <div>
@@ -235,10 +236,10 @@ export default function TeacherDetailsPage({ params }: { params: Promise<{ id: s
                                                     <div className="flex items-center gap-4">
                                                         <div className="text-center w-24">
                                                             <p className="text-sm font-bold text-gray-800">
-                                                                {assign.timeSlotId?.startTime || 'N/A'}
+                                                                {formatTime12Hour(assign.timeSlotId?.startTime)}
                                                             </p>
                                                             <p className="text-xs text-gray-500">
-                                                                {assign.timeSlotId?.endTime}
+                                                                {formatTime12Hour(assign.timeSlotId?.endTime)}
                                                             </p>
                                                         </div>
                                                         <div>

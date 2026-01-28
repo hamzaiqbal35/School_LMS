@@ -29,6 +29,7 @@ export default function StudentsPage() {
     const [keyword, setKeyword] = useState('');
     const [selectedClass, setSelectedClass] = useState('');
     const [selectedSection, setSelectedSection] = useState('');
+    const [statusFilter, setStatusFilter] = useState('Active');
 
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
@@ -58,6 +59,7 @@ export default function StudentsPage() {
             if (keyword) params.append('keyword', keyword);
             if (selectedClass) params.append('classId', selectedClass);
             if (selectedSection) params.append('sectionId', selectedSection);
+            if (statusFilter && statusFilter !== 'All') params.append('status', statusFilter);
 
             const res = await api.get(`/admin/students?${params.toString()}`);
             setStudents(res.data);
@@ -66,7 +68,7 @@ export default function StudentsPage() {
         } finally {
             setLoading(false);
         }
-    }, [keyword, selectedClass, selectedSection]);
+    }, [keyword, selectedClass, selectedSection, statusFilter]);
 
     useEffect(() => {
         // Auto-fetch when filters change (optional, but good UX)
@@ -112,7 +114,7 @@ export default function StudentsPage() {
 
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                 <form onSubmit={handleSearch} className="grid md:grid-cols-12 gap-4 items-end">
-                    <div className="md:col-span-5">
+                    <div className="md:col-span-4">
                         <label htmlFor="searchKeyword" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Search</label>
                         <div className="relative">
                             <Search className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
@@ -159,6 +161,23 @@ export default function StudentsPage() {
                             ))}
                         </select>
                     </div>
+
+                    <div className="md:col-span-2">
+                        <label htmlFor="filterStatus" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Status</label>
+                        <select
+                            id="filterStatus"
+                            name="filterStatus"
+                            className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white transition-all appearance-none"
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                        >
+                            <option value="All">All</option>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                            <option value="PassedOut">Passed Out</option>
+                            <option value="Expelled">Expelled</option>
+                        </select>
+                    </div>
                 </form>
             </div>
 
@@ -174,7 +193,7 @@ export default function StudentsPage() {
                             variants={container}
                             initial="hidden"
                             animate="show"
-                            className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                            className="grid gap-5 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3"
                         >
                             <AnimatePresence>
                                 {students.map((student) => (

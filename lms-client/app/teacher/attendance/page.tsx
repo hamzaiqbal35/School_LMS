@@ -1,7 +1,8 @@
 "use client"
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '@/lib/api';
-import { Loader2, Save, Calendar, CheckCircle, AlertCircle, ArrowLeft, Users, Clock } from 'lucide-react';
+import { formatTime12Hour } from '@/lib/utils';
+import { Loader2, Save, Calendar, CheckCircle, AlertCircle, ArrowLeft, Users, Clock, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Assignment {
@@ -22,6 +23,8 @@ interface Student {
 
 import { useSearchParams } from 'next/navigation';
 
+const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
 export default function MarkAttendancePage() {
     const searchParams = useSearchParams();
     const classIdParam = searchParams.get('classId');
@@ -32,12 +35,58 @@ export default function MarkAttendancePage() {
     const [loading, setLoading] = useState(true);
     const [loadingStudents, setLoadingStudents] = useState(false);
 
+    // Filter state
+    const [selectedSubject, setSelectedSubject] = useState<string>('');
+    const [selectedClass, setSelectedClass] = useState<string>('');
+
     // Selection state
     const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
     const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
     const [marks, setMarks] = useState<Record<string, string>>({}); // studentId -> status
 
     const [msg, setMsg] = useState({ type: '', text: '' });
+
+    // Get unique classes for filter dropdown
+    const uniqueClasses = useMemo(() => {
+        const classMap = new Map<string, string>();
+        assignments.forEach(a => {
+            const key = `${a.classId._id}-${a.sectionId._id}`;
+            if (!classMap.has(key)) {
+                classMap.set(key, `${a.classId.name} - ${a.sectionId.name}`);
+            }
+        });
+        return Array.from(classMap.entries()).map(([id, name]) => ({ id, name }));
+    }, [assignments]);
+
+    // Get unique subjects for filter dropdown
+    const uniqueSubjects = useMemo(() => {
+        const subjectMap = new Map<string, string>();
+        assignments.forEach(a => {
+            if (a.subjectId?._id && !subjectMap.has(a.subjectId._id)) {
+                subjectMap.set(a.subjectId._id, a.subjectId.name);
+            }
+        });
+        return Array.from(subjectMap.entries()).map(([id, name]) => ({ id, name }));
+    }, [assignments]);
+
+    // Get the day of week from the selected attendance date
+    const selectedDateDay = useMemo(() => {
+        if (!attendanceDate) return '';
+        const date = new Date(attendanceDate + 'T00:00:00'); // Ensure local time
+        const dayIndex = date.getDay();
+        return DAYS_OF_WEEK[dayIndex === 0 ? 6 : dayIndex - 1]; // Convert to Monday-first index
+    }, [attendanceDate]);
+
+    // Filtered assignments based on selected filters (now uses the date's day)
+    const filteredAssignments = useMemo(() => {
+        return assignments.filter(a => {
+            // Always filter by the day derived from the selected date
+            const matchesDay = !selectedDateDay || a.timeSlotId?.day === selectedDateDay;
+            const matchesClass = !selectedClass || `${a.classId._id}-${a.sectionId._id}` === selectedClass;
+            const matchesSubject = !selectedSubject || a.subjectId?._id === selectedSubject;
+            return matchesDay && matchesClass && matchesSubject;
+        });
+    }, [assignments, selectedDateDay, selectedClass, selectedSubject]);
 
     useEffect(() => {
         const fetchAssignments = async () => {
@@ -53,26 +102,109 @@ export default function MarkAttendancePage() {
         fetchAssignments();
     }, []);
 
+    // Helper function to get the most recent date for a given day of the week
+    const getDateForDay = useCallback((dayName: string): string => {
+        const dayMap: Record<string, number> = {
+            'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3,
+            'Thursday': 4, 'Friday': 5, 'Saturday': 6
+        };
+
+        const targetDay = dayMap[dayName];
+        if (targetDay === undefined) {
+            // If day is not recognized, return today's date
+            return new Date().toISOString().split('T')[0];
+        }
+
+        const today = new Date();
+        const currentDay = today.getDay();
+
+        // Calculate days to go back to reach the target day
+        let daysBack = currentDay - targetDay;
+        if (daysBack < 0) {
+            daysBack += 7; // If target day is ahead in the week, go back a full week
+        }
+
+        const targetDate = new Date(today);
+        targetDate.setDate(today.getDate() - daysBack);
+
+        return targetDate.toISOString().split('T')[0];
+    }, []);
+
     // Wrap in useCallback to refer in useEffect
     const handleClassSelect = useCallback(async (assignment: Assignment) => {
         setSelectedAssignment(assignment);
         setMsg({ type: '', text: '' });
         setLoadingStudents(true);
+
+        // Auto-set the attendance date based on the class's scheduled day
+        let dateToUse = attendanceDate;
+        if (assignment.timeSlotId?.day) {
+            dateToUse = getDateForDay(assignment.timeSlotId.day);
+            setAttendanceDate(dateToUse);
+        }
+
         try {
+            // Fetch students
             const res = await api.get(`/teacher/students?classId=${assignment.classId._id}&sectionId=${assignment.sectionId._id}`);
             const studList: Student[] = res.data;
             setStudents(studList);
 
-            // Default to Present
+            // Fetch existing attendance for this class/section/date
+            const attendanceRes = await api.get(`/attendance?classId=${assignment.classId._id}&sectionId=${assignment.sectionId._id}&date=${dateToUse}`);
+            const existingAttendance = attendanceRes.data;
+
+            // Create marks map - first default all to Present, then override with existing records
             const initialMarks: Record<string, string> = {};
             studList.forEach(s => initialMarks[s._id] = 'Present');
+
+            // Override with existing attendance records
+            existingAttendance.forEach((record: { studentId: { _id: string } | string; status: string }) => {
+                const studentId = typeof record.studentId === 'object' ? record.studentId._id : record.studentId;
+                if (studentId && initialMarks.hasOwnProperty(studentId)) {
+                    initialMarks[studentId] = record.status;
+                }
+            });
+
             setMarks(initialMarks);
         } catch (error) {
             console.error(error);
         } finally {
             setLoadingStudents(false);
         }
-    }, []);
+    }, [getDateForDay, attendanceDate]);
+
+    // Refetch attendance when date changes (to load existing records for new date)
+    const fetchExistingAttendance = useCallback(async () => {
+        if (!selectedAssignment || students.length === 0) return;
+
+        try {
+            const attendanceRes = await api.get(`/attendance?classId=${selectedAssignment.classId._id}&sectionId=${selectedAssignment.sectionId._id}&date=${attendanceDate}`);
+            const existingAttendance = attendanceRes.data;
+
+            // Create marks map - first default all to Present, then override with existing records
+            const updatedMarks: Record<string, string> = {};
+            students.forEach(s => updatedMarks[s._id] = 'Present');
+
+            // Override with existing attendance records
+            existingAttendance.forEach((record: { studentId: { _id: string } | string; status: string }) => {
+                const studentId = typeof record.studentId === 'object' ? record.studentId._id : record.studentId;
+                if (studentId && updatedMarks.hasOwnProperty(studentId)) {
+                    updatedMarks[studentId] = record.status;
+                }
+            });
+
+            setMarks(updatedMarks);
+        } catch (error) {
+            console.error('Failed to fetch existing attendance:', error);
+        }
+    }, [selectedAssignment, students, attendanceDate]);
+
+    // When attendanceDate changes and we already have a selected assignment, refetch attendance
+    useEffect(() => {
+        if (selectedAssignment && students.length > 0) {
+            fetchExistingAttendance();
+        }
+    }, [attendanceDate, fetchExistingAttendance, selectedAssignment, students.length]);
 
     // Auto-select based on query params
     useEffect(() => {
@@ -83,6 +215,7 @@ export default function MarkAttendancePage() {
             }
         }
     }, [assignments, classIdParam, sectionIdParam, selectedAssignment, handleClassSelect]);
+
 
     const handleSubmit = async () => {
         setMsg({ type: '', text: '' });
@@ -144,6 +277,94 @@ export default function MarkAttendancePage() {
                             </div>
                         </div>
 
+                        {/* Filters Section */}
+                        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                                <div className="flex items-center gap-2 text-slate-600">
+                                    <Filter className="w-5 h-5" />
+                                    <span className="font-semibold text-sm">Filters</span>
+                                </div>
+
+                                <div className="flex flex-wrap gap-3 flex-1">
+                                    {/* Subject Filter */}
+                                    <div className="flex-1 min-w-[150px]">
+                                        <select
+                                            id="filterSubject"
+                                            name="filterSubject"
+                                            value={selectedSubject}
+                                            onChange={(e) => setSelectedSubject(e.target.value)}
+                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all cursor-pointer"
+                                        >
+                                            <option value="">All Subjects</option>
+                                            {uniqueSubjects.map(subj => (
+                                                <option key={subj.id} value={subj.id}>{subj.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Class Filter */}
+                                    <div className="flex-1 min-w-[180px]">
+                                        <select
+                                            id="filterClass"
+                                            name="filterClass"
+                                            value={selectedClass}
+                                            onChange={(e) => setSelectedClass(e.target.value)}
+                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all cursor-pointer"
+                                        >
+                                            <option value="">All Classes</option>
+                                            {uniqueClasses.map(cls => (
+                                                <option key={cls.id} value={cls.id}>Class {cls.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Clear Filters Button */}
+                                {(selectedSubject || selectedClass) && (
+                                    <button
+                                        onClick={() => {
+                                            setSelectedSubject('');
+                                            setSelectedClass('');
+                                        }}
+                                        className="text-sm font-medium text-green-600 hover:text-green-700 hover:underline transition-colors whitespace-nowrap"
+                                    >
+                                        Clear Filters
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Active Filters Tags */}
+                            {(selectedSubject || selectedClass) && (
+                                <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-100">
+                                    {selectedSubject && (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-semibold">
+                                            Subject: {uniqueSubjects.find(s => s.id === selectedSubject)?.name}
+                                            <button
+                                                onClick={() => setSelectedSubject('')}
+                                                className="ml-1 hover:text-green-900 transition-colors"
+                                            >
+                                                ×
+                                            </button>
+                                        </span>
+                                    )}
+                                    {selectedClass && (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold">
+                                            Class: {uniqueClasses.find(c => c.id === selectedClass)?.name}
+                                            <button
+                                                onClick={() => setSelectedClass('')}
+                                                className="ml-1 hover:text-blue-900 transition-colors"
+                                            >
+                                                ×
+                                            </button>
+                                        </span>
+                                    )}
+                                    <span className="text-xs text-slate-400 self-center">
+                                        Showing {filteredAssignments.length} of {assignments.length} classes
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
                         {loading ? (
                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {[1, 2, 3].map(i => <div key={i} className="h-40 bg-slate-100 animate-pulse rounded-2xl" />)}
@@ -152,9 +373,24 @@ export default function MarkAttendancePage() {
                             <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
                                 <p className="text-slate-500">No classes assigned to you.</p>
                             </div>
+                        ) : filteredAssignments.length === 0 ? (
+                            <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-200">
+                                <Filter className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                                <p className="text-slate-500 font-medium">No classes match your filters</p>
+                                <p className="text-sm text-slate-400 mt-1">Try adjusting your filter criteria</p>
+                                <button
+                                    onClick={() => {
+                                        setSelectedSubject('');
+                                        setSelectedClass('');
+                                    }}
+                                    className="mt-4 text-sm font-semibold text-green-600 hover:text-green-700 hover:underline"
+                                >
+                                    Clear all filters
+                                </button>
+                            </div>
                         ) : (
                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {assignments.map((assignment) => (
+                                {filteredAssignments.map((assignment) => (
                                     <div
                                         key={assignment._id}
                                         onClick={() => handleClassSelect(assignment)}
@@ -165,8 +401,16 @@ export default function MarkAttendancePage() {
                                         </div>
                                         <div className="relative z-10">
                                             <div className="flex justify-between items-start mb-4">
-                                                <div className={`w-fit px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${assignment.originalTeacherId ? 'bg-amber-100 text-amber-700' : 'bg-green-50 text-green-700'}`}>
-                                                    {assignment.originalTeacherId ? 'Substitution' : assignment.subjectId.name}
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <div className={`w-fit px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${assignment.originalTeacherId ? 'bg-amber-100 text-amber-700' : 'bg-green-50 text-green-700'}`}>
+                                                        {assignment.originalTeacherId ? 'Substitution' : assignment.subjectId.name}
+                                                    </div>
+                                                    {/* Day Badge */}
+                                                    {assignment.timeSlotId?.day && (
+                                                        <div className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
+                                                            {assignment.timeSlotId.day}
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 {assignment.originalTeacherId && (
                                                     <div className="bg-amber-50 text-amber-600 px-2 py-1 rounded text-[10px] font-bold border border-amber-100">
@@ -189,9 +433,12 @@ export default function MarkAttendancePage() {
                                                 </div>
                                             )}
 
-                                            <div className="flex items-center gap-2 text-slate-400 text-xs mb-4 font-mono">
-                                                <Clock className="w-3.5 h-3.5" />
-                                                <span>{assignment.timeSlotId?.startTime || 'N/A'} - {assignment.timeSlotId?.endTime || 'N/A'}</span>
+                                            {/* Day and Time Display */}
+                                            <div className="flex items-center gap-3 text-xs mb-4">
+                                                <div className="flex items-center gap-1.5 text-slate-400 font-mono">
+                                                    <Clock className="w-3.5 h-3.5" />
+                                                    <span>{formatTime12Hour(assignment.timeSlotId?.startTime)} - {formatTime12Hour(assignment.timeSlotId?.endTime)}</span>
+                                                </div>
                                             </div>
 
                                             <div className="flex items-center text-green-600 font-bold text-sm group-hover:gap-2 transition-all mt-auto">

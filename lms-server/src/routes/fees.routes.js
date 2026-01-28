@@ -18,5 +18,6 @@ router.post('/structures', adminOnly, feeStructureController.saveFeeStructure);
 router.get('/download/:id', feesController.downloadChallan);
 router.post('/generate', adminOnly, feesController.generateChallan);
 router.post('/verify/:id', adminOnly, feesController.verifyPayment);
+router.delete('/:id', adminOnly, feesController.deleteChallan);
 
 module.exports = router;

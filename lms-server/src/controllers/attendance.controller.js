@@ -102,17 +102,36 @@ exports.markAttendance = async (req, res) => {
                 const endWindow = new Date(startWindow); // Use same date basis
                 endWindow.setHours(parseInt(endH), parseInt(endM), 0, 0);
 
+                // Helper function to format time in 12-hour AM/PM format
+                const formatTime12Hour = (time24) => {
+                    const [hours, minutes] = time24.split(':').map(Number);
+                    const period = hours >= 12 ? 'PM' : 'AM';
+                    const hours12 = hours % 12 || 12;
+                    return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+                };
+
+                // Format day and date for messages
+                const dayName = attendedDate.toLocaleString('en-US', { weekday: 'long' });
+                const formattedDate = attendedDate.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+
+                const startTimeFormatted = formatTime12Hour(activeAssignment.timeSlotId.startTime);
+                const endTimeFormatted = formatTime12Hour(activeAssignment.timeSlotId.endTime);
+
                 // Allow marking slightly before? No, strict "not before start".
                 // Allow marking if 'now' is within window.
                 if (now < startWindow) {
                     return res.status(403).json({
-                        message: `Too early. Attendance opens at ${activeAssignment.timeSlotId.startTime}.`
+                        message: `Too early. Attendance for ${dayName}, ${formattedDate} opens at ${startTimeFormatted}.`
                     });
                 }
 
                 if (now > endWindow) {
                     return res.status(403).json({
-                        message: `Attendance Closed. Allowed only between ${activeAssignment.timeSlotId.startTime} and ${activeAssignment.timeSlotId.endTime}.`
+                        message: `Attendance Closed for ${dayName}, ${formattedDate}. Allowed only between ${startTimeFormatted} and ${endTimeFormatted}.`
                     });
                 }
             }
@@ -198,6 +217,8 @@ exports.getAttendance = async (req, res) => {
 
         const attendance = await Attendance.find(query)
             .populate('studentId', 'fullName registrationNumber')
+            .populate('classId', 'name')
+            .populate('sectionId', 'name')
             .populate('markedBy', 'fullName role avatar')
             .sort({ date: -1 });
 

@@ -1,6 +1,7 @@
 "use client"
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
+import { formatTime12Hour } from '@/lib/utils';
 import { Loader2, Trash2, Plus, BookOpen, Layers, Clock, GraduationCap, Settings, X, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -274,7 +275,7 @@ export default function MasterDataPage() {
                                                         )}
                                                         {activeTab === 'timeslots' && (
                                                             <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full mt-1 inline-block">
-                                                                {item.day} | {item.startTime} - {item.endTime}
+                                                                {item.day} | {formatTime12Hour(item.startTime)} - {formatTime12Hour(item.endTime)}
                                                             </span>
                                                         )}
                                                     </div>

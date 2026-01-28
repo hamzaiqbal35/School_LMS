@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import TeacherFooter from "@/components/teacher/TeacherFooter";
 
 export default function TeacherLayout({
     children,
@@ -182,10 +183,11 @@ export default function TeacherLayout({
                     </button>
                 </header>
 
-                <div className="flex-1 overflow-auto p-4 md:p-8 scroll-smooth">
-                    <div className="max-w-7xl mx-auto w-full">
+                <div className="flex-1 overflow-auto scroll-smooth flex flex-col">
+                    <div className="flex-1 w-full max-w-7xl mx-auto p-4 md:p-8">
                         {children}
                     </div>
+                    <TeacherFooter />
                 </div>
             </main>
         </div>

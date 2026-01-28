@@ -34,8 +34,10 @@ exports.createStudent = async (req, res) => {
 // @access  Admin
 exports.getStudents = async (req, res) => {
     try {
-        const { classId, sectionId, keyword } = req.query;
+        const { classId, sectionId, keyword, status } = req.query;
         const query = {};
+
+        if (status && status !== 'All') query.status = status;
 
         if (classId) query.classId = classId;
         if (sectionId) query.sectionId = sectionId;

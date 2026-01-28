@@ -1,6 +1,7 @@
 "use client"
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
+import { formatTime12Hour } from '@/lib/utils';
 import { AlertCircle, CheckCircle, Loader2, Trash2, Calendar, Clock, BookOpen, Check, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
@@ -302,7 +303,7 @@ export default function AssignmentsPage() {
                                                                 />
                                                                 <div>
                                                                     <div className="text-sm font-bold text-slate-700">{slot.name}</div>
-                                                                    <div className="text-xs text-slate-500">{slot.startTime} - {slot.endTime}</div>
+                                                                    <div className="text-xs text-slate-500">{formatTime12Hour(slot.startTime)} - {formatTime12Hour(slot.endTime)}</div>
                                                                 </div>
                                                             </label>
                                                         ))}
@@ -451,7 +452,7 @@ export default function AssignmentsPage() {
                                                     <div className="flex flex-col">
                                                         <div className="text-sm text-slate-900 font-medium flex items-center gap-1.5">
                                                             <Clock className="w-3.5 h-3.5 text-slate-400" />
-                                                            {assignment.timeSlotId?.startTime} - {assignment.timeSlotId?.endTime}
+                                                            {formatTime12Hour(assignment.timeSlotId?.startTime)} - {formatTime12Hour(assignment.timeSlotId?.endTime)}
                                                         </div>
                                                         <div className="text-xs text-slate-500 mt-0.5">{assignment.timeSlotId?.day} | {assignment.timeSlotId?.name}</div>
                                                     </div>

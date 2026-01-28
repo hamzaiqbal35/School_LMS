@@ -1,6 +1,7 @@
 "use client"
 import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
+import { formatTime12Hour } from '@/lib/utils';
 import { Loader2, Calendar, AlertTriangle, CheckCircle, UserX, Clock, ArrowRight, X, UserCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
@@ -198,7 +199,7 @@ export default function AdminSubstitutionPage() {
                                                         </div>
                                                         <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
                                                             <Clock className="w-3.5 h-3.5" />
-                                                            {item.timeSlot.day} • {item.timeSlot.startTime} - {item.timeSlot.endTime}
+                                                            {item.timeSlot.day} • {formatTime12Hour(item.timeSlot.startTime)} - {formatTime12Hour(item.timeSlot.endTime)}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -273,7 +274,7 @@ export default function AdminSubstitutionPage() {
                                         <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 text-sm">
                                             <div className="font-bold text-blue-900 mb-1">Selected Class</div>
                                             <div className="text-blue-800">{selectedSlot.class.name}-{selectedSlot.section.name} • {selectedSlot.subject.name}</div>
-                                            <div className="text-xs text-blue-600 mt-1 opacity-80">{selectedSlot.timeSlot.startTime} - {selectedSlot.timeSlot.endTime}</div>
+                                            <div className="text-xs text-blue-600 mt-1 opacity-80">{formatTime12Hour(selectedSlot.timeSlot.startTime)} - {formatTime12Hour(selectedSlot.timeSlot.endTime)}</div>
                                         </div>
 
                                         <div>

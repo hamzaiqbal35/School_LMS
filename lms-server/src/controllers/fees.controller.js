@@ -349,3 +349,25 @@ exports.downloadChallan = async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 };
+
+// @desc    Delete Challan
+// @route   DELETE /api/fees/:id
+// @access  Admin
+exports.deleteChallan = async (req, res) => {
+    try {
+        const challan = await FeeChallan.findById(req.params.id);
+
+        if (!challan) return res.status(404).json({ message: 'Challan not found' });
+
+        if (challan.status !== 'Pending') {
+            return res.status(400).json({ message: 'Only Pending challans can be deleted' });
+        }
+
+        await FeeChallan.findByIdAndDelete(req.params.id);
+
+        res.json({ message: 'Challan deleted successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};

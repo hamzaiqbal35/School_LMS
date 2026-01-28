@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
-import { Loader2, Plus, Download, Search, Filter, CheckCircle, AlertCircle, Clock, FileText, ChevronDown, RefreshCw, X } from 'lucide-react';
+import { Loader2, Plus, Download, Search, Filter, CheckCircle, AlertCircle, Clock, FileText, ChevronDown, RefreshCw, X, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Student {
@@ -121,6 +121,17 @@ export default function FeesPage() {
             alert('Verification failed');
         } finally {
             setVerifying(false);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this challan?')) return;
+        try {
+            await api.delete(`/fees/${id}`);
+            fetchChallans();
+            alert('Challan deleted');
+        } catch (error: any) {
+            alert(error.response?.data?.message || 'Failed to delete');
         }
     };
 
@@ -312,12 +323,21 @@ export default function FeesPage() {
                                                         </a>
                                                     )}
                                                     {c.status === 'Pending' && (
-                                                        <button
-                                                            onClick={() => setVerifyId(c._id)}
-                                                            className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 rounded-lg text-xs font-bold transition-colors"
-                                                        >
-                                                            Verify
-                                                        </button>
+                                                        <>
+                                                            <button
+                                                                onClick={() => setVerifyId(c._id)}
+                                                                className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 rounded-lg text-xs font-bold transition-colors"
+                                                            >
+                                                                Verify
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDelete(c._id)}
+                                                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                title="Delete Challan"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </>
                                                     )}
                                                 </div>
                                             </td>

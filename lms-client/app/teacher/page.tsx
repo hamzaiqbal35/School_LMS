@@ -2,6 +2,7 @@
 import { useAuthStore } from "@/store/useAuthStore";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import { formatTime12Hour } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Calendar, Clock, ChevronRight, PieChart as PieIcon, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 import Link from "next/link";
@@ -161,8 +162,8 @@ export default function TeacherDashboard() {
                                 {todayClasses.map((cls) => (
                                     <div key={cls._id} className="relative flex flex-col md:flex-row gap-6 md:gap-10 group">
                                         <div className="md:w-20 shrink-0 flex flex-row md:flex-col items-center md:items-end justify-between md:justify-start gap-1 pt-2">
-                                            <span className="font-bold text-slate-900 text-lg leading-none">{cls.timeSlotId.startTime}</span>
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{cls.timeSlotId.endTime}</span>
+                                            <span className="font-bold text-slate-900 text-lg leading-none">{formatTime12Hour(cls.timeSlotId.startTime)}</span>
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{formatTime12Hour(cls.timeSlotId.endTime)}</span>
                                         </div>
                                         <div className="absolute left-[4.85rem] top-3 w-3 h-3 bg-white border-2 border-green-500 rounded-full z-10 hidden md:block group-hover:scale-125 transition-all shadow-sm"></div>
 
@@ -182,7 +183,7 @@ export default function TeacherDashboard() {
                                             </h3>
                                             <div className="flex items-center gap-2 text-slate-400 text-xs mb-4 font-mono">
                                                 <Clock className="w-3.5 h-3.5" />
-                                                <span>{cls.timeSlotId.startTime} - {cls.timeSlotId.endTime}</span>
+                                                <span>{formatTime12Hour(cls.timeSlotId.startTime)} - {formatTime12Hour(cls.timeSlotId.endTime)}</span>
                                             </div>
                                             <div className="pt-4 border-t border-slate-50 flex gap-3">
                                                 <Link
