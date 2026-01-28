@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
-import { Loader2, Plus, Download, Search, Filter, CheckCircle, AlertCircle, Clock, FileText, ChevronDown, RefreshCw, X, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Download, Search, Filter, CheckCircle, AlertCircle, Clock, FileText, ChevronDown, RefreshCw, X, Trash2, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Student {
@@ -24,6 +24,17 @@ interface Challan {
     status: string;
     pdfUrl?: string;
     dueDate?: string;
+    // Breakdown
+    admissionFee: number;
+    tuitionFee: number;
+    examFee: number;
+    miscCharges: number;
+    lateFee: number;
+    discount: number;
+    // Verification
+    paymentReference?: string;
+    paymentDate?: string;
+    verificationNote?: string;
 }
 
 export default function FeesPage() {
@@ -50,6 +61,9 @@ export default function FeesPage() {
     const [verifyId, setVerifyId] = useState('');
     const [verifyData, setVerifyData] = useState({ paymentReference: '', paymentDate: new Date().toISOString().split('T')[0], note: '' });
     const [verifying, setVerifying] = useState(false);
+
+    // View Modal State
+    const [viewChallan, setViewChallan] = useState<Challan | null>(null);
 
     const fetchChallans = useCallback(async () => {
         setLoading(true);
@@ -311,6 +325,15 @@ export default function FeesPage() {
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex justify-end items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    {c.status === 'Paid' && (
+                                                        <button
+                                                            onClick={() => setViewChallan(c)}
+                                                            className="p-2 text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors"
+                                                            title="View Details"
+                                                        >
+                                                            <Eye className="w-4 h-4" />
+                                                        </button>
+                                                    )}
                                                     {(c.pdfUrl || c.status !== 'Pending') && (
                                                         <a
                                                             href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/fees/download/${c._id}`}
@@ -563,6 +586,117 @@ export default function FeesPage() {
                         </motion.div>
                     </div>
                 )}
+                {/* View Details Modal */}
+                <AnimatePresence>
+                    {viewChallan && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden"
+                            >
+                                <div className="p-6 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
+                                    <div>
+                                        <h3 className="text-xl font-bold text-slate-900">Challan Details</h3>
+                                        <p className="text-sm text-slate-500 mt-1">{viewChallan.challanNumber}</p>
+                                    </div>
+                                    <button onClick={() => setViewChallan(null)} className="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+
+                                <div className="p-6 space-y-6">
+                                    {/* Student Info */}
+                                    <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                        <div className="w-12 h-12 bg-cyan-100 text-cyan-700 rounded-full flex items-center justify-center text-lg font-bold">
+                                            {viewChallan.studentId.fullName.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-slate-900">{viewChallan.studentId.fullName}</div>
+                                            <div className="text-sm text-slate-500">{viewChallan.studentId.registrationNumber}</div>
+                                        </div>
+                                        <div className="ml-auto text-right">
+                                            <div className="text-xs font-bold text-slate-500 uppercase">Month</div>
+                                            <div className="font-medium text-slate-900">{viewChallan.month}</div>
+                                        </div>
+                                    </div>
+
+                                    {/* Fee Breakdown */}
+                                    <div>
+                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Fee Breakdown</h4>
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-slate-600">Tuition Fee</span>
+                                                <span className="font-medium text-slate-900">PKR {viewChallan.tuitionFee?.toLocaleString()}</span>
+                                            </div>
+                                            {viewChallan.admissionFee > 0 && (
+                                                <div className="flex justify-between text-sm">
+                                                    <span className="text-slate-600">Admission Fee</span>
+                                                    <span className="font-medium text-slate-900">PKR {viewChallan.admissionFee?.toLocaleString()}</span>
+                                                </div>
+                                            )}
+                                            {viewChallan.examFee > 0 && (
+                                                <div className="flex justify-between text-sm">
+                                                    <span className="text-slate-600">Exam Fee</span>
+                                                    <span className="font-medium text-slate-900">PKR {viewChallan.examFee?.toLocaleString()}</span>
+                                                </div>
+                                            )}
+                                            {viewChallan.miscCharges > 0 && (
+                                                <div className="flex justify-between text-sm">
+                                                    <span className="text-slate-600">Misc Charges</span>
+                                                    <span className="font-medium text-slate-900">PKR {viewChallan.miscCharges?.toLocaleString()}</span>
+                                                </div>
+                                            )}
+                                            {viewChallan.lateFee > 0 && (
+                                                <div className="flex justify-between text-sm text-red-600">
+                                                    <span>Late Fee</span>
+                                                    <span className="font-medium">PKR {viewChallan.lateFee?.toLocaleString()}</span>
+                                                </div>
+                                            )}
+                                            {viewChallan.discount > 0 && (
+                                                <div className="flex justify-between text-sm text-green-600">
+                                                    <span>Discount</span>
+                                                    <span className="font-medium">- PKR {viewChallan.discount?.toLocaleString()}</span>
+                                                </div>
+                                            )}
+                                            <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
+                                                <span className="font-bold text-slate-900">Total Amount</span>
+                                                <span className="text-lg font-black text-slate-900">PKR {viewChallan.totalAmount?.toLocaleString()}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Payment Info */}
+                                    {viewChallan.paymentReference && (
+                                        <div className="pt-4 border-t border-slate-100">
+                                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Payment Details</h4>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="p-3 bg-green-50 rounded-xl border border-green-100">
+                                                    <div className="text-xs text-green-600 mb-1">Reference No</div>
+                                                    <div className="font-mono font-bold text-green-800 text-sm truncate" title={viewChallan.paymentReference}>
+                                                        {viewChallan.paymentReference}
+                                                    </div>
+                                                </div>
+                                                <div className="p-3 bg-green-50 rounded-xl border border-green-100">
+                                                    <div className="text-xs text-green-600 mb-1">Payment Date</div>
+                                                    <div className="font-mono font-bold text-green-800 text-sm">
+                                                        {viewChallan.paymentDate ? new Date(viewChallan.paymentDate).toLocaleDateString() : 'N/A'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {viewChallan.verificationNote && (
+                                                <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-100 text-sm text-slate-600 italic">
+                                                    "{viewChallan.verificationNote}"
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
             </AnimatePresence>
         </div>
     );
