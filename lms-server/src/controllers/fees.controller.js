@@ -324,28 +324,21 @@ exports.downloadChallan = async (req, res) => {
 
         // 2. Try Cloudinary (Network)
         if (challan.pdfPublicId) {
-            // Check for credentials
-            if (!process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
-                console.error('[Download] Critical: CLOUDINARY_API_KEY or CLOUDINARY_API_SECRET is missing in environment variables.');
-                return res.status(500).json({ message: 'Server Configuration Error: Missing Cloudinary Credentials' });
+            // Priority: Use stored pdfUrl if available (this is the permanent signed URL from upload)
+            if (challan.pdfUrl && challan.pdfUrl.startsWith('http')) {
+                console.log(`[Download] Redirecting to stored URL: ${challan.pdfUrl}`);
+                return res.redirect(challan.pdfUrl);
             }
 
-            // Generate Signed URL (Backend Only)
-            // Explicitly pass config just in case, though usually not needed if configured globally
+            // Fallback: Generate public URL (no signature needed for 'upload' type)
             const url = cloudinary.url(challan.pdfPublicId, {
                 resource_type: 'image',
-                type: 'authenticated', // matches upload
-                sign_url: true,
+                type: 'upload', // Changed to match new upload type (public)
                 secure: true,
-                format: 'pdf',
-                // Ensure auth is picked up
-                api_key: process.env.CLOUDINARY_API_KEY,
-                api_secret: process.env.CLOUDINARY_API_SECRET
+                format: 'pdf'
             });
 
-            console.log(`[Download] Redirecting to Cloudinary URL for ID: ${challan.pdfPublicId}`);
-
-            // Redirect client to the signed URL
+            console.log(`[Download] Redirecting to generated URL for ID: ${challan.pdfPublicId}`);
             return res.redirect(url);
         }
 
