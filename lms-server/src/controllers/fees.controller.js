@@ -329,8 +329,11 @@ exports.downloadChallan = async (req, res) => {
                 resource_type: 'image', // Must match upload type
                 type: 'authenticated',
                 sign_url: true,
+                secure: true, // Force HTTPS
                 format: 'pdf' // Ensure PDF extension
             });
+
+            console.log(`[Download] Fetching Cloudinary URL: ${url}`);
 
             // Fetch and Stream
             // We need 'https' to get the stream
@@ -338,8 +341,12 @@ exports.downloadChallan = async (req, res) => {
 
             https.get(url, (stream) => {
                 if (stream.statusCode !== 200) {
-                    console.error('Cloudinary Stream Error:', stream.statusCode);
-                    return res.status(stream.statusCode).send('Failed to fetch from cloud');
+                    console.error('Cloudinary Stream Error:', stream.statusCode, stream.statusMessage);
+
+                    // consume response data to free up memory
+                    stream.resume();
+
+                    return res.status(stream.statusCode).send(`Failed to fetch from cloud. Status: ${stream.statusCode}`);
                 }
                 res.setHeader('Content-Type', 'application/pdf');
                 res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
