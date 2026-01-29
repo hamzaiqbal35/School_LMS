@@ -329,29 +329,32 @@ exports.downloadChallan = async (req, res) => {
             // Determine Version (DB or Regex Extraction)
             let version = challan.pdfVersion;
             if (!version && challan.pdfUrl) {
-                // Try to extract version from stored URL (e.g., .../v17381234/...)
                 const match = challan.pdfUrl.match(/\/v(\d+)\//);
-                if (match && match[1]) {
-                    version = match[1];
-                }
+                if (match && match[1]) version = match[1];
             }
 
-            // Always generate a fresh signed URL (never rely on stored stale URL for download)
+            // Determine Type (authenticated vs upload)
+            let type = 'upload'; // Default for legacy
+            if (challan.pdfUrl && challan.pdfUrl.includes('/authenticated/')) {
+                type = 'authenticated';
+            }
+
+            // Generate "Attachment" URL 
+            // This forces download and validates signature reliably against transformation engine
             const options = {
                 resource_type: 'image',
-                type: 'upload',
+                type: type,
                 sign_url: true,
                 format: 'pdf',
-                secure: true
+                secure: true,
+                flags: `attachment:${fileName}` // Force download with filename
             };
 
-            if (version) {
-                options.version = version;
-            }
+            if (version) options.version = version;
 
             const url = cloudinary.url(challan.pdfPublicId, options);
 
-            console.log(`[Download] Generated fresh signed URL for ID: ${challan.pdfPublicId} Version: ${version}`);
+            console.log(`[Download] Generated attachment URL for ID: ${challan.pdfPublicId} Type: ${type} Version: ${version}`);
             return res.redirect(url);
         }
 
