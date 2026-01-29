@@ -227,12 +227,12 @@ exports.getChallans = async (req, res) => {
         const augmented = challans.map(c => {
             const obj = c.toObject();
             if (obj.pdfPublicId) {
-                // Generate Signed URL
+                // Generate Public URL (no signature needed for 'upload' type)
                 obj.pdfUrl = cloudinary.url(obj.pdfPublicId, {
                     resource_type: 'image',
                     type: 'upload',
-                    sign_url: true,
-                    version: obj.pdfVersion // Include version for correct signature
+                    secure: true,
+                    version: obj.pdfVersion
                 });
             } else if (obj.pdfUrl && obj.pdfUrl.startsWith('/')) {
                 // Local Fallback: Dynamic Host
@@ -334,17 +334,10 @@ exports.downloadChallan = async (req, res) => {
                 if (match && match[1]) version = match[1];
             }
 
-            // Determine Type (authenticated vs upload)
-            let type = 'upload'; // Default for legacy
-            if (challan.pdfUrl && challan.pdfUrl.includes('/authenticated/')) {
-                type = 'authenticated';
-            }
-
-            // Generate Standard Signed URL
+            // Generate Public URL (no signature needed for 'upload' type)
             const options = {
                 resource_type: 'image',
-                type: type,
-                sign_url: true,
+                type: 'upload', // Always use public type
                 format: 'pdf',
                 secure: true
             };
@@ -352,7 +345,7 @@ exports.downloadChallan = async (req, res) => {
             if (version) options.version = version;
 
             const url = cloudinary.url(challan.pdfPublicId, options);
-            console.log(`[Download Proxy] Fetching: ${url}`);
+            console.log(`[Download Proxy] Fetching public URL: ${url}`);
 
             // Proxy Stream to Client
             res.setHeader('Content-Type', 'application/pdf');
@@ -361,7 +354,23 @@ exports.downloadChallan = async (req, res) => {
             https.get(url, (stream) => {
                 if (stream.statusCode !== 200) {
                     console.error(`Cloudinary Error: ${stream.statusCode}`);
-                    return res.status(stream.statusCode || 500).json({ message: 'Could not retrieve PDF from cloud' });
+                    // Try stored URL as fallback
+                    if (challan.pdfUrl && challan.pdfUrl.startsWith('http')) {
+                        console.log(`[Download Proxy] Trying stored URL fallback: ${challan.pdfUrl}`);
+                        https.get(challan.pdfUrl, (fallbackStream) => {
+                            if (fallbackStream.statusCode !== 200) {
+                                if (!res.headersSent) res.status(fallbackStream.statusCode || 500).json({ message: 'Could not retrieve PDF from cloud' });
+                                return;
+                            }
+                            fallbackStream.pipe(res);
+                        }).on('error', (err) => {
+                            console.error('Fallback Proxy Error:', err);
+                            if (!res.headersSent) res.status(500).json({ message: 'Proxy Error' });
+                        });
+                        return;
+                    }
+                    if (!res.headersSent) res.status(stream.statusCode || 500).json({ message: 'Could not retrieve PDF from cloud' });
+                    return;
                 }
                 stream.pipe(res);
             }).on('error', (err) => {

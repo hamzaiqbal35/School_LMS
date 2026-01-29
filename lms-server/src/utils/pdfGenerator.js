@@ -431,7 +431,7 @@ const generateChallanPDF = async (challanData, studentData, browserInstance = nu
                         public_id: `challan-${challanData.challanNumber}`, // No extension for image type
                         folder: 'school_challans',
                         format: 'pdf',
-                        type: 'authenticated', // Changed to 'authenticated' for secure storage
+                        type: 'upload', // Public type for permanent access without signature expiration
                         overwrite: true
                     },
                     (error, result) => {
