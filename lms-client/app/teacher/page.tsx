@@ -224,7 +224,7 @@ export default function TeacherDashboard() {
                                                 <Cell key={`cell-${index}`} fill={entry.color} />
                                             ))}
                                         </Pie>
-                                        <Tooltip />
+                                        <Tooltip wrapperStyle={{ zIndex: 100 }} />
                                         <Legend verticalAlign="bottom" height={36} />
                                     </PieChart>
                                 </ResponsiveContainer>
@@ -234,8 +234,8 @@ export default function TeacherDashboard() {
                                     No Data Available
                                 </div>
                             )}
-                            {/* Center Text */}
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            {/* Center Text - lower z-index so tooltip appears on top */}
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 1 }}>
                                 <div className="text-center mt-[-30px]"> {/* Offset for legend */}
                                     <span className="text-3xl font-bold text-slate-900">{chartData.reduce((a, b) => a + b.value, 0)}</span>
                                     <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Total</p>

@@ -57,12 +57,44 @@ export default function AdminAttendancePage() {
     }, []);
 
     const fetchStudentAttendance = useCallback(async () => {
+        if (!classId || !sectionId) {
+            setStudentRecords([]);
+            return;
+        }
         setLoading(true);
         try {
-            const res = await api.get(`/attendance?date=${date}&classId=${classId}&sectionId=${sectionId}`);
-            setStudentRecords(res.data);
-            const frozenStatus = res.data.length > 0 ? res.data[0].isFrozen : false;
+            // Fetch both attendance records AND all students in this class/section
+            const [attendanceRes, studentsRes] = await Promise.all([
+                api.get(`/attendance?date=${date}&classId=${classId}&sectionId=${sectionId}`),
+                api.get(`/admin/students?classId=${classId}&sectionId=${sectionId}&status=Active`)
+            ]);
+
+            const attendanceRecords = attendanceRes.data;
+            const allStudents = studentsRes.data;
+            const frozenStatus = attendanceRecords.length > 0 ? attendanceRecords[0].isFrozen : false;
             setIsFrozen(frozenStatus);
+
+            // Merge: show all students, use attendance record if exists, otherwise create placeholder
+            const markedStudentIds = new Set(attendanceRecords.map((r: AttendanceRecord) => r.studentId._id));
+
+            const mergedRecords: AttendanceRecord[] = allStudents.map((student: { _id: string; fullName: string; registrationNumber: string; classId: { _id: string; name: string }; sectionId: { _id: string; name: string } }) => {
+                const existingRecord = attendanceRecords.find((r: AttendanceRecord) => r.studentId._id === student._id);
+                if (existingRecord) {
+                    return existingRecord;
+                }
+                // Create placeholder for unmarked student
+                return {
+                    _id: `temp-${student._id}`,
+                    studentId: { _id: student._id, fullName: student.fullName, registrationNumber: student.registrationNumber },
+                    classId: student.classId,
+                    sectionId: student.sectionId,
+                    status: 'Not Marked',
+                    markedAt: '',
+                    isFrozen: frozenStatus
+                };
+            });
+
+            setStudentRecords(mergedRecords);
         } catch (error) {
             console.error(error);
         } finally {
@@ -132,6 +164,35 @@ export default function AdminAttendancePage() {
             fetchStudentAttendance(); // Refresh
         } catch {
             alert('Failed to update freeze status');
+        }
+    };
+
+    // Admin: Mark/Edit Student Attendance
+    const markStudentStatus = async (studentId: string, status: string) => {
+        if (!classId || !sectionId) {
+            alert('Please select a class and section first');
+            return;
+        }
+        try {
+            // Optimistic Update
+            const updatedRecords = studentRecords.map(r =>
+                r.studentId._id === studentId ? { ...r, status } : r
+            );
+            setStudentRecords(updatedRecords);
+
+            await api.post('/attendance', {
+                date,
+                classId,
+                sectionId,
+                records: [{ studentId, status }]
+            });
+
+            // Refresh to get updated markedBy info
+            fetchStudentAttendance();
+        } catch (err) {
+            console.error(err);
+            alert('Failed to update attendance');
+            fetchStudentAttendance(); // Revert
         }
     };
 
@@ -286,6 +347,7 @@ export default function AdminAttendancePage() {
                                         <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Student</th>
                                         <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Class</th>
                                         <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
                                         <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Marked By</th>
                                         <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">History</th>
                                     </tr>
@@ -325,6 +387,51 @@ export default function AdminAttendancePage() {
                                                         {record.status === 'Late' && <Clock className="w-3 h-3 mr-1.5" />}
                                                         {record.status}
                                                     </span>
+                                                </td>
+                                                {/* Admin Action Buttons */}
+                                                <td className="px-6 py-4">
+                                                    <div className="flex bg-slate-100/80 rounded-xl p-1 w-fit shadow-inner">
+                                                        <button
+                                                            onClick={() => markStudentStatus(record.studentId._id, 'Present')}
+                                                            className={`px-2.5 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 ${record.status === 'Present'
+                                                                ? 'bg-white text-green-600 shadow-sm ring-1 ring-black/5'
+                                                                : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
+                                                                }`}
+                                                        >
+                                                            <UserCheck className="w-3 h-3" />
+                                                            P
+                                                        </button>
+                                                        <button
+                                                            onClick={() => markStudentStatus(record.studentId._id, 'Absent')}
+                                                            className={`px-2.5 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 ${record.status === 'Absent'
+                                                                ? 'bg-white text-red-600 shadow-sm ring-1 ring-black/5'
+                                                                : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
+                                                                }`}
+                                                        >
+                                                            <UserX className="w-3 h-3" />
+                                                            A
+                                                        </button>
+                                                        <button
+                                                            onClick={() => markStudentStatus(record.studentId._id, 'Leave')}
+                                                            className={`px-2.5 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 ${record.status === 'Leave'
+                                                                ? 'bg-white text-amber-600 shadow-sm ring-1 ring-black/5'
+                                                                : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
+                                                                }`}
+                                                        >
+                                                            <Calendar className="w-3 h-3" />
+                                                            L
+                                                        </button>
+                                                        <button
+                                                            onClick={() => markStudentStatus(record.studentId._id, 'Late')}
+                                                            className={`px-2.5 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 ${record.status === 'Late'
+                                                                ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5'
+                                                                : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
+                                                                }`}
+                                                        >
+                                                            <Clock className="w-3 h-3" />
+                                                            Lt
+                                                        </button>
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-sm text-slate-600">
                                                     <div className="flex items-center gap-2">
@@ -370,7 +477,7 @@ export default function AdminAttendancePage() {
                                     </AnimatePresence>
                                     {filteredStudentRecords.length === 0 && (
                                         <tr>
-                                            <td colSpan={5} className="p-12 text-center text-slate-500">
+                                            <td colSpan={6} className="p-12 text-center text-slate-500">
                                                 <div className="flex flex-col items-center">
                                                     <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-3">
                                                         <Users className="w-8 h-8 text-slate-300" />

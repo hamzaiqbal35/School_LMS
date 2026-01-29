@@ -55,7 +55,7 @@ export default function FeesDonutChart() {
         if (active && payload && payload.length) {
             const d = payload[0].payload;
             return (
-                <div className="bg-white p-3 border border-slate-100 shadow-xl rounded-xl text-xs">
+                <div className="bg-white p-3 border border-slate-100 shadow-xl rounded-xl text-xs z-50 relative">
                     <p className="font-bold text-slate-900 mb-1">{d.name}</p>
                     <p className="text-slate-500">Amount: <span className="font-mono font-bold text-slate-700">PKR {d.value.toLocaleString()}</span></p>
                     <p className="text-slate-500">Challans: <span className="font-bold text-slate-700">{d.count}</span></p>
@@ -84,12 +84,12 @@ export default function FeesDonutChart() {
                                 <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
                             ))}
                         </Pie>
-                        <Tooltip content={<CustomTooltip />} />
+                        <Tooltip content={<CustomTooltip />} wrapperStyle={{ zIndex: 100 }} />
                         <Legend verticalAlign="bottom" height={36} iconType="circle" />
                     </PieChart>
                 </ResponsiveContainer>
-                {/* Center Text */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-8">
+                {/* Center Text - lower z-index so tooltip appears on top */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-8" style={{ zIndex: 1 }}>
                     <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Total</span>
                     <span className="text-lg font-black text-slate-900 mt-1">
                         {new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(totalAmount)}
