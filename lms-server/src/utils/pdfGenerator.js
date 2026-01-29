@@ -427,11 +427,10 @@ const generateChallanPDF = async (challanData, studentData, browserInstance = nu
             return new Promise((resolve) => {
                 const uploadStream = cloudinary.uploader.upload_stream(
                     {
-                        resource_type: 'image', // Treat as image for better PDF delivery support
-                        public_id: `challan-${challanData.challanNumber}`, // No extension for image type
+                        resource_type: 'raw', // Use 'raw' for PDFs and non-image files
+                        public_id: `challan-${challanData.challanNumber}.pdf`, // Include extension for raw type
                         folder: 'school_challans',
-                        format: 'pdf',
-                        type: 'upload', // Public type for permanent access without signature expiration
+                        type: 'upload', // Public type for permanent access
                         overwrite: true
                     },
                     (error, result) => {

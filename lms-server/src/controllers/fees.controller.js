@@ -223,17 +223,21 @@ exports.getChallans = async (req, res) => {
             .populate('studentId', 'fullName registrationNumber fatherName classId sectionId')
             .sort({ createdAt: -1 });
 
-        // Augment with Signed URL for authenticated access
+        // Augment with URL for access
         const augmented = challans.map(c => {
             const obj = c.toObject();
             if (obj.pdfPublicId) {
-                // Generate Public URL (no signature needed for 'upload' type)
-                obj.pdfUrl = cloudinary.url(obj.pdfPublicId, {
-                    resource_type: 'image',
-                    type: 'upload',
-                    secure: true,
-                    version: obj.pdfVersion
-                });
+                // Generate URL (use stored URL if available for reliability)
+                if (obj.pdfUrl && obj.pdfUrl.startsWith('http')) {
+                    // Keep stored URL as-is
+                } else {
+                    obj.pdfUrl = cloudinary.url(obj.pdfPublicId, {
+                        resource_type: 'raw', // Use 'raw' for PDFs
+                        type: 'upload',
+                        secure: true,
+                        version: obj.pdfVersion
+                    });
+                }
             } else if (obj.pdfUrl && obj.pdfUrl.startsWith('/')) {
                 // Local Fallback: Dynamic Host
                 const baseUrl = `${req.protocol}://${req.get('host')}`;
@@ -341,9 +345,8 @@ exports.downloadChallan = async (req, res) => {
             }
 
             const options = {
-                resource_type: 'image',
+                resource_type: 'raw', // Use 'raw' for PDFs
                 type: 'upload',
-                format: 'pdf',
                 secure: true
             };
 
