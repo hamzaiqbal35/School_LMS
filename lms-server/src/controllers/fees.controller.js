@@ -6,6 +6,7 @@ const StudentFeeStatus = require('../models/StudentFeeStatus');
 const { generateChallanPDF } = require('../utils/pdfGenerator');
 const cloudinary = require('../config/cloudinary');
 const { getBrowser } = require('../utils/browserClient');
+const https = require('https');
 
 // Helper: Generate Challan No (Deterministic-ish but unique enough)
 // CH-YEARMONTH-STUDENTID_LAST4
@@ -339,23 +340,36 @@ exports.downloadChallan = async (req, res) => {
                 type = 'authenticated';
             }
 
-            // Generate "Attachment" URL 
-            // This forces download and validates signature reliably against transformation engine
+            // Generate Standard Signed URL
             const options = {
                 resource_type: 'image',
                 type: type,
                 sign_url: true,
                 format: 'pdf',
-                secure: true,
-                flags: 'attachment' // Simplified to avoid 400 Bad Request
+                secure: true
             };
 
             if (version) options.version = version;
 
             const url = cloudinary.url(challan.pdfPublicId, options);
+            console.log(`[Download Proxy] Fetching: ${url}`);
 
-            console.log(`[Download] Generated attachment URL for ID: ${challan.pdfPublicId} Type: ${type} Version: ${version}`);
-            return res.redirect(url);
+            // Proxy Stream to Client
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+            https.get(url, (stream) => {
+                if (stream.statusCode !== 200) {
+                    console.error(`Cloudinary Error: ${stream.statusCode}`);
+                    return res.status(stream.statusCode || 500).json({ message: 'Could not retrieve PDF from cloud' });
+                }
+                stream.pipe(res);
+            }).on('error', (err) => {
+                console.error('Proxy Request Error:', err);
+                if (!res.headersSent) res.status(500).json({ message: 'Proxy Error' });
+            });
+
+            return;
         }
 
         res.status(404).json({ message: 'PDF not found locally or on cloud' });
