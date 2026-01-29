@@ -153,9 +153,9 @@ export default function MarkAttendancePage() {
             const attendanceRes = await api.get(`/attendance?classId=${assignment.classId._id}&sectionId=${assignment.sectionId._id}&date=${dateToUse}`);
             const existingAttendance = attendanceRes.data;
 
-            // Create marks map - first default all to Present, then override with existing records
+            // Create marks map - first default all to 'Not Marked', then override with existing records
             const initialMarks: Record<string, string> = {};
-            studList.forEach(s => initialMarks[s._id] = 'Present');
+            studList.forEach(s => initialMarks[s._id] = 'Not Marked');
 
             // Override with existing attendance records
             existingAttendance.forEach((record: { studentId: { _id: string } | string; status: string }) => {
@@ -181,9 +181,9 @@ export default function MarkAttendancePage() {
             const attendanceRes = await api.get(`/attendance?classId=${selectedAssignment.classId._id}&sectionId=${selectedAssignment.sectionId._id}&date=${attendanceDate}`);
             const existingAttendance = attendanceRes.data;
 
-            // Create marks map - first default all to Present, then override with existing records
+            // Create marks map - first default all to 'Not Marked', then override with existing records
             const updatedMarks: Record<string, string> = {};
-            students.forEach(s => updatedMarks[s._id] = 'Present');
+            students.forEach(s => updatedMarks[s._id] = 'Not Marked');
 
             // Override with existing attendance records
             existingAttendance.forEach((record: { studentId: { _id: string } | string; status: string }) => {
@@ -225,7 +225,7 @@ export default function MarkAttendancePage() {
             date: attendanceDate,
             classId: selectedAssignment.classId._id,
             sectionId: selectedAssignment.sectionId._id,
-            subjectId: selectedAssignment.subjectId._id,
+            // Note: subjectId removed - attendance is now daily, not subject-wise
             records: Object.entries(marks).map(([studentId, status]) => ({
                 studentId,
                 status
@@ -234,7 +234,7 @@ export default function MarkAttendancePage() {
 
         try {
             await api.post('/attendance', payload);
-            setMsg({ type: 'success', text: 'Attendance marked successfully' });
+            setMsg({ type: 'success', text: 'Daily attendance marked successfully!' });
             // Scroll to top or show toast
         } catch (error: unknown) {
             const err = error as { response?: { data?: { message?: string } } };
@@ -247,6 +247,7 @@ export default function MarkAttendancePage() {
         absent: Object.values(marks).filter(s => s === 'Absent').length,
         leave: Object.values(marks).filter(s => s === 'Leave').length,
         late: Object.values(marks).filter(s => s === 'Late').length,
+        notMarked: Object.values(marks).filter(s => s === 'Not Marked').length,
     };
 
     return (
@@ -514,13 +515,14 @@ export default function MarkAttendancePage() {
                                                 <p className="md:hidden text-[10px] text-slate-400 font-mono mt-0.5">#{student.registrationNumber}</p>
                                             </div>
                                             <div className="col-span-7 flex justify-center gap-1 sm:gap-2">
-                                                {['Present', 'Absent', 'Leave', 'Late'].map((status) => {
+                                                {['Present', 'Absent', 'Leave', 'Late', 'Not Marked'].map((status) => {
                                                     const isActive = marks[student._id] === status;
                                                     let activeClass = "";
                                                     if (status === 'Present') activeClass = "bg-green-500 text-white border-green-500 shadow-green-500/30";
                                                     if (status === 'Absent') activeClass = "bg-red-500 text-white border-red-500 shadow-red-500/30";
                                                     if (status === 'Leave') activeClass = "bg-amber-400 text-white border-amber-400 shadow-amber-400/30";
                                                     if (status === 'Late') activeClass = "bg-slate-500 text-white border-slate-500 shadow-slate-500/30";
+                                                    if (status === 'Not Marked') activeClass = "bg-gray-400 text-white border-gray-400 shadow-gray-400/30";
 
                                                     return (
                                                         <button

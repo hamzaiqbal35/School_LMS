@@ -34,6 +34,22 @@ const StudentSchema = new Schema({
         type: String,
         trim: true
     },
+    bFormNumber: {
+        type: String,
+        trim: true
+    },
+    fatherCnic: {
+        type: String,
+        trim: true
+    },
+    cast: {
+        type: String,
+        trim: true
+    },
+    religion: {
+        type: String,
+        trim: true
+    },
 
     // Academic Placement
     classId: {

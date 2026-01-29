@@ -325,19 +325,24 @@ exports.downloadChallan = async (req, res) => {
             return;
         }
 
-        // 2. Try Cloudinary (Network)
+        // 2. For Production: Redirect directly to stored Cloudinary URL
+        // This avoids proxy issues and lets browser handle the download
+        if (challan.pdfUrl && challan.pdfUrl.startsWith('http')) {
+            console.log(`[Download] Redirecting to stored URL: ${challan.pdfUrl}`);
+            return res.redirect(challan.pdfUrl);
+        }
+
+        // 3. Fallback: Try generating URL from public_id
         if (challan.pdfPublicId) {
-            // Determine Version (DB or Regex Extraction)
             let version = challan.pdfVersion;
             if (!version && challan.pdfUrl) {
                 const match = challan.pdfUrl.match(/\/v(\d+)\//);
                 if (match && match[1]) version = match[1];
             }
 
-            // Generate Public URL (no signature needed for 'upload' type)
             const options = {
                 resource_type: 'image',
-                type: 'upload', // Always use public type
+                type: 'upload',
                 format: 'pdf',
                 secure: true
             };
@@ -345,40 +350,8 @@ exports.downloadChallan = async (req, res) => {
             if (version) options.version = version;
 
             const url = cloudinary.url(challan.pdfPublicId, options);
-            console.log(`[Download Proxy] Fetching public URL: ${url}`);
-
-            // Proxy Stream to Client
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-
-            https.get(url, (stream) => {
-                if (stream.statusCode !== 200) {
-                    console.error(`Cloudinary Error: ${stream.statusCode}`);
-                    // Try stored URL as fallback
-                    if (challan.pdfUrl && challan.pdfUrl.startsWith('http')) {
-                        console.log(`[Download Proxy] Trying stored URL fallback: ${challan.pdfUrl}`);
-                        https.get(challan.pdfUrl, (fallbackStream) => {
-                            if (fallbackStream.statusCode !== 200) {
-                                if (!res.headersSent) res.status(fallbackStream.statusCode || 500).json({ message: 'Could not retrieve PDF from cloud' });
-                                return;
-                            }
-                            fallbackStream.pipe(res);
-                        }).on('error', (err) => {
-                            console.error('Fallback Proxy Error:', err);
-                            if (!res.headersSent) res.status(500).json({ message: 'Proxy Error' });
-                        });
-                        return;
-                    }
-                    if (!res.headersSent) res.status(stream.statusCode || 500).json({ message: 'Could not retrieve PDF from cloud' });
-                    return;
-                }
-                stream.pipe(res);
-            }).on('error', (err) => {
-                console.error('Proxy Request Error:', err);
-                if (!res.headersSent) res.status(500).json({ message: 'Proxy Error' });
-            });
-
-            return;
+            console.log(`[Download] Redirecting to generated URL: ${url}`);
+            return res.redirect(url);
         }
 
         res.status(404).json({ message: 'PDF not found locally or on cloud' });

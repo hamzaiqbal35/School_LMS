@@ -103,7 +103,14 @@ export default function StudentsPage() {
         <div className="space-y-8">
             <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Student Directory</h1>
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Student Directory</h1>
+                        {!loading && (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-blue-100 text-blue-700">
+                                {students.length} {students.length === 1 ? 'Student' : 'Students'}
+                            </span>
+                        )}
+                    </div>
                     <p className="text-slate-500 mt-1">Manage student enrollments and profiles</p>
                 </div>
                 <Link href="/admin/students/create" className="group bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-bold shadow-lg shadow-blue-600/20 flex items-center gap-2 transition-all transform hover:scale-[1.02]">

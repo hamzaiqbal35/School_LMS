@@ -26,15 +26,12 @@ const AttendanceSchema = new Schema({
         ref: 'Section',
         required: true
     },
-    subjectId: { // Optional: if subject-wise attendance
-        type: Schema.Types.ObjectId,
-        ref: 'Subject'
-    },
+    // Note: subjectId removed - attendance is now daily, not subject-wise
     status: {
         type: String,
-        enum: ['Present', 'Absent', 'Leave', 'Late'],
+        enum: ['Present', 'Absent', 'Leave', 'Late', 'Not Marked'],
         required: true,
-        default: 'Absent'
+        default: 'Not Marked'
     },
     markedBy: {
         type: Schema.Types.ObjectId,
@@ -54,7 +51,8 @@ const AttendanceSchema = new Schema({
     }]
 });
 
-// Unique attendance per student per day (per subject if used)
-AttendanceSchema.index({ date: 1, studentId: 1, subjectId: 1 }, { unique: true });
+// Unique attendance per student per day (daily attendance, not subject-wise)
+AttendanceSchema.index({ date: 1, studentId: 1 }, { unique: true });
 
 module.exports = mongoose.model('Attendance', AttendanceSchema);
+

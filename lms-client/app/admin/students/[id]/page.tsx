@@ -18,6 +18,10 @@ interface Student {
     sectionId?: { name: string };
     dob?: string;
     phoneNumber?: string;
+    bFormNumber?: string;
+    fatherCnic?: string;
+    cast?: string;
+    religion?: string;
     monthlyFee: number;
     discountAmount?: number;
     isAdmissionPaid?: boolean;
@@ -36,8 +40,13 @@ export default function StudentDetailsPage({ params }: { params: Promise<{ id: s
     const router = useRouter();
     const [student, setStudent] = useState<Student | null>(null);
     const [fees, setFees] = useState<Fee[]>([]);
-    const [classFee, setClassFee] = useState(0); // New state
+    const [classFee, setClassFee] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [feeFilter, setFeeFilter] = useState('All');
+    const [yearFilter, setYearFilter] = useState('All');
+
+    // Extract unique years from fees
+    const availableYears = [...new Set(fees.map(f => f.month?.split('-')[0]).filter(Boolean))].sort().reverse();
 
     const fetchData = useCallback(async () => {
         try {
@@ -137,6 +146,14 @@ export default function StudentDetailsPage({ params }: { params: Promise<{ id: s
                         <LabelValue label="Class & Section" value={`${student.classId?.name} - ${student.sectionId?.name}`} icon={BookOpen} />
                         <LabelValue label="Date of Birth" value={student.dob?.split('T')[0]} icon={Calendar} />
                         <LabelValue label="Phone Number" value={student.phoneNumber} icon={Phone} />
+                        <div className="grid grid-cols-2">
+                            <LabelValue label="B-Form Number" value={student.bFormNumber} />
+                            <LabelValue label="Father CNIC" value={student.fatherCnic} />
+                        </div>
+                        <div className="grid grid-cols-2">
+                            <LabelValue label="Cast" value={student.cast} />
+                            <LabelValue label="Religion" value={student.religion} />
+                        </div>
                     </div>
                 </div>
 
@@ -183,10 +200,38 @@ export default function StudentDetailsPage({ params }: { params: Promise<{ id: s
 
                     {/* Fee History */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                            <Clock className="w-5 h-5 mr-2 text-purple-600" /> Payment History
-                        </h3>
-                        {fees.length > 0 ? (
+                        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                            <h3 className="text-lg font-bold text-gray-800 flex items-center">
+                                <Clock className="w-5 h-5 mr-2 text-purple-600" /> Payment History
+                            </h3>
+                            <div className="flex gap-2">
+                                <select
+                                    id="feeYearFilter"
+                                    name="feeYearFilter"
+                                    value={yearFilter}
+                                    onChange={(e) => setYearFilter(e.target.value)}
+                                    className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none bg-white"
+                                >
+                                    <option value="All">All Years</option>
+                                    {availableYears.map(year => (
+                                        <option key={year} value={year}>{year}</option>
+                                    ))}
+                                </select>
+                                <select
+                                    id="feeStatusFilter"
+                                    name="feeStatusFilter"
+                                    value={feeFilter}
+                                    onChange={(e) => setFeeFilter(e.target.value)}
+                                    className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none bg-white"
+                                >
+                                    <option value="All">All Status</option>
+                                    <option value="Paid">Paid</option>
+                                    <option value="Pending">Pending</option>
+                                    <option value="Overdue">Overdue</option>
+                                </select>
+                            </div>
+                        </div>
+                        {fees.filter(f => (feeFilter === 'All' || f.status === feeFilter) && (yearFilter === 'All' || f.month?.startsWith(yearFilter))).length > 0 ? (
                             <div className="overflow-x-auto">
                                 <table className="min-w-full text-sm">
                                     <thead className="bg-gray-50">
@@ -198,7 +243,7 @@ export default function StudentDetailsPage({ params }: { params: Promise<{ id: s
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
-                                        {fees.map((fee) => (
+                                        {fees.filter(f => (feeFilter === 'All' || f.status === feeFilter) && (yearFilter === 'All' || f.month?.startsWith(yearFilter))).map((fee) => (
                                             <tr key={fee._id} className="hover:bg-gray-50/50">
                                                 <td className="px-4 py-3 font-medium text-gray-800">{fee.month}</td>
                                                 <td className="px-4 py-3">Rs {fee.totalAmount?.toLocaleString()}</td>

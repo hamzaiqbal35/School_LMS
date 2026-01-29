@@ -57,6 +57,42 @@ const InputGroup = ({ label, name, id, type = "text", value, onChange, required 
     );
 };
 
+// CNIC Format Helper (xxxxx-xxxxxxx-x)
+const formatCnic = (value: string): string => {
+    const digits = value.replace(/\D/g, '').slice(0, 13);
+    if (digits.length <= 5) return digits;
+    if (digits.length <= 12) return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+    return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`;
+};
+
+interface CnicInputProps {
+    label: string;
+    name: string;
+    value: string;
+    onChange: (name: string, value: string) => void;
+}
+
+const CnicInput = ({ label, name, value, onChange }: CnicInputProps) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        onChange(name, formatCnic(e.target.value));
+    };
+    return (
+        <div>
+            <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+            <input
+                id={name}
+                type="text"
+                name={name}
+                value={value}
+                onChange={handleChange}
+                placeholder="xxxxx-xxxxxxx-x"
+                maxLength={15}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+            />
+        </div>
+    );
+};
+
 const SelectGroup = ({ label, name, id, value, onChange, options, required = false }: SelectGroupProps) => {
     const selectId = id || name;
     return (
@@ -94,9 +130,12 @@ export default function EditStudentPage({ params }: { params: Promise<{ id: stri
         dob: '',
         gender: '',
         phoneNumber: '',
+        bFormNumber: '',
+        fatherCnic: '',
+        cast: '',
+        religion: '',
         classId: '',
         sectionId: '',
-        // monthlyFee removed
         discountAmount: '0',
         admissionDate: '',
         status: 'Active',
@@ -125,6 +164,10 @@ export default function EditStudentPage({ params }: { params: Promise<{ id: stri
                 dob: s.dob ? s.dob.split('T')[0] : '',
                 gender: s.gender || '',
                 phoneNumber: s.phoneNumber || '',
+                bFormNumber: s.bFormNumber || '',
+                fatherCnic: s.fatherCnic || '',
+                cast: s.cast || '',
+                religion: s.religion || '',
                 classId: s.classId?._id || s.classId || '',
                 sectionId: s.sectionId?._id || s.sectionId || '',
                 discountAmount: s.discountAmount || '0',
@@ -243,6 +286,10 @@ export default function EditStudentPage({ params }: { params: Promise<{ id: stri
                             />
 
                             <InputGroup label="Phone Number" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} />
+                            <CnicInput label="B-Form Number" name="bFormNumber" value={formData.bFormNumber} onChange={(name, val) => setFormData({ ...formData, [name]: val })} />
+                            <CnicInput label="Father CNIC" name="fatherCnic" value={formData.fatherCnic} onChange={(name, val) => setFormData({ ...formData, [name]: val })} />
+                            <InputGroup label="Cast" name="cast" value={formData.cast} onChange={handleChange} />
+                            <InputGroup label="Religion" name="religion" value={formData.religion} onChange={handleChange} />
                         </div>
                     </div>
 
