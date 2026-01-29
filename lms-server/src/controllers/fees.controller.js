@@ -228,7 +228,7 @@ exports.getChallans = async (req, res) => {
                 // Generate Signed URL
                 obj.pdfUrl = cloudinary.url(obj.pdfPublicId, {
                     resource_type: 'image',
-                    type: 'authenticated',
+                    type: 'upload',
                     sign_url: true
                 });
             } else if (obj.pdfUrl && obj.pdfUrl.startsWith('/')) {
@@ -324,21 +324,17 @@ exports.downloadChallan = async (req, res) => {
 
         // 2. Try Cloudinary (Network)
         if (challan.pdfPublicId) {
-            // Priority: Use stored pdfUrl if available (this is the permanent signed URL from upload)
-            if (challan.pdfUrl && challan.pdfUrl.startsWith('http')) {
-                console.log(`[Download] Redirecting to stored URL: ${challan.pdfUrl}`);
-                return res.redirect(challan.pdfUrl);
-            }
-
-            // Fallback: Generate public URL (no signature needed for 'upload' type)
+            // Always generate a fresh signed URL (never rely on stored stale URL for download)
+            // This fixes the "Temporary Access" issue by giving a new signature each time
             const url = cloudinary.url(challan.pdfPublicId, {
                 resource_type: 'image',
-                type: 'upload', // Changed to match new upload type (public)
-                secure: true,
-                format: 'pdf'
+                type: 'upload',
+                sign_url: true, // IMPORTANT: Must be signed for restricted PDF delivery
+                format: 'pdf',
+                secure: true
             });
 
-            console.log(`[Download] Redirecting to generated URL for ID: ${challan.pdfPublicId}`);
+            console.log(`[Download] Generated fresh signed URL for ID: ${challan.pdfPublicId}`);
             return res.redirect(url);
         }
 
