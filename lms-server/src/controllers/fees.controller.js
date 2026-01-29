@@ -4,9 +4,7 @@ const User = require('../models/User'); // If needed for verification
 const ClassFeeStructure = require('../models/ClassFeeStructure');
 const StudentFeeStatus = require('../models/StudentFeeStatus');
 const { generateChallanPDF } = require('../utils/pdfGenerator');
-const cloudinary = require('../config/cloudinary');
 const { getBrowser } = require('../utils/browserClient');
-const https = require('https');
 
 // Helper: Generate Challan No (Deterministic-ish but unique enough)
 // CH-YEARMONTH-STUDENTID_LAST4
@@ -223,28 +221,9 @@ exports.getChallans = async (req, res) => {
             .populate('studentId', 'fullName registrationNumber fatherName classId sectionId')
             .sort({ createdAt: -1 });
 
-        // Augment with URL for access
-        const augmented = challans.map(c => {
-            const obj = c.toObject();
-            if (obj.pdfPublicId) {
-                // Generate URL (use stored URL if available for reliability)
-                if (obj.pdfUrl && obj.pdfUrl.startsWith('http')) {
-                    // Keep stored URL as-is
-                } else {
-                    obj.pdfUrl = cloudinary.url(obj.pdfPublicId, {
-                        resource_type: 'raw', // Use 'raw' for PDFs
-                        type: 'upload',
-                        secure: true,
-                        version: obj.pdfVersion
-                    });
-                }
-            } else if (obj.pdfUrl && obj.pdfUrl.startsWith('/')) {
-                // Local Fallback: Dynamic Host
-                const baseUrl = `${req.protocol}://${req.get('host')}`;
-                obj.pdfUrl = `${baseUrl}${obj.pdfUrl}`;
-            }
-            return obj;
-        });
+        // pdfUrl already contains the Cloudinary URL from generation
+        // No transformation needed - just return as-is
+        const augmented = challans.map(c => c.toObject());
 
         res.json(augmented);
     } catch (error) {
@@ -307,57 +286,28 @@ exports.verifyPayment = async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 };
-// @desc    Download Challan Proxy (Proxy Stream)
+// @desc    Download Challan (Cloudinary Redirect)
 // @route   GET /api/fees/download/:id
 // @access  Protected
 exports.downloadChallan = async (req, res) => {
     try {
         const challan = await FeeChallan.findById(req.params.id);
-        if (!challan) return res.status(404).json({ message: 'Challan not found' });
-
-        // 1. Try Local File First (Preferred/Offline)
-        const path = require('path');
-        const fs = require('fs');
-        const fileName = `challan-${challan.challanNumber}.pdf`;
-        const localPath = path.join(__dirname, '../../public/challans', fileName);
-
-        if (fs.existsSync(localPath)) {
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-            const fileStream = fs.createReadStream(localPath);
-            fileStream.pipe(res);
-            return;
+        if (!challan) {
+            return res.status(404).json({ message: 'Challan not found' });
         }
 
-        // 2. For Production: Redirect directly to stored Cloudinary URL
-        // This avoids proxy issues and lets browser handle the download
+        // Cloudinary is the SINGLE source of truth
+        // pdfUrl contains the public Cloudinary URL (no auth, no expiry)
         if (challan.pdfUrl && challan.pdfUrl.startsWith('http')) {
-            console.log(`[Download] Redirecting to stored URL: ${challan.pdfUrl}`);
+            console.log(`[Download] Redirecting to Cloudinary: ${challan.pdfUrl}`);
             return res.redirect(challan.pdfUrl);
         }
 
-        // 3. Fallback: Try generating URL from public_id
-        if (challan.pdfPublicId) {
-            let version = challan.pdfVersion;
-            if (!version && challan.pdfUrl) {
-                const match = challan.pdfUrl.match(/\/v(\d+)\//);
-                if (match && match[1]) version = match[1];
-            }
-
-            const options = {
-                resource_type: 'raw', // Use 'raw' for PDFs
-                type: 'upload',
-                secure: true
-            };
-
-            if (version) options.version = version;
-
-            const url = cloudinary.url(challan.pdfPublicId, options);
-            console.log(`[Download] Redirecting to generated URL: ${url}`);
-            return res.redirect(url);
-        }
-
-        res.status(404).json({ message: 'PDF not found locally or on cloud' });
+        // If no valid URL, the PDF was never generated properly
+        return res.status(404).json({
+            message: 'PDF not available. Please regenerate the challan.',
+            hint: 'Delete this challan and generate a new one.'
+        });
 
     } catch (error) {
         console.error('Download Error:', error);
