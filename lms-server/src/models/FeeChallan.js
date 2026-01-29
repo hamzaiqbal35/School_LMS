@@ -53,6 +53,7 @@ const FeeChallanSchema = new Schema({
 
     pdfUrl: { type: String },
     pdfPublicId: { type: String },
+    pdfVersion: { type: Number },
 
     createdAt: { type: Date, default: Date.now }
 });

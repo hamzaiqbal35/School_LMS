@@ -90,10 +90,11 @@ const createOrGetChallan = async (studentId, month, dueDate, options = {}, brows
     });
 
     // 6. Generate PDF
-    const { url, public_id } = await generateChallanPDF(newChallan.toObject(), student.toObject(), browser);
+    const { url, public_id, version } = await generateChallanPDF(newChallan.toObject(), student.toObject(), browser);
 
     newChallan.pdfUrl = url;
     newChallan.pdfPublicId = public_id;
+    newChallan.pdfVersion = version;
 
     // 7. Save DB
     await newChallan.save();
@@ -229,7 +230,8 @@ exports.getChallans = async (req, res) => {
                 obj.pdfUrl = cloudinary.url(obj.pdfPublicId, {
                     resource_type: 'image',
                     type: 'upload',
-                    sign_url: true
+                    sign_url: true,
+                    version: obj.pdfVersion // Include version for correct signature
                 });
             } else if (obj.pdfUrl && obj.pdfUrl.startsWith('/')) {
                 // Local Fallback: Dynamic Host
@@ -324,17 +326,32 @@ exports.downloadChallan = async (req, res) => {
 
         // 2. Try Cloudinary (Network)
         if (challan.pdfPublicId) {
+            // Determine Version (DB or Regex Extraction)
+            let version = challan.pdfVersion;
+            if (!version && challan.pdfUrl) {
+                // Try to extract version from stored URL (e.g., .../v17381234/...)
+                const match = challan.pdfUrl.match(/\/v(\d+)\//);
+                if (match && match[1]) {
+                    version = match[1];
+                }
+            }
+
             // Always generate a fresh signed URL (never rely on stored stale URL for download)
-            // This fixes the "Temporary Access" issue by giving a new signature each time
-            const url = cloudinary.url(challan.pdfPublicId, {
+            const options = {
                 resource_type: 'image',
                 type: 'upload',
-                sign_url: true, // IMPORTANT: Must be signed for restricted PDF delivery
+                sign_url: true,
                 format: 'pdf',
                 secure: true
-            });
+            };
 
-            console.log(`[Download] Generated fresh signed URL for ID: ${challan.pdfPublicId}`);
+            if (version) {
+                options.version = version;
+            }
+
+            const url = cloudinary.url(challan.pdfPublicId, options);
+
+            console.log(`[Download] Generated fresh signed URL for ID: ${challan.pdfPublicId} Version: ${version}`);
             return res.redirect(url);
         }
 

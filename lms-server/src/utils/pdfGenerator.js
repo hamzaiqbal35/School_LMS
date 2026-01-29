@@ -440,7 +440,7 @@ const generateChallanPDF = async (challanData, studentData, browserInstance = nu
                             // Fallback to local
                             resolve({ url: `/challans/${fileName}`, public_id: null });
                         } else {
-                            resolve({ url: result.secure_url, public_id: result.public_id });
+                            resolve({ url: result.secure_url, public_id: result.public_id, version: result.version });
                         }
                     }
                 );
