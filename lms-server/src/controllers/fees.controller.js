@@ -347,7 +347,7 @@ exports.downloadChallan = async (req, res) => {
                 sign_url: true,
                 format: 'pdf',
                 secure: true,
-                flags: `attachment:${fileName}` // Force download with filename
+                flags: 'attachment' // Simplified to avoid 400 Bad Request
             };
 
             if (version) options.version = version;
