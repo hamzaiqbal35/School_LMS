@@ -26,7 +26,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const pathname = usePathname();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-    useEffect(() => { checkAuth(); }, [checkAuth]);
+    useEffect(() => {
+        // Skip checkAuth if already authenticated (e.g., just logged in)
+        if (!isAuthenticated) {
+            checkAuth();
+        }
+    }, [checkAuth, isAuthenticated]);
 
     useEffect(() => {
         if (!isCheckingAuth && (!isAuthenticated || user?.role !== 'ADMIN')) {

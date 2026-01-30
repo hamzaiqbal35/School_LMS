@@ -25,9 +25,9 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
     user: null,
     isAuthenticated: false,
-    isCheckingAuth: true,
+    isCheckingAuth: true, // Start true, set false after check or if skipped
     isHydrated: true, // Always hydrated since memory-only
-    login: (user) => set({ user, isAuthenticated: true }),
+    login: (user) => set({ user, isAuthenticated: true, isCheckingAuth: false }),
     logout: () => set({ user: null, isAuthenticated: false }),
     setUser: (user) => set({ user }),
     checkAuth: async () => {

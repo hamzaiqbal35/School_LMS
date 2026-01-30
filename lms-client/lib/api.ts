@@ -16,7 +16,9 @@ const api = axios.create({
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
+        // Don't redirect for /auth/me - checkAuth handles that case
+        const isAuthMeRequest = error.config?.url?.includes('/auth/me');
+        if (error.response?.status === 401 && !isAuthMeRequest) {
             // Token expired or invalid
             useAuthStore.getState().logout();
             window.location.href = '/login';

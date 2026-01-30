@@ -30,8 +30,11 @@ export default function TeacherLayout({
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
-        checkAuth();
-    }, [checkAuth]);
+        // Skip checkAuth if already authenticated (e.g., just logged in)
+        if (!isAuthenticated) {
+            checkAuth();
+        }
+    }, [checkAuth, isAuthenticated]);
 
     useEffect(() => {
         if (!isCheckingAuth && (!isAuthenticated || user?.role !== 'TEACHER')) {
