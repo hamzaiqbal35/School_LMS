@@ -28,7 +28,7 @@ export default function ContactPage() {
                                 </div>
                                 <div>
                                     <p className="font-bold text-slate-900">Email Us</p>
-                                    <p className="text-slate-500">support@campusaxis.edu</p>
+                                    <a href="mailto:oxfordsgrammerschool@gmail.com" className="text-slate-500 hover:text-cyan-600 transition-colors">oxfordsgrammerschool@gmail.com</a>
                                 </div>
                             </div>
                             <div className="flex items-center gap-4">
@@ -37,7 +37,7 @@ export default function ContactPage() {
                                 </div>
                                 <div>
                                     <p className="font-bold text-slate-900">Call Us</p>
-                                    <p className="text-slate-500">+1 (555) 123-4567</p>
+                                    <a href="tel:03030017905" className="text-slate-500 hover:text-cyan-600 transition-colors">0303 0017905</a>
                                 </div>
                             </div>
                             <div className="flex items-center gap-4">
@@ -46,7 +46,7 @@ export default function ContactPage() {
                                 </div>
                                 <div>
                                     <p className="font-bold text-slate-900">Visit Us</p>
-                                    <p className="text-slate-500">123 Education Lane, Science City</p>
+                                    <p className="text-slate-500">Arzanipur, Tehsil chunnian, District Kasur</p>
                                 </div>
                             </div>
                         </div>

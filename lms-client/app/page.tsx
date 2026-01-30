@@ -403,11 +403,6 @@ export default function Home() {
 
             <div className="pt-8 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-400 font-medium">
               <p>&copy; {new Date().getFullYear()} Oxford Grammar School. All rights reserved.</p>
-              <div className="flex gap-8">
-                <a href="#" className="hover:text-slate-900 transition-colors">Terms</a>
-                <a href="#" className="hover:text-slate-900 transition-colors">Privacy</a>
-                <a href="#" className="hover:text-slate-900 transition-colors">Cookies</a>
-              </div>
             </div>
           </div>
         </footer>

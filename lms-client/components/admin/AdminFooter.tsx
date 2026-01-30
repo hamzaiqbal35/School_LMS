@@ -13,14 +13,10 @@ export default function AdminFooter() {
                         <p className="text-xs mt-1">Designed for Excellence.</p>
                     </div>
 
-                    <div className="flex gap-6 text-sm font-medium text-gray-600">
-                        <Link href="#" className="hover:text-blue-600 transition-colors">Help Center</Link>
-                        <Link href="#" className="hover:text-blue-600 transition-colors">Privacy Policy</Link>
-                        <Link href="#" className="hover:text-blue-600 transition-colors">Support</Link>
-                    </div>
+
 
                     <div className="text-xs text-gray-400">
-                        Version 1.2.0
+                        Version 1.3.0
                     </div>
                 </div>
             </div>
