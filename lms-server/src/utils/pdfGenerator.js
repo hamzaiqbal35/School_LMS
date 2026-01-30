@@ -3,6 +3,8 @@ const cloudinary = require('../config/cloudinary');
 const path = require('path');
 const fs = require('fs');
 
+const QRCode = require('qrcode'); // Import qrcode
+
 const generateChallanPDF = async (challanData, studentData, browserInstance = null) => {
     let browser = browserInstance;
     let ownBrowser = false;
@@ -25,6 +27,27 @@ const generateChallanPDF = async (challanData, studentData, browserInstance = nu
 
         // Helper
         const formatDate = (date) => new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+        // Generate QR Code with Full Details
+        const iban = 'PK86AIIN0000102636899017';
+        const qrData = `Student: ${studentData.fullName} (${studentData.registrationNumber})
+Father: ${studentData.fatherName}
+Class: ${studentData.classId?.name || 'N/A'} ${studentData.sectionId?.name ? '- ' + studentData.sectionId.name : ''}
+Challan No: ${challanData.challanNumber}
+Month: ${challanData.month}
+Due Date: ${formatDate(challanData.dueDate)}
+Amount: PKR ${challanData.totalAmount}
+Bank: Al Baraka Bank (Pakistan) Limited
+IBAN: ${iban}`;
+
+        const qrCodeDataUri = await QRCode.toDataURL(qrData, {
+            width: 150, // Increased size for denser data
+            margin: 1,
+            color: {
+                dark: '#0e7490', // Cyan-700
+                light: '#ffffff'
+            }
+        });
 
         const challanTemplate = (title, copyColor) => `
             <div class="challan-card">
@@ -174,26 +197,32 @@ const generateChallanPDF = async (challanData, studentData, browserInstance = nu
                 </div>
 
                 <!-- Bank Details -->
-                <div class="bank-details">
-                    <strong>🏦 Bank Details for Fee Payment:</strong>
-                    <table class="bank-table">
-                        <tr>
-                            <td class="lbl">Bank Name</td>
-                            <td class="val">Al Baraka Bank (Pakistan) Limited</td>
-                        </tr>
-                        <tr>
-                            <td class="lbl">Branch</td>
-                            <td class="val">Arzanipur Branch, Allahabad, Dist Kasur</td>
-                        </tr>
-                        <tr>
-                            <td class="lbl">Account Title</td>
-                            <td class="val">Oxford Grammar Academy</td>
-                        </tr>
-                        <tr>
-                            <td class="lbl">Account No. (IBAN)</td>
-                            <td class="val acc-num">PK86AIIN0000102636899017</td>
-                        </tr>
-                    </table>
+                <div class="bank-details" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="flex: 1;">
+                        <strong>🏦 Bank Details for Fee Payment:</strong>
+                        <table class="bank-table">
+                            <tr>
+                                <td class="lbl">Bank Name</td>
+                                <td class="val">Al Baraka Bank (Pakistan) Limited</td>
+                            </tr>
+                            <tr>
+                                <td class="lbl">Branch</td>
+                                <td class="val">Arzanipur Branch, Allahabad, Dist Kasur</td>
+                            </tr>
+                            <tr>
+                                <td class="lbl">Account Title</td>
+                                <td class="val">Oxford Grammar Academy</td>
+                            </tr>
+                            <tr>
+                                <td class="lbl">Account No. (IBAN)</td>
+                                <td class="val acc-num">${iban}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div style="margin-left: 10px; text-align: center;">
+                        <img src="${qrCodeDataUri}" alt="Pay via QR" style="width: 80px; height: 80px;" />
+                        <div style="font-size: 7px; color: #555; margin-top: 2px;">Scan to see Details</div>
+                    </div>
                 </div>
             </div>
         `;
