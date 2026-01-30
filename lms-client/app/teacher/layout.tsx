@@ -34,9 +34,7 @@ export default function TeacherLayout({
     }, [checkAuth]);
 
     useEffect(() => {
-        if (!isCheckingAuth && !isAuthenticated) {
-            router.push('/login');
-        } else if (!isCheckingAuth && user?.role !== 'TEACHER') {
+        if (!isCheckingAuth && (!isAuthenticated || user?.role !== 'TEACHER')) {
             router.push('/login');
         }
     }, [isAuthenticated, isCheckingAuth, user, router]);
