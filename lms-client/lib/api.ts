@@ -9,8 +9,19 @@ const api = axios.create({
     withCredentials: true, // Send cookies with requests
 });
 
-// Request Interceptor: NO LONGER NEEDED for Token (Cookies handled by browser)
-// api.interceptors.request.use( ... );
+// Request Interceptor: Attach token from localStorage if available
+api.interceptors.request.use(
+    (config) => {
+        if (typeof window !== 'undefined') {
+            const token = localStorage.getItem('token');
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
+            }
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
 
 // Response Interceptor: Handle 401
 api.interceptors.response.use(

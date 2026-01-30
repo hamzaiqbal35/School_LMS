@@ -8,6 +8,7 @@ interface User {
     email: string;
     role: 'ADMIN' | 'TEACHER';
     avatar?: string;
+    token?: string;
 }
 
 interface AuthState {
@@ -27,8 +28,16 @@ export const useAuthStore = create<AuthState>((set) => ({
     isAuthenticated: false,
     isCheckingAuth: true, // Start true, set false after check or if skipped
     isHydrated: true, // Always hydrated since memory-only
-    login: (user) => set({ user, isAuthenticated: true, isCheckingAuth: false }),
-    logout: () => set({ user: null, isAuthenticated: false }),
+    login: (user) => {
+        if (user.token) {
+            localStorage.setItem('token', user.token);
+        }
+        set({ user, isAuthenticated: true, isCheckingAuth: false });
+    },
+    logout: () => {
+        localStorage.removeItem('token');
+        set({ user: null, isAuthenticated: false });
+    },
     setUser: (user) => set({ user }),
     checkAuth: async () => {
         set({ isCheckingAuth: true });
@@ -36,6 +45,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             const { data } = await api.get('/auth/me');
             set({ user: data, isAuthenticated: true, isCheckingAuth: false });
         } catch {
+            localStorage.removeItem('token');
             set({ user: null, isAuthenticated: false, isCheckingAuth: false });
         }
     },
