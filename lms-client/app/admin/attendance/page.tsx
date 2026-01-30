@@ -57,16 +57,25 @@ export default function AdminAttendancePage() {
     }, []);
 
     const fetchStudentAttendance = useCallback(async () => {
-        if (!classId || !sectionId) {
-            setStudentRecords([]);
-            return;
-        }
         setLoading(true);
         try {
-            // Fetch both attendance records AND all students in this class/section
+            // Build query params dynamically
+            const attendanceParams = new URLSearchParams({ date });
+            const studentParams = new URLSearchParams({ status: 'Active' });
+
+            if (classId) {
+                attendanceParams.append('classId', classId);
+                studentParams.append('classId', classId);
+            }
+            if (sectionId) {
+                attendanceParams.append('sectionId', sectionId);
+                studentParams.append('sectionId', sectionId);
+            }
+
+            // Fetch both attendance records AND all students (filtered or all)
             const [attendanceRes, studentsRes] = await Promise.all([
-                api.get(`/attendance?date=${date}&classId=${classId}&sectionId=${sectionId}`),
-                api.get(`/admin/students?classId=${classId}&sectionId=${sectionId}&status=Active`)
+                api.get(`/attendance?${attendanceParams.toString()}`),
+                api.get(`/admin/students?${studentParams.toString()}`)
             ]);
 
             const attendanceRecords = attendanceRes.data;
@@ -75,7 +84,6 @@ export default function AdminAttendancePage() {
             setIsFrozen(frozenStatus);
 
             // Merge: show all students, use attendance record if exists, otherwise create placeholder
-            const markedStudentIds = new Set(attendanceRecords.map((r: AttendanceRecord) => r.studentId._id));
 
             const mergedRecords: AttendanceRecord[] = allStudents.map((student: { _id: string; fullName: string; registrationNumber: string; classId: { _id: string; name: string }; sectionId: { _id: string; name: string } }) => {
                 const existingRecord = attendanceRecords.find((r: AttendanceRecord) => r.studentId._id === student._id);

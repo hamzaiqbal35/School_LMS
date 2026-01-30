@@ -67,20 +67,43 @@ exports.markAttendance = async (req, res) => {
 
             if (!hasAccess) {
                 // Check regular assignment - teacher must have ANY assignment for this class/section on this day
-                const assignment = await TeacherAssignment.findOne({
+                const assignments = await TeacherAssignment.find({
                     teacherId: req.user._id,
                     classId,
                     sectionId,
                     active: true
                 }).populate('timeSlotId');
 
-                if (assignment && assignment.timeSlotId && assignment.timeSlotId.day === dayName) {
+                // Find valid assignment for the day
+                const todayAssignments = assignments.filter(a => a.timeSlotId && a.timeSlotId.day === dayName);
+
+                if (todayAssignments.length > 0) {
                     hasAccess = true;
 
-                    // Time Window Enforcement
+                    // Logic: If multiple assignments (e.g. 9am and 2pm), pick the one that is "current" or "upcoming"
+                    // to avoid showing "Closed" for the 9am one when it's 1:55pm for the 2pm one.
+                    // We'll prioritize an assignment where we are NOT "Too late" i.e. now <= endWindow (+buffer if needed)
+
+                    let targetAssignment = todayAssignments[0]; // Default to first matches
+
+                    // Try to find a better match (Currently active or upcoming)
                     const now = new Date();
-                    const [startH, startM] = assignment.timeSlotId.startTime.split(':').map(Number);
-                    const [endH, endM] = assignment.timeSlotId.endTime.split(':').map(Number);
+                    for (const assign of todayAssignments) {
+                        const [endH, endM] = assign.timeSlotId.endTime.split(':').map(Number);
+                        const endWindow = new Date();
+                        endWindow.setHours(endH, endM, 0, 0);
+
+                        // If we are NOT past this class's end time, this is a better candidate to check against
+                        // (It will either be Valid or "Too Early", but not "Closed")
+                        if (now <= endWindow) {
+                            targetAssignment = assign;
+                            break; // specific priority: first one that hasn't finished yet
+                        }
+                    }
+
+                    // Time Window Enforcement on the target assignment
+                    const [startH, startM] = targetAssignment.timeSlotId.startTime.split(':').map(Number);
+                    const [endH, endM] = targetAssignment.timeSlotId.endTime.split(':').map(Number);
 
                     const startWindow = new Date();
                     startWindow.setHours(startH, startM, 0, 0);
@@ -101,13 +124,13 @@ exports.markAttendance = async (req, res) => {
 
                     if (now < startWindow) {
                         return res.status(403).json({
-                            message: `Too early. Attendance for ${dayName}, ${formattedDate} opens at ${formatTime12Hour(assignment.timeSlotId.startTime)}.`
+                            message: `Too early. Attendance for ${dayName}, ${formattedDate} opens at ${formatTime12Hour(targetAssignment.timeSlotId.startTime)}.`
                         });
                     }
 
                     if (now > endWindow) {
                         return res.status(403).json({
-                            message: `Attendance Closed for ${dayName}, ${formattedDate}. Window was ${formatTime12Hour(assignment.timeSlotId.startTime)} - ${formatTime12Hour(assignment.timeSlotId.endTime)}.`
+                            message: `Attendance Closed for ${dayName}, ${formattedDate}. Window was ${formatTime12Hour(targetAssignment.timeSlotId.startTime)} - ${formatTime12Hour(targetAssignment.timeSlotId.endTime)}.`
                         });
                     }
                 }
@@ -183,7 +206,7 @@ exports.freezeAttendance = async (req, res) => {
 // @access  Teacher (Assigned) / Admin
 exports.getAttendance = async (req, res) => {
     try {
-        const { classId, sectionId, date, studentId } = req.query;
+        const { classId, sectionId, date, studentId, month, year } = req.query;
 
         const query = {};
         if (classId) query.classId = classId;
@@ -193,6 +216,12 @@ exports.getAttendance = async (req, res) => {
             const qDate = new Date(date);
             qDate.setUTCHours(0, 0, 0, 0);
             query.date = qDate;
+        } else if (month && year) {
+            // Construct date range for the month in UTC
+            // month is 1-12
+            const start = new Date(Date.UTC(year, month - 1, 1));
+            const end = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+            query.date = { $gte: start, $lte: end };
         }
 
         const attendance = await Attendance.find(query)

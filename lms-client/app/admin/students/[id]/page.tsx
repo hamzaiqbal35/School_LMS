@@ -35,6 +35,12 @@ interface Fee {
     paymentDate?: string;
 }
 
+interface Attendance {
+    _id: string;
+    date: string;
+    status: string;
+    markedBy: { fullName: string; role: string };
+}
 export default function StudentDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
     const router = useRouter();
@@ -44,6 +50,12 @@ export default function StudentDetailsPage({ params }: { params: Promise<{ id: s
     const [loading, setLoading] = useState(true);
     const [feeFilter, setFeeFilter] = useState('All');
     const [yearFilter, setYearFilter] = useState('All');
+
+    // Attendance State
+    const [attendance, setAttendance] = useState<Attendance[]>([]);
+    const [attMonth, setAttMonth] = useState(new Date().getMonth() + 1);
+    const [attYear, setAttYear] = useState(new Date().getFullYear());
+    const [attLoading, setAttLoading] = useState(false);
 
     // Extract unique years from fees
     const availableYears = [...new Set(fees.map(f => f.month?.split('-')[0]).filter(Boolean))].sort().reverse();
@@ -82,6 +94,16 @@ export default function StudentDetailsPage({ params }: { params: Promise<{ id: s
             fetchData();
         }
     }, [resolvedParams.id, fetchData]);
+
+    // Fetch Attendance
+    useEffect(() => {
+        if (!resolvedParams.id) return;
+        setAttLoading(true);
+        api.get(`/attendance?studentId=${resolvedParams.id}&month=${attMonth}&year=${attYear}`)
+            .then(res => setAttendance(res.data))
+            .catch(err => console.error(err))
+            .finally(() => setAttLoading(false));
+    }, [resolvedParams.id, attMonth, attYear]);
 
     if (loading) return <div className="flex justify-center p-20"><Loader2 className="w-10 h-10 animate-spin text-blue-600" /></div>;
     if (!student) return <div className="p-10 text-center">Student not found</div>;
@@ -265,6 +287,94 @@ export default function StudentDetailsPage({ params }: { params: Promise<{ id: s
                             </div>
                         ) : (
                             <p className="text-gray-500 italic text-center py-4">No payment history available</p>
+                        )}
+                    </div>
+
+                    {/* Attendance History */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                            <h3 className="text-lg font-bold text-gray-800 flex items-center">
+                                <Calendar className="w-5 h-5 mr-2 text-blue-600" /> Attendance History
+                            </h3>
+                            <div className="flex gap-2">
+                                <select
+                                    value={attMonth}
+                                    onChange={(e) => setAttMonth(Number(e.target.value))}
+                                    className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white"
+                                >
+                                    {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                                        <option key={m} value={m}>{new Date(0, m - 1).toLocaleString('default', { month: 'long' })}</option>
+                                    ))}
+                                </select>
+                                <select
+                                    value={attYear}
+                                    onChange={(e) => setAttYear(Number(e.target.value))}
+                                    className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white"
+                                >
+                                    {availableYears.length > 0 ? availableYears.map(y => <option key={y} value={y}>{y}</option>) : <option value={new Date().getFullYear()}>{new Date().getFullYear()}</option>}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Summary Stats */}
+                        {!attLoading && attendance.length > 0 && (
+                            <div className="grid grid-cols-4 gap-2 mb-4">
+                                <div className="bg-green-50 p-2 rounded-lg text-center border border-green-100">
+                                    <div className="text-xs font-bold text-green-600 uppercase">Present</div>
+                                    <div className="text-lg font-bold text-green-800">{attendance.filter(a => a.status === 'Present').length}</div>
+                                </div>
+                                <div className="bg-red-50 p-2 rounded-lg text-center border border-red-100">
+                                    <div className="text-xs font-bold text-red-600 uppercase">Absent</div>
+                                    <div className="text-lg font-bold text-red-800">{attendance.filter(a => a.status === 'Absent').length}</div>
+                                </div>
+                                <div className="bg-amber-50 p-2 rounded-lg text-center border border-amber-100">
+                                    <div className="text-xs font-bold text-amber-600 uppercase">Leave</div>
+                                    <div className="text-lg font-bold text-amber-800">{attendance.filter(a => a.status === 'Leave').length}</div>
+                                </div>
+                                <div className="bg-blue-50 p-2 rounded-lg text-center border border-blue-100">
+                                    <div className="text-xs font-bold text-blue-600 uppercase">Late</div>
+                                    <div className="text-lg font-bold text-blue-800">{attendance.filter(a => a.status === 'Late').length}</div>
+                                </div>
+                            </div>
+                        )}
+
+                        {attLoading ? (
+                            <div className="text-center py-8"><Loader2 className="w-6 h-6 animate-spin text-blue-500 mx-auto" /></div>
+                        ) : attendance.length > 0 ? (
+                            <div className="overflow-x-auto max-h-60 overflow-y-auto custom-scrollbar">
+                                <table className="min-w-full text-sm">
+                                    <thead className="bg-gray-50 sticky top-0 z-10">
+                                        <tr>
+                                            <th className="px-4 py-2 text-left font-semibold text-gray-600">Date</th>
+                                            <th className="px-4 py-2 text-left font-semibold text-gray-600">Status</th>
+                                            <th className="px-4 py-2 text-left font-semibold text-gray-600">Marked By</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {attendance.map((record) => (
+                                            <tr key={record._id} className="hover:bg-gray-50/50">
+                                                <td className="px-4 py-2 font-medium text-gray-800">
+                                                    {new Date(record.date).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}
+                                                </td>
+                                                <td className="px-4 py-2">
+                                                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${record.status === 'Present' ? 'bg-green-100 text-green-700' :
+                                                        record.status === 'Absent' ? 'bg-red-100 text-red-700' :
+                                                            record.status === 'Leave' ? 'bg-amber-100 text-amber-700' :
+                                                                'bg-blue-100 text-blue-700'
+                                                        }`}>
+                                                        {record.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-2 text-xs text-gray-500">
+                                                    {record.markedBy?.role === 'ADMIN' ? 'Admin' : record.markedBy?.fullName || 'N/A'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <p className="text-gray-500 italic text-center py-8 bg-gray-50/50 rounded-lg">No attendance records found for this period</p>
                         )}
                     </div>
                 </div>

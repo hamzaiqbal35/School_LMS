@@ -144,8 +144,9 @@ export default function FeesPage() {
             await api.delete(`/fees/${id}`);
             fetchChallans();
             alert('Challan deleted');
-        } catch (error: any) {
-            alert(error.response?.data?.message || 'Failed to delete');
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } } };
+            alert(err.response?.data?.message || 'Failed to delete');
         }
     };
 
@@ -687,7 +688,7 @@ export default function FeesPage() {
                                             </div>
                                             {viewChallan.verificationNote && (
                                                 <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-100 text-sm text-slate-600 italic">
-                                                    "{viewChallan.verificationNote}"
+                                                    &quot;{viewChallan.verificationNote}&quot;
                                                 </div>
                                             )}
                                         </div>

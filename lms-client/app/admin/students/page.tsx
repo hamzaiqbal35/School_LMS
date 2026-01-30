@@ -209,7 +209,7 @@ export default function StudentsPage() {
                                         variants={item}
                                         className="group bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all duration-300 relative overflow-hidden"
                                     >
-                                        <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                        <div className="absolute top-0 right-0 p-3 z-10">
                                             <div className="relative">
                                                 <button
                                                     onClick={() => setOpenMenuId(openMenuId === student._id ? null : student._id)}
