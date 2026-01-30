@@ -203,10 +203,10 @@ export default function AdminDashboard() {
                 </motion.div>
             </div>
 
-            {/* Analytics & Actions Grid */}
+            {/* Analytics Grid */}
             <div className="grid gap-6 grid-cols-1 lg:grid-cols-4">
-                {/* Attendance Chart - Spans 2 columns */}
-                <motion.div variants={item} className="lg:col-span-2">
+                {/* Attendance Chart - Spans 3 columns */}
+                <motion.div variants={item} className="lg:col-span-3">
                     <AttendanceGraph />
                 </motion.div>
 
@@ -214,59 +214,60 @@ export default function AdminDashboard() {
                 <motion.div variants={item} className="lg:col-span-1">
                     <FeesDonutChart />
                 </motion.div>
-
-                {/* Quick Actions - Spans 1 column */}
-                <motion.div variants={item} className="lg:col-span-1 p-6 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col h-full">
-                    <h3 className="text-lg font-bold text-slate-900 mb-6 px-2 flex items-center gap-2">
-                        <span className="w-1.5 h-6 bg-cyan-500 rounded-full"></span>
-                        Quick Actions
-                    </h3>
-                    <div className="flex-1 space-y-3">
-                        <Link href="/admin/students/create" className="group flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-blue-100 hover:bg-blue-50/50 hover:shadow-sm transition-all duration-200">
-                            <div className="h-10 w-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <GraduationCap className="w-5 h-5" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-sm text-slate-900 group-hover:text-blue-700 truncate">Admission</h4>
-                                <p className="text-[10px] text-slate-500 truncate">New student</p>
-                            </div>
-                            <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-all" />
-                        </Link>
-
-                        <Link href="/admin/classes" className="group flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-indigo-100 hover:bg-indigo-50/50 hover:shadow-sm transition-all duration-200">
-                            <div className="h-10 w-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <BookOpen className="w-5 h-5" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-sm text-slate-900 group-hover:text-indigo-700 truncate">Academics</h4>
-                                <p className="text-[10px] text-slate-500 truncate">Classes & Subs</p>
-                            </div>
-                            <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-all" />
-                        </Link>
-
-                        <Link href="/admin/fees" className="group flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-emerald-100 hover:bg-emerald-50/50 hover:shadow-sm transition-all duration-200">
-                            <div className="h-10 w-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <CreditCard className="w-5 h-5" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-sm text-slate-900 group-hover:text-emerald-700 truncate">Finance</h4>
-                                <p className="text-[10px] text-slate-500 truncate">Check dues</p>
-                            </div>
-                            <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-500 transition-all" />
-                        </Link>
-                        <Link href="/admin/attendance" className="group flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-cyan-100 hover:bg-cyan-50/50 hover:shadow-sm transition-all duration-200">
-                            <div className="h-10 w-10 rounded-lg bg-cyan-100 text-cyan-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <Calendar className="w-5 h-5" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-sm text-slate-900 group-hover:text-cyan-700 truncate">Attendance</h4>
-                                <p className="text-[10px] text-slate-500 truncate">Mark/View</p>
-                            </div>
-                            <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-cyan-500 transition-all" />
-                        </Link>
-                    </div>
-                </motion.div>
             </div>
+
+            {/* Quick Actions - Bottom Full Width */}
+            <motion.div variants={item} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                    <span className="w-1.5 h-6 bg-cyan-500 rounded-full"></span>
+                    Quick Actions
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <Link href="/admin/students/create" className="group flex items-center gap-3 p-4 rounded-xl border border-slate-100 hover:border-blue-100 hover:bg-blue-50/50 hover:shadow-md transition-all duration-200">
+                        <div className="h-12 w-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                            <GraduationCap className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-base text-slate-900 group-hover:text-blue-700 truncate">Admission</h4>
+                            <p className="text-xs text-slate-500 truncate mt-0.5">New student</p>
+                        </div>
+                        <ArrowUpRight className="w-5 h-5 text-slate-300 group-hover:text-blue-500 transition-all opacity-0 group-hover:opacity-100" />
+                    </Link>
+
+                    <Link href="/admin/classes" className="group flex items-center gap-3 p-4 rounded-xl border border-slate-100 hover:border-indigo-100 hover:bg-indigo-50/50 hover:shadow-md transition-all duration-200">
+                        <div className="h-12 w-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                            <BookOpen className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-base text-slate-900 group-hover:text-indigo-700 truncate">Academics</h4>
+                            <p className="text-xs text-slate-500 truncate mt-0.5">Classes & Subs</p>
+                        </div>
+                        <ArrowUpRight className="w-5 h-5 text-slate-300 group-hover:text-indigo-500 transition-all opacity-0 group-hover:opacity-100" />
+                    </Link>
+
+                    <Link href="/admin/fees" className="group flex items-center gap-3 p-4 rounded-xl border border-slate-100 hover:border-emerald-100 hover:bg-emerald-50/50 hover:shadow-md transition-all duration-200">
+                        <div className="h-12 w-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                            <CreditCard className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-base text-slate-900 group-hover:text-emerald-700 truncate">Finance</h4>
+                            <p className="text-xs text-slate-500 truncate mt-0.5">Check dues</p>
+                        </div>
+                        <ArrowUpRight className="w-5 h-5 text-slate-300 group-hover:text-emerald-500 transition-all opacity-0 group-hover:opacity-100" />
+                    </Link>
+
+                    <Link href="/admin/attendance" className="group flex items-center gap-3 p-4 rounded-xl border border-slate-100 hover:border-cyan-100 hover:bg-cyan-50/50 hover:shadow-md transition-all duration-200">
+                        <div className="h-12 w-12 rounded-xl bg-cyan-100 text-cyan-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                            <Calendar className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-base text-slate-900 group-hover:text-cyan-700 truncate">Attendance</h4>
+                            <p className="text-xs text-slate-500 truncate mt-0.5">Mark/View</p>
+                        </div>
+                        <ArrowUpRight className="w-5 h-5 text-slate-300 group-hover:text-cyan-500 transition-all opacity-0 group-hover:opacity-100" />
+                    </Link>
+                </div>
+            </motion.div>
         </motion.div>
     );
 }

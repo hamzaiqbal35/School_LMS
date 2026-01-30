@@ -65,7 +65,7 @@ export default function AttendanceGraph() {
     };
 
     return (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 col-span-1 lg:col-span-2">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 min-w-0">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
                     <h3 className="text-lg font-bold text-slate-900">Attendance Trends</h3>
@@ -114,7 +114,7 @@ export default function AttendanceGraph() {
                         <p className="text-sm font-medium">No attendance data found for this period</p>
                     </div>
                 ) : (
-                    <ResponsiveContainer width="100%" height="100%" debounce={1}>
+                    <ResponsiveContainer width="99%" height="100%" debounce={1}>
                         <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="colorPresent" x1="0" y1="0" x2="0" y2="1">

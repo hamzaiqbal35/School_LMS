@@ -66,10 +66,10 @@ export default function FeesDonutChart() {
     };
 
     return (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 min-w-0">
             <h3 className="text-lg font-bold text-slate-900 mb-6">Fees Collection</h3>
             <div className="h-64 relative w-full">
-                <ResponsiveContainer width="100%" height="100%" debounce={1}>
+                <ResponsiveContainer width="99%" height="100%" debounce={1}>
                     <PieChart>
                         <Pie
                             data={chartData}

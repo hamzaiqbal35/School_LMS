@@ -224,7 +224,7 @@ export default function FeesPage() {
                         <input
                             id="filterMonth"
                             name="filterMonth"
-                            type="text"
+                            type="month"
                             placeholder="YYYY-MM"
                             className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 outline-none transition-all"
                             value={filters.month}
@@ -257,6 +257,57 @@ export default function FeesPage() {
                     ))}
                 </div>
             </div>
+
+            {/* Stats Summary */}
+            {!loading && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex items-center gap-3 mb-1">
+                            <div className="p-2 bg-slate-100 rounded-lg text-slate-600">
+                                <FileText className="w-4 h-4" />
+                            </div>
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Records</span>
+                        </div>
+                        <p className="text-2xl font-black text-slate-900 ml-1">{challans.length}</p>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex items-center gap-3 mb-1">
+                            <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                                <CheckCircle className="w-4 h-4" />
+                            </div>
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Amount</span>
+                        </div>
+                        <p className="text-2xl font-black text-slate-900 ml-1">
+                            PKR {challans.reduce((sum, c) => sum + (c.totalAmount || 0), 0).toLocaleString()}
+                        </p>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex items-center gap-3 mb-1">
+                            <div className="p-2 bg-green-100 rounded-lg text-green-600">
+                                <CheckCircle className="w-4 h-4" />
+                            </div>
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Collected</span>
+                        </div>
+                        <p className="text-2xl font-black text-slate-900 ml-1">
+                            PKR {challans.filter(c => c.status === 'Paid').reduce((sum, c) => sum + (c.totalAmount || 0), 0).toLocaleString()}
+                        </p>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex items-center gap-3 mb-1">
+                            <div className="p-2 bg-yellow-100 rounded-lg text-yellow-600">
+                                <Clock className="w-4 h-4" />
+                            </div>
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending</span>
+                        </div>
+                        <p className="text-2xl font-black text-slate-900 ml-1">
+                            PKR {challans.filter(c => c.status === 'Pending' || c.status === 'Overdue').reduce((sum, c) => sum + (c.totalAmount || 0), 0).toLocaleString()}
+                        </p>
+                    </div>
+                </div>
+            )}
 
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden min-h-[400px]">
                 {loading ? (
