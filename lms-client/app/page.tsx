@@ -144,7 +144,7 @@ export default function Home() {
         {/* FEATURES GRID */}
         <section id="features" className="py-32 bg-slate-50 relative overflow-hidden">
           {/* Background Decoration */}
-            <div className="absolute top-0 right-0 w-200 h-200 bg-cyan-100/30 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 z-0"></div>
+          <div className="absolute top-0 right-0 w-200 h-200 bg-cyan-100/30 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 z-0"></div>
 
           <div className="max-w-7xl mx-auto px-6 relative z-10">
             <div className="text-center max-w-3xl mx-auto mb-20">
@@ -158,7 +158,7 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* Feature 1 */}
               <div className="bg-white rounded-3xl p-10 border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-cyan-100/50 hover:-translate-y-2 transition-all duration-300 group">
-                  <div className="w-16 h-16 bg-linear-to-br from-cyan-50 to-cyan-100 rounded-2xl flex items-center justify-center text-cyan-600 mb-8 group-hover:scale-110 transition-transform shadow-inner">
+                <div className="w-16 h-16 bg-linear-to-br from-cyan-50 to-cyan-100 rounded-2xl flex items-center justify-center text-cyan-600 mb-8 group-hover:scale-110 transition-transform shadow-inner">
                   <LayoutDashboard className="w-8 h-8" />
                 </div>
                 <h4 className="text-2xl font-bold text-slate-900 mb-4">Smart Dashboard</h4>
@@ -223,7 +223,7 @@ export default function Home() {
                 <ul className="space-y-5">
                   {[
                     'Real-time syncing across all devices',
-                    'Monthly attendance reports generation' 
+                    'Monthly attendance reports generation'
                   ].map((item, i) => (
                     <li key={i} className="flex items-center gap-4 text-slate-700 font-medium">
                       <div className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-600 flex items-center justify-center shrink-0">
@@ -392,22 +392,11 @@ export default function Home() {
               </div>
 
               <div>
-                <h4 className="font-bold text-slate-900 mb-6 text-lg">Product</h4>
-                <ul className="space-y-4 text-slate-500">
-                  <li><a href="#features" className="hover:text-cyan-600 transition-colors">Features</a></li>
-                  <li><a href="#" className="hover:text-cyan-600 transition-colors">Pricing</a></li>
-                  <li><a href="#" className="hover:text-cyan-600 transition-colors">Integrations</a></li>
-                  <li><a href="#" className="hover:text-cyan-600 transition-colors">Changelog</a></li>
-                </ul>
-              </div>
-
-              <div>
                 <h4 className="font-bold text-slate-900 mb-6 text-lg">Company</h4>
                 <ul className="space-y-4 text-slate-500">
+                  <li><a href="#features" className="hover:text-cyan-600 transition-colors">Features</a></li>
                   <li><a href="/about" className="hover:text-cyan-600 transition-colors">About Us</a></li>
-                  <li><a href="#" className="hover:text-cyan-600 transition-colors">Careers</a></li>
                   <li><a href="/contact" className="hover:text-cyan-600 transition-colors">Contact</a></li>
-                  <li><a href="#" className="hover:text-cyan-600 transition-colors">Privacy Policy</a></li>
                 </ul>
               </div>
             </div>
