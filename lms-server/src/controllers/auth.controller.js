@@ -55,9 +55,9 @@ exports.loginUser = async (req, res) => {
                 username: user.username,
                 email: user.email,
                 role: user.role,
-                role: user.role,
                 fullName: user.fullName,
-                avatar: user.avatar
+                avatar: user.avatar,
+                token // Include token for cross-site fallback
             });
         } else {
             res.status(401).json({ message: 'Invalid email or password' });
