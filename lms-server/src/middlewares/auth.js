@@ -42,6 +42,41 @@ const protect = async (req, res, next) => {
     }
 };
 
+const protectOptional = async (req, res, next) => {
+    let token;
+
+    token = req.cookies.token;
+
+    if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        token = req.headers.authorization.split(' ')[1];
+    }
+
+    if (token) {
+        try {
+            if (!process.env.JWT_SECRET) {
+                // If secret is missing, we can't verify, but for optional protect we just proceed without user
+                return next();
+            }
+
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+            req.user = await User.findById(decoded.id).select('-password');
+
+            // If user not found or inactive, we just proceed without attaching req.user
+            // The controller will handle the missing user
+            next();
+
+        } catch (error) {
+            // Token failed? Just proceed without user
+            // console.error("Optional Auth Token Failed:", error.message); // Optional logging
+            next();
+        }
+    } else {
+        // No token? Just proceed
+        next();
+    }
+};
+
 const adminOnly = (req, res, next) => {
     if (req.user && req.user.role === 'ADMIN') {
         next();
@@ -58,4 +93,4 @@ const teacherOnly = (req, res, next) => {
     }
 };
 
-module.exports = { protect, adminOnly, teacherOnly };
+module.exports = { protect, protectOptional, adminOnly, teacherOnly };

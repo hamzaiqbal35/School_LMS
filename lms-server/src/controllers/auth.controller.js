@@ -13,6 +13,13 @@ const generateToken = (id) => {
 // @access  Private
 exports.getMe = async (req, res) => {
     try {
+        if (!req.user) {
+            return res.json({
+                user: null,
+                isAuthenticated: false
+            });
+        }
+
         const user = await User.findById(req.user._id);
         res.json({
             _id: user._id,
@@ -33,7 +40,7 @@ exports.getMe = async (req, res) => {
 // @access  Public
 exports.loginUser = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, remember } = req.body;
 
         const user = await User.findOne({ email });
 
@@ -42,11 +49,14 @@ exports.loginUser = async (req, res) => {
 
             // Set Cookie
             const options = {
-                expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
                 httpOnly: true,
                 secure: true, // Always true for cross-site (Render -> Vercel)
                 sameSite: 'None' // Always None for cross-site
             };
+
+            if (remember) {
+                options.expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+            }
 
             res.cookie('token', token, options);
 

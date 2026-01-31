@@ -14,6 +14,7 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [remember, setRemember] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
     const login = useAuthStore((state) => state.login);
@@ -35,11 +36,11 @@ export default function LoginPage() {
     useEffect(() => {
         if (!isCheckingAuth && isAuthenticated && user) {
             if (user.role === "ADMIN") {
-                router.push("/admin");
+                router.replace("/admin");
             } else if (user.role === "TEACHER") {
-                router.push("/teacher");
+                router.replace("/teacher");
             } else {
-                router.push("/");
+                router.replace("/");
             }
         }
     }, [isAuthenticated, isCheckingAuth, user, router]);
@@ -55,18 +56,18 @@ export default function LoginPage() {
         const toastId = toast.loading("Signing you in...");
 
         try {
-            const { data } = await api.post("/auth/login", { email, password });
+            const { data } = await api.post("/auth/login", { email, password, remember });
             login(data);
 
             toast.success(`Welcome, ${data.fullName || "User"}!`, { id: toastId });
 
             // Redirect based on role
             if (data.role === "ADMIN") {
-                router.push("/admin");
+                router.replace("/admin");
             } else if (data.role === "TEACHER") {
-                router.push("/teacher");
+                router.replace("/teacher");
             } else {
-                router.push("/");
+                router.replace("/");
             }
         } catch (error: unknown) {
             console.error("Login error:", error);
@@ -215,6 +216,20 @@ export default function LoginPage() {
                                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
                             </div>
+                        </div>
+
+                        {/* REMEMBER ME */}
+                        <div className="flex items-center gap-2 ml-1">
+                            <input
+                                id="remember"
+                                type="checkbox"
+                                checked={remember}
+                                onChange={(e) => setRemember(e.target.checked)}
+                                className="w-5 h-5 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500 focus:ring-offset-0 cursor-pointer"
+                            />
+                            <label htmlFor="remember" className="text-sm font-bold text-slate-600 cursor-pointer select-none">
+                                Remember me for 30 days
+                            </label>
                         </div>
 
                         {/* LOGIN BUTTON */}

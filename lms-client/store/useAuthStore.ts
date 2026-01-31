@@ -29,13 +29,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     isCheckingAuth: true, // Start true, set false after check or if skipped
     isHydrated: true, // Always hydrated since memory-only
     login: (user) => {
-        if (user.token) {
-            localStorage.setItem('token', user.token);
-        }
         set({ user, isAuthenticated: true, isCheckingAuth: false });
     },
     logout: () => {
-        localStorage.removeItem('token');
         set({ user: null, isAuthenticated: false });
     },
     setUser: (user) => set({ user }),
@@ -43,9 +39,31 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({ isCheckingAuth: true });
         try {
             const { data } = await api.get('/auth/me');
-            set({ user: data, isAuthenticated: true, isCheckingAuth: false });
+
+            // Backend now returns 200 with { user: null } if not logged in
+            // OR returns the user object directly if logged in (legacy compatibility check)
+
+            // Check if we got { user: null ... } structure
+            if (data && data.user === null && data.isAuthenticated === false) {
+                set({ user: null, isAuthenticated: false, isCheckingAuth: false });
+                return;
+            }
+
+            // Otherwise, data IS the user object (backward compatibility with what we replaced)
+            // But let's look at the structure we defined in controller:
+            /*
+             if logged in:
+             { _id: ..., username: ... }
+            */
+
+            if (data && data._id) {
+                set({ user: data, isAuthenticated: true, isCheckingAuth: false });
+            } else {
+                // Fallback if structure is unexpected
+                set({ user: null, isAuthenticated: false, isCheckingAuth: false });
+            }
+
         } catch {
-            localStorage.removeItem('token');
             set({ user: null, isAuthenticated: false, isCheckingAuth: false });
         }
     },
