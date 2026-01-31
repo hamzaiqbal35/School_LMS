@@ -27,9 +27,10 @@ export default function ForgotPasswordPage() {
             await api.post("/auth/forgotpassword", { email });
             setIsSent(true);
             toast.success("Reset link sent to your email!", { id: toastId });
-        } catch (error: any) {
+        } catch (error) {
             console.error("Forgot Password error:", error);
-            const message = error.response?.data?.message || "Something went wrong";
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const message = (error as any).response?.data?.message || "Something went wrong";
             toast.error(message, { id: toastId });
         } finally {
             setIsLoading(false);
@@ -77,7 +78,7 @@ export default function ForgotPasswordPage() {
                             <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-400 to-teal-400">Account Access</span>
                         </h1>
                         <p className="text-lg text-slate-400 leading-relaxed mb-8 font-light">
-                            Don't worry, it happens to the best of us. We'll verify your identity and get you back into your workspace in no time.
+                            Don&apos;t worry, it happens to the best of us. We&apos;ll verify your identity and get you back into your workspace in no time.
                         </p>
                     </motion.div>
                 </div>
@@ -119,7 +120,7 @@ export default function ForgotPasswordPage() {
                             </motion.div>
                             <h2 className="text-2xl font-bold text-slate-900 mb-2">Check your email</h2>
                             <p className="text-slate-500 mb-8">
-                                We've sent a password reset link to <br />
+                                We&apos;ve sent a password reset link to <br />
                                 <span className="font-semibold text-slate-700">{email}</span>
                             </p>
                             <Link
@@ -139,7 +140,7 @@ export default function ForgotPasswordPage() {
                                     <Mail className="w-8 h-8" />
                                 </motion.div>
                                 <h2 className="text-3xl font-extrabold text-slate-900 mb-3 tracking-tight">Forgot Password?</h2>
-                                <p className="text-base text-slate-500 font-medium px-4">Enter your email address and we'll send you a link to reset your password.</p>
+                                <p className="text-base text-slate-500 font-medium px-4">Enter your email address and we&apos;ll send you a link to reset your password.</p>
                             </div>
 
                             <form className="space-y-6" onSubmit={handleSubmit}>

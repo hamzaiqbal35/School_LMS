@@ -298,6 +298,8 @@ export default function StudentDetailsPage({ params }: { params: Promise<{ id: s
                             </h3>
                             <div className="flex gap-2">
                                 <select
+                                    id="attendanceMonthFilter"
+                                    name="attendanceMonthFilter"
                                     value={attMonth}
                                     onChange={(e) => setAttMonth(Number(e.target.value))}
                                     className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white"
@@ -307,6 +309,8 @@ export default function StudentDetailsPage({ params }: { params: Promise<{ id: s
                                     ))}
                                 </select>
                                 <select
+                                    id="attendanceYearFilter"
+                                    name="attendanceYearFilter"
                                     value={attYear}
                                     onChange={(e) => setAttYear(Number(e.target.value))}
                                     className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white"

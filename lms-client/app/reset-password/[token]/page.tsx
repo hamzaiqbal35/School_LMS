@@ -46,9 +46,10 @@ export default function ResetPasswordPage({ params }: { params: Params }) {
             await api.put(`/auth/resetpassword/${token}`, { password });
             toast.success("Password updated successfully!", { id: toastId });
             router.push("/login");
-        } catch (error: any) {
+        } catch (error) {
             console.error("Reset Password error:", error);
-            const message = error.response?.data?.message || "Invalid or expired token";
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const message = (error as any).response?.data?.message || "Invalid or expired token";
             toast.error(message, { id: toastId });
         } finally {
             setIsLoading(false);
