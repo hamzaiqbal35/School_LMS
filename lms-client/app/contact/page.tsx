@@ -1,7 +1,47 @@
-// Link import removed
+"use client";
+
 import LandingNavbar from "@/components/LandingNavbar";
+import { useState } from "react";
+import api from "@/lib/api";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 export default function ContactPage() {
+    const [formData, setFormData] = useState({
+        firstName: "",
+        lastName: "",
+        email: "",
+        subject: "",
+        message: ""
+    });
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        try {
+            await api.post("/contact", formData);
+            toast.success("Message sent successfully! We'll get back to you soon.");
+            setFormData({
+                firstName: "",
+                lastName: "",
+                email: "",
+                subject: "",
+                message: ""
+            });
+        } catch (error: any) {
+            console.error("Contact form error:", error);
+            const message = error.response?.data?.message || "Failed to send message";
+            toast.error(message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-800 selection:bg-purple-100">
             <LandingNavbar />
@@ -54,7 +94,7 @@ export default function ContactPage() {
 
                     {/* Contact Form */}
                     <div className="bg-white p-8 md:p-10 rounded-3xl border border-slate-100 shadow-xl shadow-cyan-50 animate-fade-in-up [animation-delay:500ms]" style={{ animationFillMode: 'both' }}>
-                        <form className="space-y-6">
+                        <form className="space-y-6" onSubmit={handleSubmit}>
                             <div className="grid grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label htmlFor="firstName" className="text-sm font-bold text-slate-700">First Name</label>
@@ -62,6 +102,8 @@ export default function ContactPage() {
                                         id="firstName"
                                         name="firstName"
                                         type="text"
+                                        value={formData.firstName}
+                                        onChange={handleChange}
                                         className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-purple-50 transition-all font-medium"
                                         placeholder="Jane"
                                         autoComplete="given-name"
@@ -74,6 +116,8 @@ export default function ContactPage() {
                                         id="lastName"
                                         name="lastName"
                                         type="text"
+                                        value={formData.lastName}
+                                        onChange={handleChange}
                                         className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-50 transition-all font-medium"
                                         placeholder="Doe"
                                         autoComplete="family-name"
@@ -87,6 +131,8 @@ export default function ContactPage() {
                                     id="email"
                                     name="email"
                                     type="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
                                     className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-50 transition-all font-medium"
                                     placeholder="jane@example.com"
                                     autoComplete="email"
@@ -98,14 +144,16 @@ export default function ContactPage() {
                                 <select
                                     id="subject"
                                     name="subject"
+                                    value={formData.subject}
+                                    onChange={handleChange}
                                     className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-50 transition-all font-medium appearance-none"
                                     required
                                 >
                                     <option value="">Select a subject</option>
-                                    <option value="general">General Inquiry</option>
-                                    <option value="support">Technical Support</option>
-                                    <option value="admissions">Admissions</option>
-                                    <option value="other">Other</option>
+                                    <option value="General Inquiry">General Inquiry</option>
+                                    <option value="Technical Support">Technical Support</option>
+                                    <option value="Admissions">Admissions</option>
+                                    <option value="Other">Other</option>
                                 </select>
                             </div>
                             <div className="space-y-2">
@@ -113,13 +161,19 @@ export default function ContactPage() {
                                 <textarea
                                     id="message"
                                     name="message"
+                                    value={formData.message}
+                                    onChange={handleChange}
                                     className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-50 transition-all font-medium h-32 resize-none"
                                     placeholder="How can we help you?"
                                     required
                                 ></textarea>
                             </div>
-                            <button type="submit" className="w-full py-4 rounded-xl bg-cyan-600 text-white font-bold text-lg hover:bg-cyan-700 shadow-lg shadow-purple-200 hover:shadow-cyan-300 transform hover:-translate-y-1 transition-all">
-                                Send Message
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className="w-full py-4 rounded-xl bg-cyan-600 text-white font-bold text-lg hover:bg-cyan-700 shadow-lg shadow-purple-200 hover:shadow-cyan-300 transform hover:-translate-y-1 transition-all flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
+                            >
+                                {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : "Send Message"}
                             </button>
                         </form>
                     </div>

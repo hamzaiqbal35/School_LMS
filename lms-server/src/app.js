@@ -88,6 +88,7 @@ app.use('/api/teacher-attendance', require('./routes/teacherAttendance.routes'))
 app.use('/api/fees', require('./routes/fees.routes'));
 app.use('/api/substitution', require('./routes/substitution.routes'));
 app.use('/api/upload', require('./routes/upload.routes'));
+app.use('/api/contact', require('./routes/contact.routes'));
 
 // Basic route
 app.get('/', (req, res) => {
