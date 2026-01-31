@@ -27,20 +27,7 @@ exports.markAttendance = async (req, res) => {
             return res.status(403).json({ message: 'Attendance for this date is frozen. Contact Admin.' });
         }
 
-        // 1. Check if attendance already marked for this class/section/date
-        // First period teacher marks it, then it's locked for other teachers
-        const existingAttendance = await Attendance.findOne({
-            date: attendedDate,
-            classId,
-            sectionId
-        });
 
-        if (existingAttendance && req.user.role !== 'ADMIN') {
-            // Attendance already marked by first period teacher
-            return res.status(403).json({
-                message: 'Attendance for this class has already been marked today by the first period teacher.'
-            });
-        }
 
         // 2. Authorization: If Teacher, check they have an assignment for this class today
         if (req.user.role === 'TEACHER') {
@@ -144,6 +131,24 @@ exports.markAttendance = async (req, res) => {
             if (!hasAccess) {
                 return res.status(403).json({
                     message: `You are not assigned to this class on ${dayName}.`
+                });
+            }
+        }
+
+        // 2. Check for Existing Attendance (After validating time)
+        const existingAttendance = await Attendance.findOne({
+            date: attendedDate,
+            classId,
+            sectionId
+        });
+
+        if (existingAttendance && req.user.role !== 'ADMIN') {
+            // Check ownership: If I marked it, I can edit.
+            const isMyRecord = existingAttendance.markedBy && existingAttendance.markedBy.toString() === req.user._id.toString();
+
+            if (!isMyRecord) {
+                return res.status(403).json({
+                    message: 'Attendance for this class has already been marked today by another teacher.'
                 });
             }
         }

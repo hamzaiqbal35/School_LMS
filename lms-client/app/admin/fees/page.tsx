@@ -132,9 +132,10 @@ export default function FeesPage() {
                 alert(`Failed to generate any challans.\nError: ${errors[0]?.error || 'Unknown Error'}`);
             }
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error);
-            alert(error.response?.data?.message || 'Failed to connect to server');
+            const err = error as { response?: { data?: { message?: string } } };
+            alert(err.response?.data?.message || 'Failed to connect to server');
         } finally {
             setGenerating(false);
         }
