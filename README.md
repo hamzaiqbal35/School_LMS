@@ -1,35 +1,39 @@
 # School Management System (LMS)
 
-A comprehensive School Management System designed to streamline administrative tasks, enhance teacher productivity, and provide students/parents with easy access to academic information.
+A comprehensive, full-stack School Management System designed to streamline administrative tasks, enhance teacher productivity, and provide a seamless experience for students and parents. Built with modern web technologies for performance, scalability, and enhanced user experience.
 
 ## 🚀 Features
 
-### Admin Module
-- **Dashboard**: Overview of total students, teachers, and other key metrics.
-- **Student Management**: Add, update, view, and delete student records.
-- **Teacher Management**: Manage teacher profiles and assignments.
-- **Class Management**: Organize classes and sections.
-- **Fee Management**: Define fee structures, generate challans, and track payments.
-- **Attendance Monitoring**: View overall attendance stats.
+### 👨‍💼 Admin Module
+- **Dashboard**: Real-time overview of students, teachers, classes, and financial metrics.
+- **Student Management**: Complete lifecycle management (Admission, Editing, Deletion, Promoting).
+- **Teacher Management**: Profile management, class assignment, and schedule tracking.
+- **Fee Management**: Automated challan generation, fee structure definition, and payment tracking.
+- **Attendance**: Global attendance monitoring and reporting.
 
-### Teacher Module
-- **Class Management**: View assigned classes and students.
-- **Attendance**: Mark daily attendance for students.
-- **Assignments**: Create and manage assignments.
-- **Grading**: Input and manage student grades.
+### 👨‍🏫 Teacher Module
+- **Classroom Hub**: View assigned classes and student lists.
+- **Attendance System**: Easy-to-use interface for marking daily student attendance.
+- **Academic Management**: (Planned) Assignment creation and grading.
 
-### General
-- **Secure Authentication**: Role-based access control (Admin, Teacher).
-- **Responsive Design**: Works seamlessly on desktop and mobile devices.
+### 🌟 Public & General
+- **Landing Page**: Professional, responsive public-facing pages (Home, About, Contact).
+- **Contact Form**: Functional contact form with automated email notifications.
+- **Authentication**: Secure role-based login (Admin, Teacher, Student) with JWT.
+- **Password Recovery**: Secure "Forgot Password" flow with email verification links.
+- **Responsive Design**: Fully optimized for desktops, tablets, and mobile devices.
 
 ## 🛠 Tech Stack
 
 ### Client (Frontend)
 - **Framework**: [Next.js 15](https://nextjs.org/) (App Directory)
 - **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **UI Components**: Shadcn UI, Radix UI
+- **Styling**: Tailwind CSS, PostCSS
+- **UI Libraries**: [Shadcn UI](https://ui.shadcn.com/), [Radix UI](https://www.radix-ui.com/)
+- **Animations**: Framer Motion, Tailwindcss Animate
 - **State Management**: Zustand
+- **Charts**: Recharts
+- **Notifications**: Sonner
 - **Icons**: Lucide React
 - **Data Fetching**: Axios
 
@@ -37,9 +41,12 @@ A comprehensive School Management System designed to streamline administrative t
 - **Runtime**: Node.js
 - **Framework**: Express.js
 - **Database**: MongoDB (Mongoose ODM)
-- **Authentication**: JWT & Cookies
-- **File Storage**: Cloudinary (for images and documents)
-- **Security**: Helmet, HPP, CORS, Rate Limiting
+- **Authentication**: JWT (JSON Web Tokens) & HTTP-only Cookies
+- **Email Service**: Nodemailer (SMTP)
+- **File Storage**: Cloudinary (for images/documents)
+- **PDF Generation**: Puppeteer
+- **Security**: Helmet, HPP, CORS, Rate Limiting, XSS-Clean
+- **Validation**: Zod
 
 ## 📦 Installation & Setup
 
@@ -47,6 +54,7 @@ A comprehensive School Management System designed to streamline administrative t
 - Node.js (v18+ recommended)
 - MongoDB Database (Local or Atlas)
 - Cloudinary Account
+- SMTP Server (e.g., Gmail, SendGrid, Mailtrap)
 
 ### 1. Clone the Repository
 \`\`\`bash
@@ -61,17 +69,41 @@ cd lms-server
 npm install
 \`\`\`
 
-Create a \`.env\` file in \`lms-server\` based on \`.env.example\`:
-\`\`\`bash
-cp .env.example .env
+Create a \`.env\` file in \`lms-server\` with the following variables:
+\`\`\`env
+# Server Configuration
+PORT=5000
+NODE_ENV=development
+
+# Database
+MONGO_URI=your_mongodb_connection_string
+
+# Frontend Connection
+CLIENT_URL=http://localhost:3000
+
+# Authentication
+JWT_SECRET=your_super_secret_jwt_key
+JWT_EXPIRE=30d
+COOKIE_EXPIRE=30
+
+# File Storage (Cloudinary)
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+# Email Service (SMTP)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_EMAIL=your_email@gmail.com
+SMTP_PASSWORD=your_app_password
+FROM_EMAIL=your_email@gmail.com
+FROM_NAME=School_LMS
 \`\`\`
-Fill in your environment variables (MongoDB URI, Cloudinary credentials, etc.).
 
 Start the development server:
 \`\`\`bash
 npm run dev
 \`\`\`
-The server will run on \`http://localhost:5000\` (default).
 
 ### 3. Frontend Setup (lms-client)
 Navigate to the client directory and install dependencies:
@@ -80,11 +112,10 @@ cd ../lms-client
 npm install
 \`\`\`
 
-Create a \`.env.local\` file in \`lms-client\` based on \`.env.local.example\`:
-\`\`\`bash
-cp .env.local.example .env.local
+Create a \`.env.local\` file in \`lms-client\`:
+\`\`\`env
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
 \`\`\`
-Ensure \`NEXT_PUBLIC_API_URL\` points to your backend (e.g., \`http://localhost:5000/api\`).
 
 Start the development server:
 \`\`\`bash
@@ -92,23 +123,8 @@ npm run dev
 \`\`\`
 Visit \`http://localhost:3000\` in your browser.
 
-## 🔑 Environment Variables
-
-### Server (\`lms-server/.env\`)
-| Variable | Description |
-|----------|-------------|
-| \`PORT\` | Port number for the server (default: 5000) |
-| \`MONGO_URI\` | Connection string for MongoDB |
-| \`CLIENT_URL\` | URL of the frontend (for CORS) |
-| \`JWT_SECRET\` | Secret key for signing JWTs |
-| \`CLOUDINARY_CLOUD_NAME\` | Cloudinary Cloud Name |
-| \`CLOUDINARY_API_KEY\` | Cloudinary API Key |
-| \`CLOUDINARY_API_SECRET\` | Cloudinary API Secret |
-
-### Client (\`lms-client/.env.local\`)
-| Variable | Description |
-|----------|-------------|
-| \`NEXT_PUBLIC_API_URL\` | Base URL for the backend API |
-
 ## 🤝 Contributing
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+This project is licensed under the MIT License.
