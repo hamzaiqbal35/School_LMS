@@ -1,6 +1,6 @@
 const express = require('express');
 const { protect, protectOptional } = require('../middlewares/auth');
-const { loginUser, registerAdmin, logoutUser, getMe, updateProfile } = require('../controllers/auth.controller');
+const { loginUser, registerAdmin, logoutUser, getMe, updateProfile, forgotPassword, resetPassword } = require('../controllers/auth.controller');
 const { authLimiter } = require('../middlewares/rateLimiter');
 const validate = require('../middlewares/validate');
 const { loginSchema, registerAdminSchema } = require('../validations/auth.validation');
@@ -10,6 +10,8 @@ const r = express.Router();
 r.post('/login', authLimiter, validate(loginSchema), loginUser);
 r.post('/register-admin', validate(registerAdminSchema), registerAdmin); // Careful with this in prod
 r.post('/logout', logoutUser);
+r.post('/forgotpassword', forgotPassword);
+r.put('/resetpassword/:resettoken', resetPassword);
 
 r.get('/me', protectOptional, getMe);
 r.put('/update-profile', protect, updateProfile);

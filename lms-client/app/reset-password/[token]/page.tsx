@@ -1,92 +1,59 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Eye, EyeOff, Mail, Lock, ArrowLeft, Loader2 } from "lucide-react";
+import { useState, use } from "react";
+import { Lock, Eye, EyeOff, ArrowLeft, Loader2, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import api from "@/lib/api";
-import { useAuthStore } from "@/store/useAuthStore";
 
-export default function LoginPage() {
-    const [showPassword, setShowPassword] = useState(false);
-    const [email, setEmail] = useState("");
+type Params = Promise<{ token: string }>;
+
+export default function ResetPasswordPage({ params }: { params: Params }) {
+    // Unwrap params using React.use()
+    const resolvedParams = use(params);
+    const token = resolvedParams.token;
+
     const [password, setPassword] = useState("");
-    const [remember, setRemember] = useState(false);
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
-    const login = useAuthStore((state) => state.login);
-    const { isAuthenticated, isCheckingAuth, checkAuth, user } = useAuthStore();
-
-    // Check auth on mount
-    {/* useEffect(() => {
-        checkAuth();
-    }, [checkAuth]); */}
-
-    // Redirect if authenticated
-    useEffect(() => {
-        const initAuth = async () => {
-            await checkAuth();
-        };
-        initAuth();
-    }, [checkAuth]);
-
-    useEffect(() => {
-        if (!isCheckingAuth && isAuthenticated && user) {
-            if (user.role === "ADMIN") {
-                router.replace("/admin");
-            } else if (user.role === "TEACHER") {
-                router.replace("/teacher");
-            } else {
-                router.replace("/");
-            }
-        }
-    }, [isAuthenticated, isCheckingAuth, user, router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!email || !password) {
+        if (!password || !confirmPassword) {
             toast.error("Please fill in all fields");
             return;
         }
 
+        if (password !== confirmPassword) {
+            toast.error("Passwords do not match");
+            return;
+        }
+
+        if (password.length < 6) {
+            toast.error("Password must be at least 6 characters");
+            return;
+        }
+
         setIsLoading(true);
-        const toastId = toast.loading("Signing you in...");
+        const toastId = toast.loading("Updating password...");
 
         try {
-            const { data } = await api.post("/auth/login", { email, password, remember });
-            login(data);
-
-            toast.success(`Welcome, ${data.fullName || "User"}!`, { id: toastId });
-
-            // Redirect based on role
-            if (data.role === "ADMIN") {
-                router.replace("/admin");
-            } else if (data.role === "TEACHER") {
-                router.replace("/teacher");
-            } else {
-                router.replace("/");
-            }
-        } catch (error: unknown) {
-            console.error("Login error:", error);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const err = error as any;
-            const message = err.response?.data?.message || "Invalid email or password";
+            await api.put(`/auth/resetpassword/${token}`, { password });
+            toast.success("Password updated successfully!", { id: toastId });
+            router.push("/login");
+        } catch (error: any) {
+            console.error("Reset Password error:", error);
+            const message = error.response?.data?.message || "Invalid or expired token";
             toast.error(message, { id: toastId });
         } finally {
             setIsLoading(false);
         }
     };
-
-    if (isCheckingAuth) {
-        return (
-            <div className="h-screen flex items-center justify-center bg-white">
-                <Loader2 className="w-10 h-10 animate-spin text-cyan-600" />
-            </div>
-        );
-    }
 
     return (
         <div className="h-screen overflow-hidden flex flex-col md:flex-row bg-white font-sans text-slate-800 selection:bg-cyan-100 selection:text-cyan-900">
@@ -111,7 +78,7 @@ export default function LoginPage() {
                 <div className="relative z-10">
                     <Link href="/" className="inline-flex items-center gap-3 hover:opacity-90 transition-opacity">
                         <div className="relative w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/20 overflow-hidden">
-                            <Image src="/Logo2.png" width={64} height={64} className="object-contain p-1" alt="Logo" />
+                            <Image src="/Logo2.png" fill sizes="64px" className="object-contain p-1" alt="Logo" />
                         </div>
                         <span className="text-2xl font-bold tracking-tight text-white uppercase italic">Oxford Grammar</span>
                     </Link>
@@ -124,12 +91,12 @@ export default function LoginPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6 }}
                     >
-                        <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-6 leading-tight tracking-tight">
-                            Education <br />
-                            <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-400 to-teal-400">Reimagined</span>
+                        <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight tracking-tight">
+                            Secure Your <br />
+                            <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-400 to-teal-400">Digital Access</span>
                         </h1>
-                        <p className="text-lg md:text-xl text-slate-400 leading-relaxed mb-8 font-light">
-                            Experience the most intuitive school management platform. Streamline operations, empower teachers, and engage students with a state-of-the-art interface.
+                        <p className="text-lg text-slate-400 leading-relaxed mb-8 font-light">
+                            Create a strong, unique password to protect your account. Your security is our top priority.
                         </p>
                     </motion.div>
                 </div>
@@ -155,7 +122,7 @@ export default function LoginPage() {
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.45 }}
-                    className="w-full max-w-md bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] p-12 border border-slate-100 relative group"
+                    className="w-full max-w-md bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] p-12 border border-slate-100 relative group mt-10 md:mt-20"
                 >
                     {/* Top Accent Bar */}
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-1.5 bg-linear-to-r from-cyan-500 to-teal-500 rounded-b-full"></div>
@@ -167,41 +134,19 @@ export default function LoginPage() {
                         >
                             <Lock className="w-8 h-8" />
                         </motion.div>
-                        <h2 className="text-3xl font-extrabold text-slate-900 mb-3 tracking-tight">Welcome Back</h2>
-                        <p className="text-base text-slate-500 font-medium px-4">Securely access your institution&apos;s educational portal.</p>
+                        <h2 className="text-3xl font-extrabold text-slate-900 mb-3 tracking-tight">Set New Password</h2>
+                        <p className="text-base text-slate-500 font-medium px-4">Please enter your new password below. Make sure it&apos;s strong!</p>
                     </div>
 
                     <form className="space-y-6" onSubmit={handleSubmit}>
-                        {/* EMAIL */}
-                        <div className="space-y-2">
-                            <label htmlFor="email" className="text-sm font-bold text-slate-700 ml-1">Email Address</label>
-                            <div className="relative group">
-                                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-cyan-600 transition-colors" />
-                                <input
-                                    id="email"
-                                    name="email"
-                                    autoComplete="email"
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="name@institution.edu"
-                                    className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 outline-none transition-all font-medium shadow-sm hover:border-slate-300"
-                                />
-                            </div>
-                        </div>
-
                         {/* PASSWORD */}
                         <div className="space-y-2">
-                            <div className="flex justify-between items-center ml-1">
-                                <label htmlFor="password" className="text-sm font-bold text-slate-700">Password</label>
-                                <Link href="/forgot-password" className="text-xs font-bold text-cyan-600 hover:text-cyan-700 hover:underline underline-offset-4">Forgot Password?</Link>
-                            </div>
+                            <label htmlFor="password" className="text-sm font-bold text-slate-700 ml-1">New Password</label>
                             <div className="relative group">
                                 <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-cyan-600 transition-colors" />
                                 <input
                                     id="password"
                                     name="password"
-                                    autoComplete="current-password"
                                     type={showPassword ? "text" : "password"}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
@@ -218,21 +163,24 @@ export default function LoginPage() {
                             </div>
                         </div>
 
-                        {/* REMEMBER ME */}
-                        <div className="flex items-center gap-2 ml-1">
-                            <input
-                                id="remember"
-                                type="checkbox"
-                                checked={remember}
-                                onChange={(e) => setRemember(e.target.checked)}
-                                className="w-5 h-5 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500 focus:ring-offset-0 cursor-pointer"
-                            />
-                            <label htmlFor="remember" className="text-sm font-bold text-slate-600 cursor-pointer select-none">
-                                Remember me for 30 days
-                            </label>
+                        {/* CONFIRM PASSWORD */}
+                        <div className="space-y-2">
+                            <label htmlFor="confirmPassword" className="text-sm font-bold text-slate-700 ml-1">Confirm Password</label>
+                            <div className="relative group">
+                                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-cyan-600 transition-colors" />
+                                <input
+                                    id="confirmPassword"
+                                    name="confirmPassword"
+                                    type={showPassword ? "text" : "password"}
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 outline-none transition-all font-medium shadow-sm hover:border-slate-300"
+                                />
+                            </div>
                         </div>
 
-                        {/* LOGIN BUTTON */}
+                        {/* SUBMIT BUTTON */}
                         <motion.button
                             disabled={isLoading}
                             whileHover={{ y: -2 }}
@@ -243,33 +191,20 @@ export default function LoginPage() {
                                 <Loader2 className="w-5 h-5 animate-spin" />
                             ) : (
                                 <>
-                                    <span>Sign In</span>
-                                    <ArrowLeft className="w-5 h-5 rotate-180 group-hover/btn:translate-x-1 transition-transform" />
+                                    <span>Reset Password</span>
+                                    <ArrowRight className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
                                 </>
                             )}
                         </motion.button>
                     </form>
 
-                    <div className="mt-6 pt-6 border-t border-slate-100 text-center">
-                        <p className="text-sm text-slate-500 font-medium">
-                            Need help? <Link href="/contact" className="font-bold text-cyan-600 hover:text-cyan-700 hover:underline underline-offset-4">Support Center</Link>
-                        </p>
-                    </div>
-
-                    <div className="mt-4 flex justify-center">
-                        <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-cyan-600 transition-all group px-4 py-2 rounded-xl hover:bg-cyan-50">
-                            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back to Home
+                    <div className="mt-8 text-center">
+                        <Link href="/login" className="inline-flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-cyan-600 transition-all group px-4 py-2 rounded-xl hover:bg-cyan-50">
+                            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back to Login
                         </Link>
                     </div>
 
                 </motion.div>
-
-                {/* Visual Accent */}
-                <div className="mt-12 text-slate-400 flex items-center gap-4 text-xs font-bold uppercase tracking-widest opacity-50">
-                    <span className="h-px w-8 bg-slate-200"></span>
-                    Trusted by Professionals
-                    <span className="h-px w-8 bg-slate-200"></span>
-                </div>
             </div>
         </div>
     );
