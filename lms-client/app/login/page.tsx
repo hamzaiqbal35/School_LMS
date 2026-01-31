@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -17,6 +17,32 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
     const login = useAuthStore((state) => state.login);
+    const { isAuthenticated, isCheckingAuth, checkAuth, user } = useAuthStore();
+
+    // Check auth on mount
+    {/* useEffect(() => {
+        checkAuth();
+    }, [checkAuth]); */}
+
+    // Redirect if authenticated
+    useEffect(() => {
+        const initAuth = async () => {
+            await checkAuth();
+        };
+        initAuth();
+    }, [checkAuth]);
+
+    useEffect(() => {
+        if (!isCheckingAuth && isAuthenticated && user) {
+            if (user.role === "ADMIN") {
+                router.push("/admin");
+            } else if (user.role === "TEACHER") {
+                router.push("/teacher");
+            } else {
+                router.push("/");
+            }
+        }
+    }, [isAuthenticated, isCheckingAuth, user, router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -52,6 +78,14 @@ export default function LoginPage() {
             setIsLoading(false);
         }
     };
+
+    if (isCheckingAuth) {
+        return (
+            <div className="h-screen flex items-center justify-center bg-white">
+                <Loader2 className="w-10 h-10 animate-spin text-cyan-600" />
+            </div>
+        );
+    }
 
     return (
         <div className="h-screen overflow-hidden flex flex-col md:flex-row bg-white font-sans text-slate-800 selection:bg-cyan-100 selection:text-cyan-900">
@@ -140,24 +174,24 @@ export default function LoginPage() {
                         {/* EMAIL */}
                         <div className="space-y-2">
                             <label htmlFor="email" className="text-sm font-bold text-slate-700 ml-1">Email Address</label>
-                                <div className="relative group">
-                                    <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-cyan-600 transition-colors" />
-                                    <input
-                                        id="email"
-                                        name="email"
-                                        autoComplete="email"
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="name@institution.edu"
-                                        className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 outline-none transition-all font-medium shadow-sm hover:border-slate-300"
-                                    />
-                                </div>
+                            <div className="relative group">
+                                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-cyan-600 transition-colors" />
+                                <input
+                                    id="email"
+                                    name="email"
+                                    autoComplete="email"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="name@institution.edu"
+                                    className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 outline-none transition-all font-medium shadow-sm hover:border-slate-300"
+                                />
+                            </div>
                         </div>
 
                         {/* PASSWORD */}
                         <div className="space-y-2">
-                                <div className="flex justify-between items-center ml-1">
+                            <div className="flex justify-between items-center ml-1">
                                 <label htmlFor="password" className="text-sm font-bold text-slate-700">Password</label>
                                 <a href="#" className="text-xs font-bold text-cyan-600 hover:text-cyan-700 hover:underline underline-offset-4">Forgot Password?</a>
                             </div>
