@@ -82,20 +82,25 @@ exports.markAttendance = async (req, res) => {
 
                     // Logic: If multiple assignments (e.g. 9am and 2pm), pick the one that is "current" or "upcoming"
                     // to avoid showing "Closed" for the 9am one when it's 1:55pm for the 2pm one.
-                    // We'll prioritize an assignment where we are NOT "Too late" i.e. now <= endWindow (+buffer if needed)
+                    // Prioritize assignment where we are NOT "Too late" i.e. now <= endWindow
+
+                    // FIX: Use PKT (UTC+5) for all time comparisons to avoid server timezone issues
+                    const now = new Date();
+                    const pktTimeStr = now.toLocaleTimeString('en-US', { timeZone: 'Asia/Karachi', hour12: false });
+                    const [curH, curM] = pktTimeStr.split(':').map(Number);
+                    const curTotalMins = curH * 60 + curM;
 
                     let targetAssignment = todayAssignments[0]; // Default to first matches
 
                     // Try to find a better match (Currently active or upcoming)
-                    const now = new Date();
                     for (const assign of todayAssignments) {
-                        const [endH, endM] = assign.timeSlotId.endTime.split(':').map(Number);
-                        const endWindow = new Date();
-                        endWindow.setHours(endH, endM, 0, 0);
+                        if (!assign.timeSlotId || !assign.timeSlotId.endTime) continue;
 
-                        // If we are NOT past this class's end time, this is a better candidate to check against
-                        // (It will either be Valid or "Too Early", but not "Closed")
-                        if (now <= endWindow) {
+                        const [endH, endM] = assign.timeSlotId.endTime.split(':').map(Number);
+                        const endTotalMins = endH * 60 + endM;
+
+                        // If current time is before or equal to end time, this is a valid candidate (Open or Future)
+                        if (curTotalMins <= endTotalMins) {
                             targetAssignment = assign;
                             break; // specific priority: first one that hasn't finished yet
                         }
@@ -105,10 +110,8 @@ exports.markAttendance = async (req, res) => {
                     const [startH, startM] = targetAssignment.timeSlotId.startTime.split(':').map(Number);
                     const [endH, endM] = targetAssignment.timeSlotId.endTime.split(':').map(Number);
 
-                    const startWindow = new Date();
-                    startWindow.setHours(startH, startM, 0, 0);
-                    const endWindow = new Date();
-                    endWindow.setHours(endH, endM, 0, 0);
+                    const startTotalMins = startH * 60 + startM;
+                    const endTotalMins = endH * 60 + endM;
 
                     // Helper function to format time in 12-hour AM/PM format
                     const formatTime12Hour = (time24) => {
@@ -122,13 +125,15 @@ exports.markAttendance = async (req, res) => {
                         month: 'short', day: 'numeric', year: 'numeric'
                     });
 
-                    if (now < startWindow) {
+                    // Check: Too Early?
+                    if (curTotalMins < startTotalMins) {
                         return res.status(403).json({
                             message: `Too early. Attendance for ${dayName}, ${formattedDate} opens at ${formatTime12Hour(targetAssignment.timeSlotId.startTime)}.`
                         });
                     }
 
-                    if (now > endWindow) {
+                    // Check: Closed?
+                    if (curTotalMins > endTotalMins) {
                         return res.status(403).json({
                             message: `Attendance Closed for ${dayName}, ${formattedDate}. Window was ${formatTime12Hour(targetAssignment.timeSlotId.startTime)} - ${formatTime12Hour(targetAssignment.timeSlotId.endTime)}.`
                         });
