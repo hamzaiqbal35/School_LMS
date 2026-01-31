@@ -37,7 +37,7 @@ export default function ContactPage() {
                                 </div>
                                 <div>
                                     <p className="font-bold text-slate-900">Call Us</p>
-                                    <a href="tel:03030017905" className="text-slate-500 hover:text-cyan-600 transition-colors">0303 0017905</a>
+                                    <a href="tel:+923030017905" className="text-slate-500 hover:text-cyan-600 transition-colors">+92 303 0017905</a>
                                 </div>
                             </div>
                             <div className="flex items-center gap-4">
