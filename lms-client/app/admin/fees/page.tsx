@@ -107,18 +107,34 @@ export default function FeesPage() {
         try {
             const ids = genData.studentIds.length > 0 ? genData.studentIds : allStudents.map(s => s._id);
 
-            await api.post('/fees/generate', {
+            const res = await api.post('/fees/generate', {
                 month: genData.month,
                 dueDate: genData.dueDate,
                 studentIds: ids,
                 includeExamFee: genData.includeExamFee,
                 includeMisc: genData.includeMisc
             });
+
+            const { successCount, errorCount, errors } = res.data;
+
+            if (successCount > 0) {
+                fetchChallans(); // Refresh list immediately if any succeeded
+            }
+
             setShowGen(false);
-            fetchChallans();
-            alert('Challans Generated Successfully');
-        } catch {
-            alert('Failed to generate');
+
+            if (errorCount === 0) {
+                alert(`successfully generated ${successCount} challans.`);
+            } else if (successCount > 0) {
+                alert(`Generated ${successCount} challans, but failed for ${errorCount} students.\nFirst Error: ${errors[0]?.error || 'Unknown Error'}`);
+            } else {
+                // Total failure
+                alert(`Failed to generate any challans.\nError: ${errors[0]?.error || 'Unknown Error'}`);
+            }
+
+        } catch (error: any) {
+            console.error(error);
+            alert(error.response?.data?.message || 'Failed to connect to server');
         } finally {
             setGenerating(false);
         }
