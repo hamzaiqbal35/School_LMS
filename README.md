@@ -2,28 +2,28 @@
 
 A comprehensive, full-stack School Management System designed to streamline administrative tasks, enhance teacher productivity, and provide a seamless experience for students and parents. Built with modern web technologies for performance, scalability, and enhanced user experience.
 
-## 🚀 Features
+## Features
 
-### 👨‍💼 Admin Module
+### Admin Module
 - **Dashboard**: Real-time overview of students, teachers, classes, and financial metrics.
 - **Student Management**: Complete lifecycle management (Admission, Editing, Deletion, Promoting).
 - **Teacher Management**: Profile management, class assignment, and schedule tracking.
 - **Fee Management**: Automated challan generation, fee structure definition, and payment tracking.
 - **Attendance**: Global attendance monitoring and reporting.
 
-### 👨‍🏫 Teacher Module
+### Teacher Module
 - **Classroom Hub**: View assigned classes and student lists.
 - **Attendance System**: Easy-to-use interface for marking daily student attendance.
 - **Academic Management**: (Planned) Assignment creation and grading.
 
-### 🌟 Public & General
+### Public & General
 - **Landing Page**: Professional, responsive public-facing pages (Home, About, Contact).
 - **Contact Form**: Functional contact form with automated email notifications.
 - **Authentication**: Secure role-based login (Admin, Teacher, Student) with JWT.
 - **Password Recovery**: Secure "Forgot Password" flow with email verification links.
 - **Responsive Design**: Fully optimized for desktops, tablets, and mobile devices.
 
-## 🛠 Tech Stack
+## Tech Stack
 
 ### Client (Frontend)
 - **Framework**: [Next.js 15](https://nextjs.org/) (App Directory)
@@ -48,7 +48,7 @@ A comprehensive, full-stack School Management System designed to streamline admi
 - **Security**: Helmet, HPP, CORS, Rate Limiting, XSS-Clean
 - **Validation**: Zod
 
-## 📦 Installation & Setup
+## Installation & Setup
 
 ### Prerequisites
 - Node.js (v18+ recommended)
