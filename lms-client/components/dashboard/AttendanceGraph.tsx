@@ -106,7 +106,7 @@ export default function AttendanceGraph() {
             <div className="h-72 w-full">
                 {loading ? (
                     <div className="h-full flex items-center justify-center">
-                        <Loader2 className="animate-spin text-cyan-600" />
+                        <Loader2 className="animate-spin text-emerald-800" />
                     </div>
                 ) : data.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-slate-400">

@@ -1,25 +1,28 @@
-"use client"
-import React from 'react';
+"use client";
+
+import React from "react";
 
 export default function TeacherFooter() {
-    const currentYear = new Date().getFullYear();
+  const currentYear = new Date().getFullYear();
 
-    return (
-        <footer className="bg-white border-t border-gray-200 mt-auto">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="text-sm text-gray-500 text-center md:text-left">
-                        <p>&copy; {currentYear} School Management System. All rights reserved.</p>
-                        <p className="text-xs mt-1">Empowering Educators.</p>
-                    </div>
+  return (
+    <footer className="bg-white border-t border-slate-200 mt-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-3">
+          <div className="text-xs text-slate-500 text-center md:text-left">
+            <p className="font-medium text-slate-700">
+              &copy; {currentYear} Oxford Grammar &amp; Cambridge EdTech School. All rights reserved.
+            </p>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Faculty Classroom Hub &bull; Empowering Educators
+            </p>
+          </div>
 
-
-
-                    <div className="text-xs text-gray-400">
-                        Version 1.3.0
-                    </div>
-                </div>
-            </div>
-        </footer>
-    );
+          <div className="text-[11px] font-mono-code text-slate-400">
+            System v2.0 &bull; Continuous Timetable Sync
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
 }

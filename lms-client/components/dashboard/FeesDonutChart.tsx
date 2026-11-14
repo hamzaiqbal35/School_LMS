@@ -35,7 +35,7 @@ export default function FeesDonutChart() {
         fetchFees();
     }, []);
 
-    if (loading) return <div className="h-64 flex items-center justify-center"><Loader2 className="animate-spin text-cyan-600" /></div>;
+    if (loading) return <div className="h-64 flex items-center justify-center"><Loader2 className="animate-spin text-emerald-800" /></div>;
     if (error || !data) return <div className="h-64 flex items-center justify-center text-red-500"><AlertCircle className="mr-2" /> Failed to load data</div>;
 
     const chartData = [

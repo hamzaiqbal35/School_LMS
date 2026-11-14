@@ -1,605 +1,744 @@
-"use client"
-import { useState, useEffect, useCallback } from 'react';
-import api from '@/lib/api';
-import { Loader2, Lock, Unlock, History, Calendar, UserCheck, UserX, Clock, Users, GraduationCap, ChevronDown } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import api from "@/lib/api";
+import {
+  Loader2,
+  Lock,
+  Unlock,
+  History,
+  Calendar,
+  UserCheck,
+  UserX,
+  Clock,
+  Users,
+  GraduationCap,
+  ChevronDown,
+  CalendarCheck,
+  ShieldCheck,
+  CheckCircle2
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
+import { toast } from "sonner";
 
 interface AttendanceRecord {
+  _id: string;
+  studentId: {
     _id: string;
-    studentId: {
-        _id: string;
-        fullName: string;
-        registrationNumber: string;
-    };
-    classId?: { _id: string; name: string };
-    sectionId?: { _id: string; name: string };
-    status: string;
-    markedBy?: { fullName: string; avatar?: string };
-    markedAt: string;
-    isFrozen: boolean;
-    history?: { status: string; timestamp: string; reason?: string }[];
+    fullName: string;
+    registrationNumber: string;
+  };
+  classId?: { _id: string; name: string };
+  sectionId?: { _id: string; name: string };
+  status: string;
+  markedBy?: { fullName: string; avatar?: string };
+  markedAt: string;
+  isFrozen: boolean;
+  history?: { status: string; timestamp: string; reason?: string }[];
 }
 
 interface TeacherRecord {
-    teacherId: { _id: string; fullName: string; avatar?: string };
-    status: string;
-    markedAt?: string;
-    markedBy?: { fullName: string };
-}
-interface MasterData {
-    classes: { _id: string; name: string }[];
-    sections: { _id: string; name: string }[];
+  teacherId: { _id: string; fullName: string; avatar?: string };
+  status: string;
+  markedAt?: string;
+  markedBy?: { fullName: string };
 }
 
+interface MasterData {
+  classes: { _id: string; name: string }[];
+  sections: { _id: string; name: string }[];
+}
 
 export default function AdminAttendancePage() {
-    const [activeTab, setActiveTab] = useState<'STUDENT' | 'TEACHER'>('STUDENT');
+  const [activeTab, setActiveTab] = useState<"STUDENT" | "TEACHER">("STUDENT");
 
-    // Common
-    const [loading, setLoading] = useState(false);
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  // Common
+  const [loading, setLoading] = useState(false);
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
 
-    // Student State
-    const [classId, setClassId] = useState('');
-    const [sectionId, setSectionId] = useState('');
-    const [studentRecords, setStudentRecords] = useState<AttendanceRecord[]>([]);
-    const [masterData, setMasterData] = useState<MasterData>({ classes: [], sections: [] });
-    const [isFrozen, setIsFrozen] = useState(false);
-    const [statusFilter, setStatusFilter] = useState('ALL');
+  // Student State
+  const [classId, setClassId] = useState("");
+  const [sectionId, setSectionId] = useState("");
+  const [studentRecords, setStudentRecords] = useState<AttendanceRecord[]>([]);
+  const [masterData, setMasterData] = useState<MasterData>({ classes: [], sections: [] });
+  const [isFrozen, setIsFrozen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("ALL");
 
-    // Teacher State
-    const [teachers, setTeachers] = useState<{ _id: string; fullName: string; email: string; avatar?: string }[]>([]);
-    const [teacherRecords, setTeacherRecords] = useState<TeacherRecord[]>([]);
+  // Teacher State
+  const [teachers, setTeachers] = useState<
+    { _id: string; fullName: string; email: string; avatar?: string }[]
+  >([]);
+  const [teacherRecords, setTeacherRecords] = useState<TeacherRecord[]>([]);
 
-    useEffect(() => {
-        api.get('/admin/master-data').then(res => setMasterData(res.data));
-    }, []);
+  useEffect(() => {
+    api.get("/admin/master-data").then((res) => setMasterData(res.data));
+  }, []);
 
-    const fetchStudentAttendance = useCallback(async () => {
-        setLoading(true);
-        try {
-            // Build query params dynamically
-            const attendanceParams = new URLSearchParams({ date });
-            const studentParams = new URLSearchParams({ status: 'Active' });
+  const fetchStudentAttendance = useCallback(async () => {
+    setLoading(true);
+    try {
+      const attendanceParams = new URLSearchParams({ date });
+      const studentParams = new URLSearchParams({ status: "Active" });
 
-            if (classId) {
-                attendanceParams.append('classId', classId);
-                studentParams.append('classId', classId);
-            }
-            if (sectionId) {
-                attendanceParams.append('sectionId', sectionId);
-                studentParams.append('sectionId', sectionId);
-            }
+      if (classId) {
+        attendanceParams.append("classId", classId);
+        studentParams.append("classId", classId);
+      }
+      if (sectionId) {
+        attendanceParams.append("sectionId", sectionId);
+        studentParams.append("sectionId", sectionId);
+      }
 
-            // Fetch both attendance records AND all students (filtered or all)
-            const [attendanceRes, studentsRes] = await Promise.all([
-                api.get(`/attendance?${attendanceParams.toString()}`),
-                api.get(`/admin/students?${studentParams.toString()}`)
-            ]);
+      const [attendanceRes, studentsRes] = await Promise.all([
+        api.get(`/attendance?${attendanceParams.toString()}`),
+        api.get(`/admin/students?${studentParams.toString()}`),
+      ]);
 
-            const attendanceRecords = attendanceRes.data;
-            const allStudents = studentsRes.data;
-            const frozenStatus = attendanceRecords.length > 0 ? attendanceRecords[0].isFrozen : false;
-            setIsFrozen(frozenStatus);
+      const attendanceRecords = attendanceRes.data;
+      const allStudents = studentsRes.data;
+      const frozenStatus = attendanceRecords.length > 0 ? attendanceRecords[0].isFrozen : false;
+      setIsFrozen(frozenStatus);
 
-            // Merge: show all students, use attendance record if exists, otherwise create placeholder
-
-            const mergedRecords: AttendanceRecord[] = allStudents.map((student: { _id: string; fullName: string; registrationNumber: string; classId: { _id: string; name: string }; sectionId: { _id: string; name: string } }) => {
-                const existingRecord = attendanceRecords.find((r: AttendanceRecord) => r.studentId._id === student._id);
-                if (existingRecord) {
-                    return existingRecord;
-                }
-                // Create placeholder for unmarked student
-                return {
-                    _id: `temp-${student._id}`,
-                    studentId: { _id: student._id, fullName: student.fullName, registrationNumber: student.registrationNumber },
-                    classId: student.classId,
-                    sectionId: student.sectionId,
-                    status: 'Not Marked',
-                    markedAt: '',
-                    isFrozen: frozenStatus
-                };
-            });
-
-            setStudentRecords(mergedRecords);
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
+      const mergedRecords: AttendanceRecord[] = allStudents.map(
+        (student: {
+          _id: string;
+          fullName: string;
+          registrationNumber: string;
+          classId: { _id: string; name: string };
+          sectionId: { _id: string; name: string };
+        }) => {
+          const existingRecord = attendanceRecords.find(
+            (r: AttendanceRecord) => r.studentId._id === student._id
+          );
+          if (existingRecord) {
+            return existingRecord;
+          }
+          return {
+            _id: `temp-${student._id}`,
+            studentId: {
+              _id: student._id,
+              fullName: student.fullName,
+              registrationNumber: student.registrationNumber,
+            },
+            classId: student.classId,
+            sectionId: student.sectionId,
+            status: "Not Marked",
+            markedAt: "",
+            isFrozen: frozenStatus,
+          };
         }
-    }, [date, classId, sectionId]);
+      );
 
-    const fetchTeacherAttendance = useCallback(async () => {
-        setLoading(true);
-        try {
-            const [teachersRes, attendanceRes] = await Promise.all([
-                api.get('/admin/teachers'),
-                api.get(`/teacher-attendance?date=${date}`)
-            ]);
+      setStudentRecords(mergedRecords);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to load student attendance roll call.");
+    } finally {
+      setLoading(false);
+    }
+  }, [date, classId, sectionId]);
 
-            setTeachers(teachersRes.data);
-            setTeacherRecords(attendanceRes.data);
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
-    }, [date]);
+  const fetchTeacherAttendance = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [teachersRes, attendanceRes] = await Promise.all([
+        api.get("/admin/teachers"),
+        api.get(`/teacher-attendance?date=${date}`),
+      ]);
 
-    useEffect(() => {
-        if (activeTab === 'STUDENT') {
-            fetchStudentAttendance();
-        } else if (activeTab === 'TEACHER') {
-            fetchTeacherAttendance();
-        }
-    }, [activeTab, date, classId, sectionId, fetchStudentAttendance, fetchTeacherAttendance]);
+      setTeachers(teachersRes.data);
+      setTeacherRecords(attendanceRes.data);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to load faculty attendance.");
+    } finally {
+      setLoading(false);
+    }
+  }, [date]);
 
+  useEffect(() => {
+    if (activeTab === "STUDENT") {
+      fetchStudentAttendance();
+    } else if (activeTab === "TEACHER") {
+      fetchTeacherAttendance();
+    }
+  }, [activeTab, date, classId, sectionId, fetchStudentAttendance, fetchTeacherAttendance]);
 
-    const markTeacherStatus = async (teacherId: string, status: string) => {
-        try {
-            // Optimistic Update
-            const updatedRecords = teacherRecords.some(r => r.teacherId._id === teacherId)
-                ? teacherRecords.map(r => r.teacherId._id === teacherId ? { ...r, status } : r)
-                : [...teacherRecords, { teacherId: { _id: teacherId, fullName: '' }, status, markedAt: new Date().toISOString(), markedBy: { fullName: 'Admin' } }]; // Simplified optimistic
+  const markTeacherStatus = async (teacherId: string, status: string) => {
+    try {
+      const updatedRecords = teacherRecords.some((r) => r.teacherId._id === teacherId)
+        ? teacherRecords.map((r) => (r.teacherId._id === teacherId ? { ...r, status } : r))
+        : [
+            ...teacherRecords,
+            {
+              teacherId: { _id: teacherId, fullName: "" },
+              status,
+              markedAt: new Date().toISOString(),
+              markedBy: { fullName: "Admin" },
+            },
+          ];
 
-            setTeacherRecords(updatedRecords);
+      setTeacherRecords(updatedRecords);
 
-            await api.post('/teacher-attendance', {
-                date,
-                records: [{ teacherId, status }]
-            });
+      await api.post("/teacher-attendance", {
+        date,
+        records: [{ teacherId, status }],
+      });
 
-            // Background refresh to ensure consistency
-            const res = await api.get(`/teacher-attendance?date=${date}`);
-            setTeacherRecords(res.data);
-        } catch {
-            alert('Failed to mark attendance');
-            fetchTeacherAttendance(); // Revert
-        }
-    };
+      toast.success(`Faculty status recorded as ${status}.`);
+      const res = await api.get(`/teacher-attendance?date=${date}`);
+      setTeacherRecords(res.data);
+    } catch {
+      toast.error("Failed to record faculty attendance.");
+      fetchTeacherAttendance();
+    }
+  };
 
-    const toggleFreeze = async () => {
-        if (!classId || !sectionId) return;
-        try {
-            await api.post('/attendance/freeze', {
-                date,
-                classId,
-                sectionId,
-                action: isFrozen ? 'UNFREEZE' : 'FREEZE'
-            });
-            setIsFrozen(!isFrozen);
-            fetchStudentAttendance(); // Refresh
-        } catch {
-            alert('Failed to update freeze status');
-        }
-    };
+  const toggleFreeze = async () => {
+    if (!classId || !sectionId) {
+      toast.warning("Please select a specific Class and Section to freeze or unfreeze.");
+      return;
+    }
+    try {
+      await api.post("/attendance/freeze", {
+        date,
+        classId,
+        sectionId,
+        action: isFrozen ? "UNFREEZE" : "FREEZE",
+      });
+      setIsFrozen(!isFrozen);
+      toast.success(isFrozen ? "Attendance audit unlocked." : "Attendance audit locked.");
+      fetchStudentAttendance();
+    } catch {
+      toast.error("Failed to update freeze status.");
+    }
+  };
 
-    // Admin: Mark/Edit Student Attendance
-    const markStudentStatus = async (studentId: string, status: string) => {
-        if (!classId || !sectionId) {
-            alert('Please select a class and section first');
-            return;
-        }
-        try {
-            // Optimistic Update
-            const updatedRecords = studentRecords.map(r =>
-                r.studentId._id === studentId ? { ...r, status } : r
-            );
-            setStudentRecords(updatedRecords);
+  const markStudentStatus = async (studentId: string, status: string) => {
+    if (!classId || !sectionId) {
+      toast.warning("Please filter by a specific Class and Section before recording attendance.");
+      return;
+    }
+    try {
+      const updatedRecords = studentRecords.map((r) =>
+        r.studentId._id === studentId ? { ...r, status } : r
+      );
+      setStudentRecords(updatedRecords);
 
-            await api.post('/attendance', {
-                date,
-                classId,
-                sectionId,
-                records: [{ studentId, status }]
-            });
+      await api.post("/attendance", {
+        date,
+        classId,
+        sectionId,
+        records: [{ studentId, status }],
+      });
 
-            // Refresh to get updated markedBy info
-            fetchStudentAttendance();
-        } catch (err) {
-            console.error(err);
-            alert('Failed to update attendance');
-            fetchStudentAttendance(); // Revert
-        }
-    };
+      toast.success(`Student attendance marked: ${status}`);
+      fetchStudentAttendance();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to record student status.");
+      fetchStudentAttendance();
+    }
+  };
 
-    const filteredStudentRecords = studentRecords.filter(record => statusFilter === 'ALL' || record.status === statusFilter);
+  const filteredStudentRecords = studentRecords.filter(
+    (record) => statusFilter === "ALL" || record.status === statusFilter
+  );
 
-    const filteredTeacherRecords = teachers.filter(teacher => {
-        if (statusFilter === 'ALL') return true;
-        const record = teacherRecords.find(r => r.teacherId._id === teacher._id);
-        const status = record ? record.status : 'Not Marked';
-        return status === statusFilter;
-    });
+  const filteredTeacherRecords = teachers.filter((teacher) => {
+    if (statusFilter === "ALL") return true;
+    const record = teacherRecords.find((r) => r.teacherId._id === teacher._id);
+    const status = record ? record.status : "Not Marked";
+    return status === statusFilter;
+  });
 
-    const currentCount = activeTab === 'STUDENT' ? filteredStudentRecords.length : filteredTeacherRecords.length;
+  const currentCount =
+    activeTab === "STUDENT" ? filteredStudentRecords.length : filteredTeacherRecords.length;
 
-    return (
-        <div className="space-y-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Attendance Audit</h1>
-                    <p className="text-slate-500 mt-1">Track and manage daily attendance records</p>
-                </div>
-                <div className="flex bg-white p-1.5 rounded-xl shadow-sm border border-slate-200">
-                    <button
-                        onClick={() => setActiveTab('STUDENT')}
-                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'STUDENT' ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
-                    >
-                        <GraduationCap className="w-4 h-4" />
-                        Students
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('TEACHER')}
-                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'TEACHER' ? 'bg-indigo-50 text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
-                    >
-                        <Users className="w-4 h-4" />
-                        Teachers
-                    </button>
-                </div>
-            </div>
-
-            {/* Controls */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <div className="flex flex-wrap items-center gap-4">
-                    <div className="w-full md:w-auto">
-                        <label htmlFor="filterDate" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Date</label>
-                        <div className="relative">
-                            <Calendar className="absolute left-3 top-2.5 text-slate-400 w-4 h-4" />
-                            <input
-                                id="filterDate"
-                                name="filterDate"
-                                type="date"
-                                className="pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-slate-700 font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none w-full md:w-auto transition-all"
-                                value={date}
-                                onChange={(e) => setDate(e.target.value)}
-                            />
-                        </div>
-                    </div>
-
-                    {activeTab === 'STUDENT' && (
-                        <>
-                            <div className="w-full md:w-auto">
-                                <label htmlFor="filterClass" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Class</label>
-                                <div className="relative">
-                                    <select
-                                        id="filterClass"
-                                        name="filterClass"
-                                        className="pl-3 pr-8 py-2.5 border border-slate-200 rounded-xl text-slate-700 font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none w-full md:min-w-[180px] appearance-none transition-all bg-white"
-                                        value={classId}
-                                        onChange={(e) => setClassId(e.target.value)}
-                                    >
-                                        <option value="">All Classes</option>
-                                        {masterData.classes.map((c: { _id: string; name: string }) => (
-                                            <option key={c._id} value={c._id}>{c.name}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-3 text-slate-400 w-4 h-4 pointer-events-none" />
-                                </div>
-                            </div>
-                            <div className="w-full md:w-auto">
-                                <label htmlFor="filterSection" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Section</label>
-                                <div className="relative">
-                                    <select
-                                        id="filterSection"
-                                        name="filterSection"
-                                        className="pl-3 pr-8 py-2.5 border border-slate-200 rounded-xl text-slate-700 font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none w-full md:min-w-[180px] appearance-none transition-all bg-white"
-                                        value={sectionId}
-                                        onChange={(e) => setSectionId(e.target.value)}
-                                    >
-                                        <option value="">All Sections</option>
-                                        {masterData.sections.map((s: { _id: string; name: string }) => (
-                                            <option key={s._id} value={s._id}>{s.name}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-3 text-slate-400 w-4 h-4 pointer-events-none" />
-                                </div>
-                            </div>
-
-                            {classId && sectionId && (
-                                <div className="ml-auto self-end w-full md:w-auto">
-                                    <button
-                                        onClick={toggleFreeze}
-                                        className={`w-full md:w-auto flex items-center justify-center px-4 py-2.5 rounded-xl font-bold transition-all ${isFrozen
-                                            ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 shadow-sm'
-                                            : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-sm'
-                                            }`}
-                                    >
-                                        {isFrozen ? <Lock className="w-4 h-4 mr-2" /> : <Unlock className="w-4 h-4 mr-2" />}
-                                        {isFrozen ? 'Unfreeze Record' : 'Freeze Record'}
-                                    </button>
-                                </div>
-                            )}
-                        </>
-                    )}
-                </div>
-
-                {/* Status Filter */}
-                <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end">
-                    <div className="w-full md:w-auto flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 mr-2 shadow-sm">
-                            {currentCount} Records
-                        </span>
-                        <label htmlFor="statusFilter" className="text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Filter Status:</label>
-                        <select
-                            id="statusFilter"
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none font-medium cursor-pointer"
-                        >
-                            <option value="ALL">All Statuses</option>
-                            <option value="Not Marked">Not Marked</option>
-                            <option value="Present">Present</option>
-                            <option value="Absent">Absent</option>
-                            <option value="Leave">Leave</option>
-                            <option value="Late">Late</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            {/* Data Table */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                {loading ? (
-                    <div className="p-20 flex justify-center items-center flex-col gap-4">
-                        <Loader2 className="animate-spin text-blue-600 w-10 h-10" />
-                        <p className="text-slate-500 font-medium">Loading records...</p>
-                    </div>
-                ) : (
-                    activeTab === 'STUDENT' ? (
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-slate-100">
-                                <thead className="bg-slate-50/50">
-                                    <tr>
-                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Student</th>
-                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Class</th>
-                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
-                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Marked By</th>
-                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">History</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100 bg-white">
-                                    <AnimatePresence>
-                                        {filteredStudentRecords.map(record => (
-                                            <motion.tr
-                                                key={record._id}
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                className="group hover:bg-slate-50/50 transition-colors"
-                                            >
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold relative overflow-hidden">
-                                                            {(record.studentId?.fullName || '?').charAt(0)}
-                                                        </div>
-                                                        <div>
-                                                            <div className="font-bold text-slate-900">{record.studentId?.fullName}</div>
-                                                            <div className="text-xs text-slate-500 font-mono">{record.studentId?.registrationNumber}</div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-slate-600">
-                                                    {record.classId?.name} - {record.sectionId?.name}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border ${record.status === 'Present' ? 'bg-green-50 text-green-700 border-green-100' :
-                                                        record.status === 'Absent' ? 'bg-red-50 text-red-700 border-red-100' :
-                                                            record.status === 'Leave' ? 'bg-amber-50 text-amber-700 border-amber-100' :
-                                                                'bg-slate-50 text-slate-700 border-slate-200'
-                                                        }`}>
-                                                        {record.status === 'Present' && <UserCheck className="w-3 h-3 mr-1.5" />}
-                                                        {record.status === 'Absent' && <UserX className="w-3 h-3 mr-1.5" />}
-                                                        {record.status === 'Leave' && <Calendar className="w-3 h-3 mr-1.5" />}
-                                                        {record.status === 'Late' && <Clock className="w-3 h-3 mr-1.5" />}
-                                                        {record.status}
-                                                    </span>
-                                                </td>
-                                                {/* Admin Action Buttons */}
-                                                <td className="px-6 py-4">
-                                                    <div className="flex bg-slate-100/80 rounded-xl p-1 w-fit shadow-inner">
-                                                        <button
-                                                            onClick={() => markStudentStatus(record.studentId._id, 'Present')}
-                                                            className={`px-2.5 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 ${record.status === 'Present'
-                                                                ? 'bg-white text-green-600 shadow-sm ring-1 ring-black/5'
-                                                                : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
-                                                                }`}
-                                                        >
-                                                            <UserCheck className="w-3 h-3" />
-                                                            P
-                                                        </button>
-                                                        <button
-                                                            onClick={() => markStudentStatus(record.studentId._id, 'Absent')}
-                                                            className={`px-2.5 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 ${record.status === 'Absent'
-                                                                ? 'bg-white text-red-600 shadow-sm ring-1 ring-black/5'
-                                                                : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
-                                                                }`}
-                                                        >
-                                                            <UserX className="w-3 h-3" />
-                                                            A
-                                                        </button>
-                                                        <button
-                                                            onClick={() => markStudentStatus(record.studentId._id, 'Leave')}
-                                                            className={`px-2.5 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 ${record.status === 'Leave'
-                                                                ? 'bg-white text-amber-600 shadow-sm ring-1 ring-black/5'
-                                                                : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
-                                                                }`}
-                                                        >
-                                                            <Calendar className="w-3 h-3" />
-                                                            L
-                                                        </button>
-                                                        <button
-                                                            onClick={() => markStudentStatus(record.studentId._id, 'Late')}
-                                                            className={`px-2.5 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 ${record.status === 'Late'
-                                                                ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5'
-                                                                : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
-                                                                }`}
-                                                        >
-                                                            <Clock className="w-3 h-3" />
-                                                            Lt
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-slate-600">
-                                                    <div className="flex items-center gap-2">
-                                                        {record.markedBy?.avatar && (
-                                                            <div className="relative w-5 h-5 rounded-full overflow-hidden shrink-0 border border-slate-200">
-                                                                <Image src={record.markedBy.avatar} alt={record.markedBy.fullName} fill className="object-cover" sizes="20px" />
-                                                            </div>
-                                                        )}
-                                                        <div className="font-medium">{record.markedBy?.fullName || 'N/A'}</div>
-                                                    </div>
-                                                    <div className="text-xs text-slate-400 flex items-center mt-0.5">
-                                                        <Clock className="w-3 h-3 mr-1" />
-                                                        {new Date(record.markedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    {record.history && record.history.length > 1 && (
-                                                        <div className="group/tooltip relative inline-block">
-                                                            <button className="text-blue-600 hover:text-blue-800 flex items-center text-xs font-bold bg-blue-50 px-2 py-1 rounded-md transition-colors">
-                                                                <History className="w-3 h-3 mr-1.5" />
-                                                                {record.history.length} Updates
-                                                            </button>
-                                                            {/* Tooltip */}
-                                                            <div className="absolute right-0 bottom-full mb-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 p-4 hidden group-hover/tooltip:block z-50">
-                                                                <h4 className="text-xs font-bold text-slate-900 mb-3 border-b border-slate-100 pb-2 uppercase tracking-wide">Modification Log</h4>
-                                                                <div className="space-y-3 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
-                                                                    {record.history.map((h: { status: string; timestamp: string; reason?: string }, i: number) => (
-                                                                        <div key={i} className="text-xs text-slate-600 border-b border-slate-50 pb-2 last:border-0 last:pb-0">
-                                                                            <div className="flex justify-between items-center mb-1">
-                                                                                <span className={`font-bold px-1.5 py-0.5 rounded ${h.status === 'Present' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{h.status}</span>
-                                                                                <span className="text-slate-400 text-[10px]">{new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
-                                                                            </div>
-                                                                            {h.reason && <div className="text-slate-500 italic bg-slate-50 p-1.5 rounded mt-1">&quot;{h.reason}&quot;</div>}
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </td>
-                                            </motion.tr>
-                                        ))}
-                                    </AnimatePresence>
-                                    {filteredStudentRecords.length === 0 && (
-                                        <tr>
-                                            <td colSpan={6} className="p-12 text-center text-slate-500">
-                                                <div className="flex flex-col items-center">
-                                                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-3">
-                                                        <Users className="w-8 h-8 text-slate-300" />
-                                                    </div>
-                                                    <p className="font-medium">No student records found</p>
-                                                    <p className="text-sm mt-1 text-slate-400">Select a class and section to view attendance.</p>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-slate-100">
-                                <thead className="bg-slate-50/50">
-                                    <tr>
-                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Teacher</th>
-                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Current Status</th>
-                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100 bg-white">
-                                    <AnimatePresence>
-                                        {filteredTeacherRecords.map(teacher => {
-                                            const record = teacherRecords.find(r => r.teacherId._id === teacher._id);
-                                            const status = record ? record.status : null;
-
-                                            return (
-                                                <motion.tr
-                                                    key={teacher._id}
-                                                    initial={{ opacity: 0 }}
-                                                    animate={{ opacity: 1 }}
-                                                    className="group hover:bg-slate-50/50 transition-colors"
-                                                >
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold relative overflow-hidden">
-                                                                {teacher.avatar ? (
-                                                                    <Image src={teacher.avatar} alt={teacher.fullName} fill className="object-cover" sizes="40px" />
-                                                                ) : (
-                                                                    teacher.fullName.charAt(0)
-                                                                )}
-                                                            </div>
-                                                            <div>
-                                                                <div className="font-bold text-slate-900">{teacher.fullName}</div>
-                                                                <div className="text-xs text-slate-500">{teacher.email}</div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        {status ? (
-                                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border ${status === 'Present' ? 'bg-green-50 text-green-700 border-green-100' :
-                                                                status === 'Absent' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-amber-50 text-amber-700 border-amber-100'
-                                                                }`}>
-                                                                {status === 'Present' && <UserCheck className="w-3 h-3 mr-1.5" />}
-                                                                {status === 'Absent' && <UserX className="w-3 h-3 mr-1.5" />}
-                                                                {status === 'Leave' && <Calendar className="w-3 h-3 mr-1.5" />}
-                                                                {status}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-slate-100 text-slate-500 border border-slate-200">
-                                                                Not Marked
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex bg-slate-100/80 rounded-xl p-1 w-fit shadow-inner">
-                                                            <button
-                                                                onClick={() => markTeacherStatus(teacher._id, 'Present')}
-                                                                className={`px-3 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${status === 'Present'
-                                                                    ? 'bg-white text-green-600 shadow-sm ring-1 ring-black/5 transform scale-105'
-                                                                    : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
-                                                                    }`}
-                                                            >
-                                                                <UserCheck className={`w-3.5 h-3.5 ${status === 'Present' ? 'stroke-[2.5px]' : ''}`} />
-                                                                Present
-                                                            </button>
-                                                            <button
-                                                                onClick={() => markTeacherStatus(teacher._id, 'Absent')}
-                                                                className={`px-3 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${status === 'Absent'
-                                                                    ? 'bg-white text-red-600 shadow-sm ring-1 ring-black/5 transform scale-105'
-                                                                    : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
-                                                                    }`}
-                                                            >
-                                                                <UserX className={`w-3.5 h-3.5 ${status === 'Absent' ? 'stroke-[2.5px]' : ''}`} />
-                                                                Absent
-                                                            </button>
-                                                            <button
-                                                                onClick={() => markTeacherStatus(teacher._id, 'Leave')}
-                                                                className={`px-3 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${status === 'Leave'
-                                                                    ? 'bg-white text-amber-600 shadow-sm ring-1 ring-black/5 transform scale-105'
-                                                                    : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
-                                                                    }`}
-                                                            >
-                                                                <Calendar className={`w-3.5 h-3.5 ${status === 'Leave' ? 'stroke-[2.5px]' : ''}`} />
-                                                                Leave
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </motion.tr>
-                                            );
-                                        })}
-                                    </AnimatePresence>
-                                    {filteredTeacherRecords.length === 0 && (
-                                        <tr><td colSpan={3} className="p-12 text-center text-slate-500">No teachers found matching criteria.</td></tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    )
-                )}
-            </div>
+  return (
+    <div className="space-y-8 font-sans">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-3 py-1 rounded-full w-fit mb-2">
+            <CalendarCheck className="w-3.5 h-3.5" />
+            <span>Daily Attendance &amp; Institutional Audit</span>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
+            Attendance Roll Call &amp; Freeze Matrix
+          </h1>
+          <p className="text-xs md:text-sm text-slate-500 mt-1">
+            Audit-locked homeroom attendance for students and faculty compliance tracking.
+          </p>
         </div>
-    );
+
+        {/* Tab Switcher */}
+        <div className="flex bg-white p-1 rounded-2xl shadow-xs border border-slate-200">
+          <button
+            onClick={() => setActiveTab("STUDENT")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === "STUDENT"
+                ? "bg-emerald-800 text-white shadow-xs"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+            }`}
+          >
+            <GraduationCap className="w-3.5 h-3.5" />
+            <span>Student Roll Call</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("TEACHER")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === "TEACHER"
+                ? "bg-emerald-800 text-white shadow-xs"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>Faculty Attendance</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Control Filter Bar */}
+      <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200">
+        <div className="flex flex-wrap items-end gap-3.5">
+          <div>
+            <label
+              htmlFor="filterDate"
+              className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1"
+            >
+              Calendar Date
+            </label>
+            <div className="relative">
+              <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-3.5 h-3.5" />
+              <input
+                id="filterDate"
+                name="filterDate"
+                type="date"
+                className="pl-9 pr-3.5 py-2 border border-slate-200 rounded-xl text-xs font-mono-code text-slate-800 font-medium focus:ring-1 focus:ring-emerald-700 focus:border-emerald-700 outline-none transition-all bg-white"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {activeTab === "STUDENT" && (
+            <>
+              <div>
+                <label
+                  htmlFor="filterClass"
+                  className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1"
+                >
+                  Class Cohort
+                </label>
+                <div className="relative">
+                  <select
+                    id="filterClass"
+                    name="filterClass"
+                    className="pl-3 pr-8 py-2 border border-slate-200 rounded-xl text-xs text-slate-700 font-medium focus:ring-1 focus:ring-emerald-700 focus:border-emerald-700 outline-none min-w-[150px] appearance-none transition-all bg-white cursor-pointer"
+                    value={classId}
+                    onChange={(e) => setClassId(e.target.value)}
+                  >
+                    <option value="">All Classes</option>
+                    {masterData.classes.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 w-3.5 h-3.5 pointer-events-none" />
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="filterSection"
+                  className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1"
+                >
+                  Section
+                </label>
+                <div className="relative">
+                  <select
+                    id="filterSection"
+                    name="filterSection"
+                    className="pl-3 pr-8 py-2 border border-slate-200 rounded-xl text-xs text-slate-700 font-medium focus:ring-1 focus:ring-emerald-700 focus:border-emerald-700 outline-none min-w-[140px] appearance-none transition-all bg-white cursor-pointer"
+                    value={sectionId}
+                    onChange={(e) => setSectionId(e.target.value)}
+                  >
+                    <option value="">All Sections</option>
+                    {masterData.sections.map((s) => (
+                      <option key={s._id} value={s._id}>
+                        Section {s.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 w-3.5 h-3.5 pointer-events-none" />
+                </div>
+              </div>
+
+              {classId && sectionId && (
+                <div className="ml-auto">
+                  <button
+                    onClick={toggleFreeze}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer ${
+                      isFrozen
+                        ? "bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200"
+                        : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-300"
+                    }`}
+                  >
+                    {isFrozen ? (
+                      <>
+                        <Lock className="w-3.5 h-3.5 text-rose-600" />
+                        <span>Attendance Locked (Compliance Active)</span>
+                      </>
+                    ) : (
+                      <>
+                        <Unlock className="w-3.5 h-3.5 text-emerald-700" />
+                        <span>Lock Roll Call (Audit Freeze)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Status Filter */}
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-[11px] font-mono-code font-bold text-slate-600 bg-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-200">
+              {currentCount} Entries
+            </span>
+            <select
+              id="statusFilter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2 outline-none font-medium cursor-pointer"
+            >
+              <option value="ALL">All Statuses</option>
+              <option value="Not Marked">Not Marked</option>
+              <option value="Present">Present</option>
+              <option value="Absent">Absent</option>
+              <option value="Leave">Leave</option>
+              <option value="Late">Late</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Table Container */}
+      <div className="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+        {loading ? (
+          <div className="p-20 flex flex-col items-center justify-center text-slate-400">
+            <Loader2 className="animate-spin text-emerald-800 w-8 h-8 mb-3" />
+            <p className="text-xs font-semibold">Synchronizing roll call records...</p>
+          </div>
+        ) : activeTab === "STUDENT" ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-100 text-xs">
+              <thead className="bg-slate-50/50">
+                <tr>
+                  <th className="px-5 py-3.5 text-left font-bold text-slate-500 uppercase tracking-wider text-[10px]">
+                    Student Scholar
+                  </th>
+                  <th className="px-5 py-3.5 text-left font-bold text-slate-500 uppercase tracking-wider text-[10px]">
+                    Cohort
+                  </th>
+                  <th className="px-5 py-3.5 text-left font-bold text-slate-500 uppercase tracking-wider text-[10px]">
+                    Status
+                  </th>
+                  <th className="px-5 py-3.5 text-left font-bold text-slate-500 uppercase tracking-wider text-[10px]">
+                    Audit Toggles
+                  </th>
+                  <th className="px-5 py-3.5 text-left font-bold text-slate-500 uppercase tracking-wider text-[10px]">
+                    Audited By
+                  </th>
+                  <th className="px-5 py-3.5 text-right font-bold text-slate-500 uppercase tracking-wider text-[10px]">
+                    Modifications
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                <AnimatePresence>
+                  {filteredStudentRecords.map((record) => (
+                    <motion.tr
+                      key={record._id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="group hover:bg-slate-50/70 transition-colors"
+                    >
+                      <td className="px-5 py-3.5 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-emerald-900 font-bold font-mono-code text-xs shrink-0">
+                            {(record.studentId?.fullName || "?").charAt(0)}
+                          </div>
+                          <div>
+                            <div className="font-bold text-slate-900">
+                              {record.studentId?.fullName}
+                            </div>
+                            <div className="text-[11px] text-slate-500 font-mono-code">
+                              {record.studentId?.registrationNumber}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-5 py-3.5 whitespace-nowrap text-slate-600">
+                        {record.classId?.name} &bull; Section {record.sectionId?.name}
+                      </td>
+
+                      <td className="px-5 py-3.5 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide border ${
+                            record.status === "Present"
+                              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                              : record.status === "Absent"
+                              ? "bg-rose-50 text-rose-700 border-rose-200"
+                              : record.status === "Leave"
+                              ? "bg-amber-50 text-amber-800 border-amber-200"
+                              : record.status === "Late"
+                              ? "bg-indigo-50 text-indigo-800 border-indigo-200"
+                              : "bg-slate-100 text-slate-600 border-slate-200"
+                          }`}
+                        >
+                          {record.status === "Present" && <UserCheck className="w-3 h-3 mr-1" />}
+                          {record.status === "Absent" && <UserX className="w-3 h-3 mr-1" />}
+                          {record.status === "Leave" && <Calendar className="w-3 h-3 mr-1" />}
+                          {record.status === "Late" && <Clock className="w-3 h-3 mr-1" />}
+                          {record.status}
+                        </span>
+                      </td>
+
+                      {/* Action Buttons */}
+                      <td className="px-5 py-3.5 whitespace-nowrap">
+                        <div className="flex bg-slate-100 rounded-xl p-0.5 w-fit border border-slate-200/80">
+                          <button
+                            type="button"
+                            onClick={() => markStudentStatus(record.studentId._id, "Present")}
+                            className={`px-2 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                              record.status === "Present"
+                                ? "bg-emerald-800 text-white shadow-2xs"
+                                : "text-slate-600 hover:text-slate-900"
+                            }`}
+                            title="Mark Present"
+                          >
+                            P
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => markStudentStatus(record.studentId._id, "Absent")}
+                            className={`px-2 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                              record.status === "Absent"
+                                ? "bg-rose-700 text-white shadow-2xs"
+                                : "text-slate-600 hover:text-slate-900"
+                            }`}
+                            title="Mark Absent"
+                          >
+                            A
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => markStudentStatus(record.studentId._id, "Leave")}
+                            className={`px-2 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                              record.status === "Leave"
+                                ? "bg-amber-600 text-white shadow-2xs"
+                                : "text-slate-600 hover:text-slate-900"
+                            }`}
+                            title="Mark Leave"
+                          >
+                            L
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => markStudentStatus(record.studentId._id, "Late")}
+                            className={`px-2 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                              record.status === "Late"
+                                ? "bg-indigo-700 text-white shadow-2xs"
+                                : "text-slate-600 hover:text-slate-900"
+                            }`}
+                            title="Mark Late"
+                          >
+                            Lt
+                          </button>
+                        </div>
+                      </td>
+
+                      <td className="px-5 py-3.5 whitespace-nowrap text-slate-600">
+                        <div className="font-semibold text-slate-900">
+                          {record.markedBy?.fullName || "Unrecorded"}
+                        </div>
+                        {record.markedAt && (
+                          <div className="text-[10px] text-slate-400 font-mono-code flex items-center mt-0.5">
+                            <Clock className="w-2.5 h-2.5 mr-1" />
+                            {new Date(record.markedAt).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true,
+                            })}
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="px-5 py-3.5 whitespace-nowrap text-right">
+                        {record.history && record.history.length > 1 && (
+                          <span className="text-[10px] font-mono-code font-bold bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded">
+                            {record.history.length} audits
+                          </span>
+                        )}
+                      </td>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
+
+                {filteredStudentRecords.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="p-16 text-center text-slate-400">
+                      <div className="flex flex-col items-center">
+                        <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mb-3">
+                          <Users className="w-6 h-6 text-slate-400" />
+                        </div>
+                        <p className="font-bold text-slate-800 text-xs">No attendance roll calls found</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Select a Class Cohort and Section from the toolbar above.
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-100 text-xs">
+              <thead className="bg-slate-50/50">
+                <tr>
+                  <th className="px-5 py-3.5 text-left font-bold text-slate-500 uppercase tracking-wider text-[10px]">
+                    Faculty Member
+                  </th>
+                  <th className="px-5 py-3.5 text-left font-bold text-slate-500 uppercase tracking-wider text-[10px]">
+                    Current Daily Status
+                  </th>
+                  <th className="px-5 py-3.5 text-left font-bold text-slate-500 uppercase tracking-wider text-[10px]">
+                    Audit Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                <AnimatePresence>
+                  {filteredTeacherRecords.map((teacher) => {
+                    const record = teacherRecords.find((r) => r.teacherId._id === teacher._id);
+                    const status = record ? record.status : null;
+
+                    return (
+                      <motion.tr
+                        key={teacher._id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="group hover:bg-slate-50/70 transition-colors"
+                      >
+                        <td className="px-5 py-3.5 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-200/80 flex items-center justify-center text-indigo-900 font-bold font-mono-code text-xs relative overflow-hidden shrink-0">
+                              {teacher.avatar ? (
+                                <Image
+                                  src={teacher.avatar}
+                                  alt={teacher.fullName}
+                                  fill
+                                  className="object-cover"
+                                  sizes="36px"
+                                />
+                              ) : (
+                                teacher.fullName.charAt(0)
+                              )}
+                            </div>
+                            <div>
+                              <div className="font-bold text-slate-900">{teacher.fullName}</div>
+                              <div className="text-[11px] text-slate-500">{teacher.email}</div>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="px-5 py-3.5 whitespace-nowrap">
+                          {status ? (
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide border ${
+                                status === "Present"
+                                  ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                  : status === "Absent"
+                                  ? "bg-rose-50 text-rose-700 border-rose-200"
+                                  : "bg-amber-50 text-amber-800 border-amber-200"
+                              }`}
+                            >
+                              {status === "Present" && <UserCheck className="w-3 h-3 mr-1" />}
+                              {status === "Absent" && <UserX className="w-3 h-3 mr-1" />}
+                              {status === "Leave" && <Calendar className="w-3 h-3 mr-1" />}
+                              {status}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200">
+                              Unrecorded
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="px-5 py-3.5 whitespace-nowrap">
+                          <div className="flex bg-slate-100 rounded-xl p-0.5 w-fit border border-slate-200/80">
+                            <button
+                              type="button"
+                              onClick={() => markTeacherStatus(teacher._id, "Present")}
+                              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                                status === "Present"
+                                  ? "bg-emerald-800 text-white shadow-2xs"
+                                  : "text-slate-600 hover:text-slate-900"
+                              }`}
+                            >
+                              <UserCheck className="w-3 h-3" />
+                              Present
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => markTeacherStatus(teacher._id, "Absent")}
+                              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                                status === "Absent"
+                                  ? "bg-rose-700 text-white shadow-2xs"
+                                  : "text-slate-600 hover:text-slate-900"
+                              }`}
+                            >
+                              <UserX className="w-3 h-3" />
+                              Absent
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => markTeacherStatus(teacher._id, "Leave")}
+                              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                                status === "Leave"
+                                  ? "bg-amber-600 text-white shadow-2xs"
+                                  : "text-slate-600 hover:text-slate-900"
+                              }`}
+                            >
+                              <Calendar className="w-3 h-3" />
+                              Leave
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </AnimatePresence>
+
+                {filteredTeacherRecords.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="p-16 text-center text-slate-400">
+                      No matching faculty records found for selected date.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

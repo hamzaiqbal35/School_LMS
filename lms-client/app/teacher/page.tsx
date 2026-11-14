@@ -140,10 +140,9 @@ export default function TeacherDashboard() {
                     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8">
                         <div className="flex items-center justify-between mb-8">
                             <h2 className="text-xl font-bold text-slate-900">Today&apos;s Schedule</h2>
-                            {/* Just a placeholder link for View Full Week as requested */}
-                            <Link href="#" className="text-sm font-bold text-green-600 hover:text-green-700 flex items-center gap-1 opacity-50 cursor-not-allowed" title="Coming Soon">
-                                View Full Week <ChevronRight className="w-4 h-4" />
-                            </Link>
+                            <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                                Daily Schedule Synced
+                            </span>
                         </div>
 
                         {loading ? (

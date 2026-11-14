@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Eye, EyeOff, Mail, Lock, ArrowLeft, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, ArrowLeft, Loader2, ShieldCheck, Building2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -9,268 +9,245 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
+import DotGrid from "@/components/reactbits/DotGrid";
 
 export default function LoginPage() {
-    const [showPassword, setShowPassword] = useState(false);
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [remember, setRemember] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const router = useRouter();
-    const login = useAuthStore((state) => state.login);
-    const { isAuthenticated, isCheckingAuth, checkAuth, user } = useAuthStore();
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const login = useAuthStore((state) => state.login);
+  const { isAuthenticated, isCheckingAuth, checkAuth, user } = useAuthStore();
 
-    // Check auth on mount
-    {/* useEffect(() => {
-        checkAuth();
-    }, [checkAuth]); */}
-
-    // Redirect if authenticated
-    useEffect(() => {
-        const initAuth = async () => {
-            await checkAuth();
-        };
-        initAuth();
-    }, [checkAuth]);
-
-    useEffect(() => {
-        if (!isCheckingAuth && isAuthenticated && user) {
-            if (user.role === "ADMIN") {
-                router.replace("/admin");
-            } else if (user.role === "TEACHER") {
-                router.replace("/teacher");
-            } else {
-                router.replace("/");
-            }
-        }
-    }, [isAuthenticated, isCheckingAuth, user, router]);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!email || !password) {
-            toast.error("Please fill in all fields");
-            return;
-        }
-
-        setIsLoading(true);
-        const toastId = toast.loading("Signing you in...");
-
-        try {
-            const { data } = await api.post("/auth/login", { email, password, remember });
-            login(data);
-
-            toast.success(`Welcome, ${data.fullName || "User"}!`, { id: toastId });
-
-            // Redirect based on role
-            if (data.role === "ADMIN") {
-                router.replace("/admin");
-            } else if (data.role === "TEACHER") {
-                router.replace("/teacher");
-            } else {
-                router.replace("/");
-            }
-        } catch (error: unknown) {
-            console.error("Login error:", error);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const err = error as any;
-            const message = err.response?.data?.message || "Invalid email or password";
-            toast.error(message, { id: toastId });
-        } finally {
-            setIsLoading(false);
-        }
+  useEffect(() => {
+    const initAuth = async () => {
+      await checkAuth();
     };
+    initAuth();
+  }, [checkAuth]);
 
-    if (isCheckingAuth) {
-        return (
-            <div className="h-screen flex items-center justify-center bg-white">
-                <Loader2 className="w-10 h-10 animate-spin text-cyan-600" />
-            </div>
-        );
+  useEffect(() => {
+    if (!isCheckingAuth && isAuthenticated && user) {
+      if (user.role === "ADMIN") {
+        router.replace("/admin");
+      } else if (user.role === "TEACHER") {
+        router.replace("/teacher");
+      } else {
+        router.replace("/");
+      }
+    }
+  }, [isAuthenticated, isCheckingAuth, user, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast.error("Please provide both email and password.");
+      return;
     }
 
+    setIsLoading(true);
+    const toastId = toast.loading("Verifying institutional credentials...");
+
+    try {
+      const { data } = await api.post("/auth/login", { email, password, remember });
+      login(data);
+
+      toast.success(`Welcome, ${data.fullName || "User"}!`, { id: toastId });
+
+      if (data.role === "ADMIN") {
+        router.replace("/admin");
+      } else if (data.role === "TEACHER") {
+        router.replace("/teacher");
+      } else {
+        router.replace("/");
+      }
+    } catch (error: unknown) {
+      console.error("Login error:", error);
+      const err = error as any;
+      const message = err.response?.data?.message || "Invalid email or password.";
+      toast.error(message, { id: toastId });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isCheckingAuth) {
     return (
-        <div className="h-screen overflow-hidden flex flex-col md:flex-row bg-white font-sans text-slate-800 selection:bg-cyan-100 selection:text-cyan-900">
-
-            {/* LEFT SIDE - VISUAL */}
-            <div className="hidden lg:flex w-1/2 h-screen top-0 bg-slate-900 relative overflow-hidden flex-col justify-between p-12">
-
-                {/* Blob Backgrounds */}
-                <motion.div
-                    animate={{ opacity: [0.32, 0.44, 0.32] }}
-                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute top-0 right-0 w-130 h-130 bg-cyan-600/30 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"
-                />
-                <motion.div
-                    animate={{ opacity: [0.2, 0.34, 0.2] }}
-                    transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-                    className="absolute bottom-0 left-0 w-105 h-105 bg-teal-600/20 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2 pointer-events-none"
-                />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[url('/grid.svg')] opacity-10"></div>
-
-                {/* Logo Area */}
-                <div className="relative z-10">
-                    <Link href="/" className="inline-flex items-center gap-3 hover:opacity-90 transition-opacity">
-                        <div className="relative w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/20 overflow-hidden">
-                            <Image src="/Logo2.png" width={64} height={64} className="object-contain p-1" alt="Logo" />
-                        </div>
-                        <span className="text-2xl font-bold tracking-tight text-white uppercase italic">Oxford Grammar</span>
-                    </Link>
-                </div>
-
-                {/* Main Content */}
-                <div className="relative z-10 max-w-lg">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6 }}
-                    >
-                        <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-6 leading-tight tracking-tight">
-                            Education <br />
-                            <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-400 to-teal-400">Reimagined</span>
-                        </h1>
-                        <p className="text-lg md:text-xl text-slate-400 leading-relaxed mb-8 font-light">
-                            Experience the most intuitive school management platform. Streamline operations, empower teachers, and engage students with a state-of-the-art interface.
-                        </p>
-                    </motion.div>
-                </div>
-
-                {/* Footer Strip */}
-                <div className="relative z-10 flex gap-8 text-sm text-slate-500 font-medium">
-                    <span>© {new Date().getFullYear()} Oxford Grammar School</span>
-                    <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-                    <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-                </div>
-            </div>
-
-            {/* RIGHT SIDE - FORM */}
-            <div className="flex-1 flex flex-col justify-start items-center p-8 bg-slate-50/50 backdrop-blur-sm relative overflow-auto">
-
-                {/* Decorative background for mobile */}
-                <div className="lg:hidden absolute inset-0 -z-10 overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-100/40 rounded-full blur-3xl"></div>
-                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-100/40 rounded-full blur-3xl"></div>
-                </div>
-
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.45 }}
-                    className="w-full max-w-md bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] p-12 border border-slate-100 relative group"
-                >
-                    {/* Top Accent Bar */}
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-1.5 bg-linear-to-r from-cyan-500 to-teal-500 rounded-b-full"></div>
-
-                    <div className="mb-8 text-center">
-                        <motion.div
-                            whileHover={{ rotate: 5 }}
-                            className="w-16 h-16 bg-cyan-50 rounded-2xl flex items-center justify-center text-cyan-600 mx-auto mb-6 shadow-sm border border-cyan-100/50"
-                        >
-                            <Lock className="w-8 h-8" />
-                        </motion.div>
-                        <h2 className="text-3xl font-extrabold text-slate-900 mb-3 tracking-tight">Welcome Back</h2>
-                        <p className="text-base text-slate-500 font-medium px-4">Securely access your institution&apos;s educational portal.</p>
-                    </div>
-
-                    <form className="space-y-6" onSubmit={handleSubmit}>
-                        {/* EMAIL */}
-                        <div className="space-y-2">
-                            <label htmlFor="email" className="text-sm font-bold text-slate-700 ml-1">Email Address</label>
-                            <div className="relative group">
-                                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-cyan-600 transition-colors" />
-                                <input
-                                    id="email"
-                                    name="email"
-                                    autoComplete="email"
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="name@institution.edu"
-                                    className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 outline-none transition-all font-medium shadow-sm hover:border-slate-300"
-                                />
-                            </div>
-                        </div>
-
-                        {/* PASSWORD */}
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center ml-1">
-                                <label htmlFor="password" className="text-sm font-bold text-slate-700">Password</label>
-                                <Link href="/forgot-password" className="text-xs font-bold text-cyan-600 hover:text-cyan-700 hover:underline underline-offset-4">Forgot Password?</Link>
-                            </div>
-                            <div className="relative group">
-                                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-cyan-600 transition-colors" />
-                                <input
-                                    id="password"
-                                    name="password"
-                                    autoComplete="current-password"
-                                    type={showPassword ? "text" : "password"}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="••••••••"
-                                    className="w-full pl-12 pr-12 py-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 outline-none transition-all font-medium shadow-sm hover:border-slate-300"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-cyan-600 transition-colors p-1"
-                                >
-                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* REMEMBER ME */}
-                        <div className="flex items-center gap-2 ml-1">
-                            <input
-                                id="remember"
-                                type="checkbox"
-                                checked={remember}
-                                onChange={(e) => setRemember(e.target.checked)}
-                                className="w-5 h-5 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500 focus:ring-offset-0 cursor-pointer"
-                            />
-                            <label htmlFor="remember" className="text-sm font-bold text-slate-600 cursor-pointer select-none">
-                                Remember me for 30 days
-                            </label>
-                        </div>
-
-                        {/* LOGIN BUTTON */}
-                        <motion.button
-                            disabled={isLoading}
-                            whileHover={{ y: -2 }}
-                            whileTap={{ scale: 0.98 }}
-                            className="w-full py-4 rounded-2xl bg-slate-900 text-white font-bold text-lg shadow-xl hover:bg-slate-800 transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed group/btn"
-                        >
-                            {isLoading ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : (
-                                <>
-                                    <span>Sign In</span>
-                                    <ArrowLeft className="w-5 h-5 rotate-180 group-hover/btn:translate-x-1 transition-transform" />
-                                </>
-                            )}
-                        </motion.button>
-                    </form>
-
-                    <div className="mt-6 pt-6 border-t border-slate-100 text-center">
-                        <p className="text-sm text-slate-500 font-medium">
-                            Need help? <Link href="/contact" className="font-bold text-cyan-600 hover:text-cyan-700 hover:underline underline-offset-4">Support Center</Link>
-                        </p>
-                    </div>
-
-                    <div className="mt-4 flex justify-center">
-                        <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-cyan-600 transition-all group px-4 py-2 rounded-xl hover:bg-cyan-50">
-                            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back to Home
-                        </Link>
-                    </div>
-
-                </motion.div>
-
-                {/* Visual Accent */}
-                <div className="mt-12 text-slate-400 flex items-center gap-4 text-xs font-bold uppercase tracking-widest opacity-50">
-                    <span className="h-px w-8 bg-slate-200"></span>
-                    Trusted by Professionals
-                    <span className="h-px w-8 bg-slate-200"></span>
-                </div>
-            </div>
-        </div>
+      <div className="h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="w-8 h-8 animate-spin text-emerald-800" />
+      </div>
     );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col lg:flex-row bg-slate-50 font-sans text-slate-900 selection:bg-emerald-100 selection:text-emerald-950">
+      {/* LEFT SIDE - ACADEMIC VISUAL PANEL */}
+      <div className="hidden lg:flex w-1/2 min-h-screen bg-slate-950 text-white relative overflow-hidden flex-col justify-between p-12">
+        <DotGrid gap={24} dotSize={1} color="rgba(255, 255, 255, 0.08)" fadeEdges={true} />
+
+        {/* School Crest & Identity */}
+        <div className="relative z-10">
+          <Link href="/" className="inline-flex items-center gap-3.5 group">
+            <div className="w-13 h-13 rounded-2xl bg-white shadow-md p-1.5 flex items-center justify-center shrink-0 border border-slate-100">
+              <div className="relative w-full h-full">
+                <Image src="/Logo2.png" fill sizes="48px" className="object-contain" alt="School Crest" />
+              </div>
+            </div>
+            <div>
+              <span className="block text-lg font-bold tracking-tight text-white leading-tight">
+                Oxford Grammar School
+              </span>
+              <span className="text-xs text-emerald-400 font-medium uppercase tracking-wider">
+                Cambridge EdTech Campus
+              </span>
+            </div>
+          </Link>
+        </div>
+
+        {/* Academic Centerpiece */}
+        <div className="relative z-10 max-w-lg">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950 border border-emerald-800 text-emerald-300 text-[11px] font-semibold mb-6">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            Encrypted Academic Portal &bull; Role-Based Access
+          </span>
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-5 leading-tight tracking-tight">
+            Institutional Management with Integrity &amp; Precision
+          </h1>
+          <p className="text-sm md:text-base text-slate-400 leading-relaxed font-light mb-8">
+            Access administrative control boards, submit daily student roll calls, reconcile fee challans,
+            and monitor timetable substitution schedules through an audit-locked environment.
+          </p>
+        </div>
+
+        {/* Footer */}
+        <div className="relative z-10 flex gap-6 text-xs text-slate-500">
+          <span>&copy; {new Date().getFullYear()} Oxford Grammar School</span>
+          <Link href="/about" className="hover:text-slate-300 transition-colors">Academic Mission</Link>
+          <Link href="/contact" className="hover:text-slate-300 transition-colors">Inquiries</Link>
+        </div>
+      </div>
+
+      {/* RIGHT SIDE - SECURE FORM */}
+      <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-12 relative overflow-auto">
+        <DotGrid gap={28} dotSize={1.1} color="rgba(15, 23, 42, 0.05)" fadeEdges={true} />
+
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl shadow-slate-900/5 p-8 sm:p-10 border border-slate-200/80 relative">
+          <div className="mb-8 text-center">
+            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-800 mx-auto mb-4 border border-emerald-200/60">
+              <ShieldCheck className="w-6 h-6" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+              Portal Sign In
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Authorized Faculty, Staff &amp; Administrative Personnel
+            </p>
+          </div>
+
+          <form className="space-y-4" onSubmit={handleSubmit} autoComplete="off">
+            {/* EMAIL */}
+            <div>
+              <label htmlFor="email" className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Institutional Email Address
+              </label>
+              <div className="relative">
+                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  id="email"
+                  name="email"
+                  autoComplete="off"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@school.edu.pk"
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-lg bg-slate-50/70 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-emerald-700 focus:bg-white focus:ring-1 focus:ring-emerald-700 outline-none text-xs transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* PASSWORD */}
+            <div>
+              <div className="flex justify-between items-center mb-1.5">
+                <label htmlFor="password" className="text-xs font-semibold text-slate-700">
+                  Account Password
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-[11px] font-semibold text-emerald-800 hover:text-emerald-900 hover:underline"
+                >
+                  Forgot Password?
+                </Link>
+              </div>
+              <div className="relative">
+                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  id="password"
+                  name="password"
+                  autoComplete="new-password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-lg bg-slate-50/70 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-emerald-700 focus:bg-white focus:ring-1 focus:ring-emerald-700 outline-none text-xs transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            {/* REMEMBER ME */}
+            <div className="flex items-center gap-2 pt-1">
+              <input
+                id="remember"
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 text-emerald-800 focus:ring-emerald-700 cursor-pointer accent-emerald-800"
+              />
+              <label htmlFor="remember" className="text-xs text-slate-600 cursor-pointer select-none">
+                Remember institutional session for 30 days
+              </label>
+            </div>
+
+            {/* LOGIN BUTTON */}
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3 px-4 rounded-full bg-emerald-800 text-white font-semibold text-xs hover:bg-emerald-900 transition-all shadow-xs flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-emerald-200" />
+                    <span>Verifying Credentials...</span>
+                  </>
+                ) : (
+                  <span>Sign In to Academic Portal</span>
+                )}
+              </button>
+            </div>
+          </form>
+
+          <div className="mt-6 pt-5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-slate-500 hover:text-emerald-800 transition-colors"
+            >
+              <ArrowLeft size={14} /> Back to Overview
+            </Link>
+            <Link href="/contact" className="hover:text-emerald-800 transition-colors">
+              Help Desk
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

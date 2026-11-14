@@ -1,6 +1,10 @@
 @import "tailwindcss";
 
 @theme {
+  --font-display: var(--font-display), "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: var(--font-sans), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: var(--font-mono), "JetBrains Mono", monospace;
+
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
 
@@ -33,63 +37,25 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 
-  /* Animations */
-  --animate-float: float 6s ease-in-out infinite;
-  --animate-glow: glow 4s ease-in-out infinite;
-  --animate-fade-in-up: fade-in-up 0.8s ease-out forwards;
-  --animate-blob: blob 7s infinite;
-  --animate-infinite-scroll: infinite-scroll 20s linear infinite;
+  /* Oxford & Cambridge Custom Tokens */
+  --color-oxford-navy: #0a0f1d;
+  --color-oxford-slate: #11182c;
+  --color-cambridge-emerald: #0f5132;
+  --color-cambridge-hover: #146c43;
+  --color-cambridge-muted: #e8f5ee;
 
-  @keyframes float {
-
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-
-    50% {
-      transform: translateY(-10px);
-    }
-  }
-
-  @keyframes glow {
-
-    0%,
-    100% {
-      opacity: 0.5;
-      transform: scale(1);
-    }
-
-    50% {
-      opacity: 1;
-      transform: scale(1.1);
-    }
-  }
+  /* Keyframe Animations */
+  --animate-fade-in-up: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-infinite-scroll: infinite-scroll 24s linear infinite;
 
   @keyframes fade-in-up {
     0% {
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(16px);
     }
-
     100% {
       opacity: 1;
       transform: translateY(0);
-    }
-  }
-
-  @keyframes blob {
-    0% {
-      transform: translate(0px, 0px) scale(1);
-    }
-    33% {
-      transform: translate(30px, -50px) scale(1.1);
-    }
-    66% {
-      transform: translate(-20px, 20px) scale(0.9);
-    }
-    100% {
-      transform: translate(0px, 0px) scale(1);
     }
   }
 
@@ -101,81 +67,100 @@
       transform: translateX(-50%);
     }
   }
+
+  @keyframes shiny-shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
 }
 
 :root {
+  /* Crisp academic off-white */
   --background: 210 40% 98%;
-  /* Light Grey/Blue Tint */
-  --foreground: 222.2 84% 4.9%;
+  --foreground: 222.2 47% 11.2%;
 
   --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
+  --card-foreground: 222.2 47% 11.2%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
+  --popover-foreground: 222.2 47% 11.2%;
 
-  /* Purple/Violet Theme */
-  --primary: 262.1 83.3% 57.8%;
-  --primary-foreground: 210 40% 98%;
+  /* Cambridge Emerald Theme (#0F5132 -> HSL: 152, 69%, 19%) */
+  --primary: 152 69% 19%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 262 30% 94%;
-  --secondary-foreground: 262.1 83.3% 57.8%;
+  /* Soft Emerald Tint */
+  --secondary: 146 36% 94%;
+  --secondary-foreground: 152 69% 19%;
 
   --muted: 210 40% 96.1%;
   --muted-foreground: 215.4 16.3% 46.9%;
 
-  --accent: 262 30% 94%;
-  --accent-foreground: 262.1 83.3% 57.8%;
+  --accent: 146 36% 94%;
+  --accent-foreground: 152 69% 19%;
 
   --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
+  --destructive-foreground: 0 0% 100%;
 
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
-  --ring: 262.1 83.3% 57.8%;
+  --ring: 152 69% 25%;
 
-  --radius: 0.5rem;
+  --radius: 0.75rem;
 
-  /* Sidebar uses Primary Purple */
-  --sidebar-bg: 262.1 83.3% 57.8%;
-  --sidebar-fg: 0 0% 100%;
+  /* Sidebar Theme: Deep Oxford Navy */
+  --sidebar-bg: 224 49% 8%;
+  --sidebar-fg: 210 40% 98%;
 }
 
 .dark {
-  --background: 222.2 84% 4.9%;
+  --background: 224 49% 7%;
   --foreground: 210 40% 98%;
 
-  --card: 222.2 84% 4.9%;
+  --card: 224 45% 10%;
   --card-foreground: 210 40% 98%;
 
-  --popover: 222.2 84% 4.9%;
+  --popover: 224 45% 10%;
   --popover-foreground: 210 40% 98%;
 
-  --primary: 210 40% 98%;
-  --primary-foreground: 222.2 47.4% 11.2%;
+  --primary: 152 69% 35%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 217.2 32.6% 17.5%;
+  --secondary: 222 36% 16%;
   --secondary-foreground: 210 40% 98%;
 
-  --muted: 217.2 32.6% 17.5%;
+  --muted: 222 36% 16%;
   --muted-foreground: 215 20.2% 65.1%;
 
-  --accent: 217.2 32.6% 17.5%;
+  --accent: 222 36% 16%;
   --accent-foreground: 210 40% 98%;
 
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 210 40% 98%;
 
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 212.7 26.8% 83.9%;
+  --border: 222 36% 18%;
+  --input: 222 36% 18%;
+  --ring: 152 69% 35%;
 }
 
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
-  font-family: var(--font-sans, sans-serif);
-  @apply antialiased scroll-smooth;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}
+
+.font-mono-code {
+  font-family: var(--font-mono);
 }
 
 @layer base {
@@ -184,34 +169,21 @@ body {
   }
 }
 
-/* Glass & Card Utilities */
-.glass {
-  @apply bg-white/70 backdrop-blur-lg border border-white/40 shadow-sm;
-}
-
-.glass-card {
-  @apply bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300;
-}
-
-/* Infinite scroll helpers: ensure the scrolling track is inline and children don't shrink
-   so duplicate sequences join seamlessly when translated by -50% */
-.animate-infinite-scroll {
-  display: inline-flex;
-  will-change: transform;
-}
-.animate-infinite-scroll > * {
-  flex: 0 0 auto;
-}
-
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 7px;
+  height: 7px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-transparent;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-200 rounded-full hover:bg-slate-300;
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
