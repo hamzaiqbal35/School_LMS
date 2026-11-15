@@ -7,7 +7,6 @@ import {
   Plus,
   Download,
   Search,
-  Filter,
   CheckCircle,
   AlertCircle,
   Clock,
@@ -18,7 +17,6 @@ import {
   Trash2,
   Eye,
   Receipt,
-  ShieldCheck,
   CreditCard,
   Building2
 } from "lucide-react";

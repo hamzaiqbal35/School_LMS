@@ -7,7 +7,6 @@ import SpotlightCard from "@/components/reactbits/SpotlightCard";
 import SplitText from "@/components/reactbits/SplitText";
 import CountUp from "@/components/reactbits/CountUp";
 import Magnet from "@/components/reactbits/Magnet";
-import ShinyText from "@/components/reactbits/ShinyText";
 import DotGrid from "@/components/reactbits/DotGrid";
 import { useState } from "react";
 import {
@@ -20,14 +19,7 @@ import {
   Building2,
   Layers,
   ChevronRight,
-  BookOpen,
   Receipt,
-  Users2,
-  GraduationCap,
-  Sparkles,
-  HelpCircle,
-  FileCheck2,
-  Compass,
   ChevronDown
 } from "lucide-react";
 

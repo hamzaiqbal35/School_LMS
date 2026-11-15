@@ -117,3 +117,24 @@ exports.updateStudent = async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 };
+
+// @desc    Update student avatar (Admin only)
+// @route   PUT /api/admin/students/:id/avatar
+// @access  Admin
+exports.updateStudentAvatar = async (req, res) => {
+    try {
+        const { avatar } = req.body;
+        const student = await Student.findByIdAndUpdate(
+            req.params.id,
+            { avatar, lastModifiedBy: req.user._id },
+            { new: true }
+        );
+
+        if (!student) return res.status(404).json({ message: 'Student not found' });
+
+        res.json({ message: 'Student photo updated successfully', student });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};

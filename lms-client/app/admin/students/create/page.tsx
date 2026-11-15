@@ -1,368 +1,756 @@
-"use client"
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import api from '@/lib/api';
-import { ArrowLeft, Loader2, Save } from 'lucide-react';
-import Link from 'next/link';
-import { use } from 'react';
+"use client";
 
-// Reusable Input Component (internal)
-interface InputGroupProps {
-    label: string;
-    name: string;
-    id?: string;
-    type?: string;
-    value: string | number;
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    required?: boolean;
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import api from "@/lib/api";
+import {
+  ArrowLeft,
+  Loader2,
+  Camera,
+  Upload,
+  X,
+  BookOpen,
+  User as UserIcon,
+  CreditCard,
+  Save
+} from "lucide-react";
+import { toast } from "sonner";
+
+interface ReferenceData {
+  _id: string;
+  name: string;
 }
 
-const InputGroup = ({ label, name, id, type = "text", value, onChange, required = false }: InputGroupProps) => {
-    const inputId = id || name;
-    return (
-        <div>
-            <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-            <input
-                id={inputId}
-                type={type}
-                name={name}
-                value={value}
-                onChange={onChange}
-                required={required}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-            />
-        </div>
-    );
-};
+interface AxiosErrorLike {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
 
 // CNIC Format Helper (xxxxx-xxxxxxx-x)
 const formatCnic = (value: string): string => {
-    const digits = value.replace(/\D/g, '').slice(0, 13);
-    if (digits.length <= 5) return digits;
-    if (digits.length <= 12) return `${digits.slice(0, 5)}-${digits.slice(5)}`;
-    return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`;
+  const digits = value.replace(/\D/g, "").slice(0, 13);
+  if (digits.length <= 5) return digits;
+  if (digits.length <= 12) return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+  return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`;
 };
 
-// CNIC Input Component
-interface CnicInputProps {
-    label: string;
-    name: string;
-    value: string;
-    onChange: (name: string, value: string) => void;
-}
+export default function CreateStudentPage() {
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-const CnicInput = ({ label, name, value, onChange }: CnicInputProps) => {
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const formatted = formatCnic(e.target.value);
-        onChange(name, formatted);
+  const [loading, setLoading] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [masterData, setMasterData] = useState<{
+    classes: ReferenceData[];
+    sections: ReferenceData[];
+  }>({ classes: [], sections: [] });
+
+  const [formData, setFormData] = useState({
+    registrationNumber: "",
+    fullName: "",
+    fatherName: "",
+    dob: "",
+    gender: "Male",
+    phoneNumber: "",
+    bFormNumber: "",
+    fatherCnic: "",
+    cast: "",
+    religion: "Islam",
+    classId: "",
+    sectionId: "",
+    campusId: "Main Campus",
+    discountAmount: 0,
+    admissionDate: new Date().toISOString().split("T")[0],
+    status: "Active",
+    isAdmissionPaid: false,
+    avatar: "",
+  });
+
+  const [classFee, setClassFee] = useState<number>(0);
+
+  // Fetch Master Data on load
+  useEffect(() => {
+    const fetchMasterData = async () => {
+      try {
+        const res = await api.get("/admin/master-data");
+        setMasterData(res.data);
+      } catch (error) {
+        console.error("Failed to load master data:", error);
+        toast.error("Failed to load academic classes and sections.");
+      }
     };
-    return (
-        <div>
-            <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-            <input
-                id={name}
-                type="text"
-                name={name}
-                value={value}
-                onChange={handleChange}
-                placeholder="xxxxx-xxxxxxx-x"
-                maxLength={15}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-            />
-        </div>
-    );
-};
+    fetchMasterData();
+  }, []);
 
-interface SelectGroupProps {
-    label: string;
-    name: string;
-    id?: string;
-    value: string;
-    onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-    options: { label: string; value: string }[];
-    required?: boolean;
-}
+  // Fetch Fee structure when class changes
+  useEffect(() => {
+    if (formData.classId) {
+      const fetchFee = async () => {
+        try {
+          const res = await api.get(`/fees/structures/${formData.classId}`);
+          setClassFee(res.data?.monthlyTuition || 0);
+        } catch {
+          setClassFee(0);
+        }
+      };
+      fetchFee();
+    } else {
+      setClassFee(0);
+    }
+  }, [formData.classId]);
 
-const SelectGroup = ({ label, name, id, value, onChange, options, required = false }: SelectGroupProps) => {
-    const selectId = id || name;
-    return (
-        <div>
-            <label htmlFor={selectId} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-            <select
-                id={selectId}
-                name={name}
-                value={value}
-                onChange={onChange}
-                required={required}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-            >
-                <option value="">Select...</option>
-                {options.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-            </select>
-        </div>
-    );
-};
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
+    if (type === "checkbox") {
+      setFormData({
+        ...formData,
+        [name]: (e.target as HTMLInputElement).checked,
+      });
+    } else if (name === "discountAmount") {
+      setFormData({
+        ...formData,
+        [name]: Number(value) || 0,
+      });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
 
-interface ReferenceData {
-    _id: string;
-    name: string;
-}
+  const handleCnicChange = (name: string, rawVal: string) => {
+    setFormData({ ...formData, [name]: formatCnic(rawVal) });
+  };
 
-export default function StudentForm({ params }: { params: Promise<{ id?: string }> }) {
-    const router = useRouter();
+  // Student Photo Upload Handler
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    interface AxiosErrorLike {
-        response?: {
-            data?: {
-                message?: string;
-            };
-        };
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload a valid image file (PNG, JPG, or WebP).");
+      return;
     }
 
-    const resolvedParams = use(params);
-    const isEdit = !!resolvedParams?.id;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image file size must be less than 5MB.");
+      return;
+    }
 
-    const [loading, setLoading] = useState(false);
-    const [masterData, setMasterData] = useState<{ classes: ReferenceData[]; sections: ReferenceData[] }>({ classes: [], sections: [] });
+    setUploadingPhoto(true);
+    const toastId = toast.loading("Uploading student photograph...");
 
-    const [formData, setFormData] = useState({
-        registrationNumber: '',
-        fullName: '',
-        fatherName: '',
-        dob: '',
-        gender: '',
-        phoneNumber: '',
-        bFormNumber: '',
-        fatherCnic: '',
-        cast: '',
-        religion: '',
-        classId: '',
-        sectionId: '',
-        discountAmount: '0',
-        admissionDate: new Date().toISOString().split('T')[0],
-        status: 'Active',
-        isAdmissionPaid: false,
-    });
+    try {
+      const uploadData = new FormData();
+      uploadData.append("file", file);
 
-    // New State for Helper
-    const [classFee, setClassFee] = useState(0);
+      const res = await api.post("/upload/avatar", uploadData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
-    // Fetch Fee when class changes
-    useEffect(() => {
-        if (formData.classId) {
-            const fetchFee = async () => {
-                try {
-                    const res = await api.get(`/fees/structures/${formData.classId}`);
-                    setClassFee(res.data.monthlyTuition || 0);
-                } catch {
-                    setClassFee(0);
-                }
-            };
-            fetchFee();
-        }
-    }, [formData.classId]);
+      setFormData((prev) => ({ ...prev, avatar: res.data.url }));
+      toast.success("Student photograph attached successfully.", { id: toastId });
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Failed to upload student photograph.", { id: toastId });
+    } finally {
+      setUploadingPhoto(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
-    const fetchMasterData = async () => {
-        try {
-            const res = await api.get('/admin/master-data');
-            setMasterData(res.data);
-        } catch (error) {
-            console.error(error);
-        }
-    };
+  const handleRemovePhoto = () => {
+    setFormData((prev) => ({ ...prev, avatar: "" }));
+  };
 
-    const fetchStudent = useCallback(async () => {
-        try {
-            const res = await api.get(`/admin/students/${resolvedParams?.id}`);
-            const s = res.data;
-            setFormData({
-                registrationNumber: s.registrationNumber,
-                fullName: s.fullName,
-                fatherName: s.fatherName,
-                dob: s.dob ? s.dob.split('T')[0] : '',
-                gender: s.gender,
-                phoneNumber: s.phoneNumber || '',
-                bFormNumber: s.bFormNumber || '',
-                fatherCnic: s.fatherCnic || '',
-                cast: s.cast || '',
-                religion: s.religion || '',
-                classId: s.classId?._id || s.classId,
-                sectionId: s.sectionId?._id || s.sectionId,
-                discountAmount: s.discountAmount || '0',
-                admissionDate: s.admissionDate ? s.admissionDate.split('T')[0] : '',
-                status: s.status,
-                isAdmissionPaid: !!s.isAdmissionPaid
-            });
-        } catch (error) {
-            console.error(error);
-            alert('Failed to load student');
-        }
-    }, [resolvedParams?.id]);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    useEffect(() => {
-        fetchMasterData();
-        if (isEdit) {
-            fetchStudent();
-        }
-    }, [isEdit, fetchStudent]);
+    if (!formData.fullName.trim()) {
+      toast.error("Please enter the student's full name.");
+      return;
+    }
+    if (!formData.registrationNumber.trim()) {
+      toast.error("Please provide a valid registration number.");
+      return;
+    }
+    if (!formData.classId) {
+      toast.error("Please allocate an academic class.");
+      return;
+    }
+    if (!formData.sectionId) {
+      toast.error("Please allocate a class section.");
+      return;
+    }
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value, type } = e.target;
-        const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
-        setFormData({ ...formData, [name]: val });
-    };
+    setLoading(true);
+    const toastId = toast.loading("Registering new scholar into institutional ledger...");
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        try {
-            if (isEdit) {
-                await api.put(`/admin/students/${resolvedParams?.id}`, formData);
-            } else {
-                await api.post('/admin/students', formData);
-            }
-            router.push('/admin/students');
-        } catch (error) {
-            const err = error as AxiosErrorLike;
-            alert(err.response?.data?.message || 'Operation failed');
-        } finally {
-            setLoading(false);
-        }
-    };
+    try {
+      await api.post("/admin/students", formData);
+      toast.success("Scholar admitted successfully!", { id: toastId });
+      router.push("/admin/students");
+    } catch (error: unknown) {
+      const err = error as AxiosErrorLike;
+      toast.error(err.response?.data?.message || "Failed to admit student.", {
+        id: toastId,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return (
-        <div className="max-w-4xl mx-auto">
-            <div className="sticky top-0 z-20 bg-gray-100/95 backdrop-blur-sm py-4 mb-2 flex items-center justify-between -mx-4 px-4 sm:-mx-0 sm:px-0">
-                <div className="flex items-center gap-4">
-                    <Link href="/admin/students" className="p-2 hover:bg-white rounded-full transition-colors shadow-sm bg-white/50">
-                        <ArrowLeft className="w-5 h-5 text-gray-600" />
-                    </Link>
-                    <h1 className="text-2xl font-bold text-gray-900">
-                        {isEdit ? 'Edit Student' : 'New Admission'}
-                    </h1>
-                </div>
-            </div>
+  const netPayable = Math.max(0, classFee - (formData.discountAmount || 0));
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <form onSubmit={handleSubmit} className="p-8 space-y-8">
-                    {/* Academic Info */}
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Academic Placement</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <InputGroup label="Registration No" name="registrationNumber" value={formData.registrationNumber} onChange={handleChange} required />
-                            <InputGroup label="Admission Date" name="admissionDate" type="date" value={formData.admissionDate} onChange={handleChange} />
-
-                            <SelectGroup
-                                label="Class"
-                                name="classId"
-                                value={formData.classId}
-                                onChange={handleChange}
-                                options={masterData.classes.map((c: ReferenceData) => ({ label: c.name, value: c._id }))}
-                                required
-                            />
-
-                            <SelectGroup
-                                label="Section"
-                                name="sectionId"
-                                value={formData.sectionId}
-                                onChange={handleChange}
-                                options={masterData.sections.map((s: ReferenceData) => ({ label: s.name, value: s._id }))}
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    {/* Personal Info */}
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Personal Information</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <InputGroup label="Student Name" name="fullName" value={formData.fullName} onChange={handleChange} required />
-                            <InputGroup label="Father Name" name="fatherName" value={formData.fatherName} onChange={handleChange} required />
-                            <InputGroup label="Date of Birth" name="dob" type="date" value={formData.dob} onChange={handleChange} required />
-
-                            <SelectGroup
-                                label="Gender"
-                                name="gender"
-                                value={formData.gender}
-                                onChange={handleChange}
-                                options={[
-                                    { label: 'Male', value: 'Male' },
-                                    { label: 'Female', value: 'Female' },
-                                    { label: 'Other', value: 'Other' }
-                                ]}
-                                required
-                            />
-
-                            <InputGroup label="Phone Number" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} />
-                            <CnicInput label="B-Form Number" name="bFormNumber" value={formData.bFormNumber} onChange={(name, val) => setFormData({ ...formData, [name]: val })} />
-                            <CnicInput label="Father CNIC" name="fatherCnic" value={formData.fatherCnic} onChange={(name, val) => setFormData({ ...formData, [name]: val })} />
-                            <InputGroup label="Cast" name="cast" value={formData.cast} onChange={handleChange} />
-                            <InputGroup label="Religion" name="religion" value={formData.religion} onChange={handleChange} />
-                        </div>
-                    </div>
-
-                    {/* Financial Info */}
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Fee Structure</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <p className="block text-sm font-medium text-gray-700 mb-1">Monthly Tuition (Class Based)</p>
-                                <div className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 font-medium">
-                                    PKR {classFee.toLocaleString()}
-                                </div>
-                                <p className="text-xs text-gray-400 mt-1">Managed via Class Settings</p>
-                            </div>
-                            <InputGroup label="Discount (PKR)" name="discountAmount" type="number" value={formData.discountAmount} onChange={handleChange} />
-
-                            <div className="flex items-center pt-6">
-                                <input
-                                    type="checkbox"
-                                    id="isAdmissionPaid"
-                                    name="isAdmissionPaid"
-                                    className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                                    checked={formData.isAdmissionPaid}
-                                    onChange={handleChange}
-                                />
-                                <label htmlFor="isAdmissionPaid" className="ml-2 block text-sm font-medium text-gray-700">
-                                    Admission Fee Paid?
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    {isEdit && (
-                        <div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Status</h3>
-                            <SelectGroup
-                                label="Student Status"
-                                name="status"
-                                value={formData.status}
-                                onChange={handleChange}
-                                options={[
-                                    { label: 'Active', value: 'Active' },
-                                    { label: 'Inactive', value: 'Inactive' },
-                                    { label: 'Passed Out', value: 'PassedOut' },
-                                    { label: 'Expelled', value: 'Expelled' }
-                                ]}
-                                required
-                            />
-                        </div>
-                    )}
-
-                    <div className="pt-6 flex justify-end">
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold shadow-md transition-all flex items-center disabled:opacity-50"
-                        >
-                            {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Save className="w-5 h-5 mr-2" />}
-                            {isEdit ? 'Update Student' : 'Save Student'}
-                        </button>
-                    </div>
-                </form>
-            </div>
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto pb-16 font-sans">
+      {/* TOP BREADCRUMB & HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <button
+            type="button"
+            onClick={() => router.push("/admin/students")}
+            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-emerald-900 bg-white border border-slate-200 px-3.5 py-2 rounded-xl shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer mb-2"
+          >
+            <ArrowLeft className="w-4 h-4 text-emerald-800" />
+            <span>Back to Student Directory</span>
+          </button>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
+            Admit New Student
+          </h1>
+          <p className="text-xs md:text-sm text-slate-500 mt-0.5">
+            Register an enrolled scholar, record academic placement, and issue financial ledger schedule.
+          </p>
         </div>
-    );
+
+        <div className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-3 py-1.5 rounded-full w-fit">
+          Session 2026–27
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* CARD 1: STUDENT PHOTOGRAPH & BIOMETRIC RECORD */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6">
+          <div className="flex items-center gap-2.5 pb-4 mb-5 border-b border-slate-100">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center font-bold">
+              <Camera className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Scholar Photograph</h3>
+              <p className="text-[11px] text-slate-500">Official student identity photograph</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+            {/* Photo Avatar Preview */}
+            <div className="relative group shrink-0">
+              <div className="w-28 h-28 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden relative shadow-inner">
+                {uploadingPhoto ? (
+                  <div className="flex flex-col items-center text-slate-400">
+                    <Loader2 className="w-6 h-6 animate-spin text-emerald-800 mb-1" />
+                    <span className="text-[10px] font-semibold">Uploading...</span>
+                  </div>
+                ) : formData.avatar ? (
+                  <Image
+                    src={formData.avatar}
+                    alt="Student Preview"
+                    fill
+                    sizes="112px"
+                    className="object-cover rounded-xl"
+                  />
+                ) : (
+                  <div className="text-center p-2 text-slate-400">
+                    <UserIcon className="w-10 h-10 mx-auto opacity-30 text-slate-500 mb-1" />
+                    <span className="text-[10px] font-semibold block text-slate-400">No Photo</span>
+                  </div>
+                )}
+              </div>
+
+              {formData.avatar && !uploadingPhoto && (
+                <button
+                  type="button"
+                  onClick={handleRemovePhoto}
+                  className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center shadow-md transition-colors cursor-pointer"
+                  title="Remove Photograph"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Upload Controls & Guidelines */}
+            <div className="flex-1 space-y-3 text-center sm:text-left">
+              <div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handlePhotoUpload}
+                  accept="image/png, image/jpeg, image/webp"
+                  className="hidden"
+                  id="studentPhotoInput"
+                />
+                <button
+                  type="button"
+                  disabled={uploadingPhoto}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-900 border border-slate-200 hover:border-emerald-200 text-xs font-semibold transition-all cursor-pointer disabled:opacity-60"
+                >
+                  {uploadingPhoto ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Transmitting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-3.5 h-3.5 text-emerald-800" />
+                      <span>{formData.avatar ? "Change Photograph" : "Upload Student Photo"}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="text-xs text-slate-500 space-y-1">
+                <p>Accepted formats: <strong>PNG, JPG, or WebP</strong> (Max 5MB).</p>
+                <p className="text-[11px] text-slate-400">
+                  Ensure the photograph has clear lighting, uniform dress, and a plain light background.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* CARD 2: ACADEMIC PLACEMENT & COHORT ALLOCATION */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6">
+          <div className="flex items-center gap-2.5 pb-4 mb-5 border-b border-slate-100">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center font-bold">
+              <BookOpen className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Academic Placement</h3>
+              <p className="text-[11px] text-slate-500">Official cohort division and enrollment metadata</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
+            <div>
+              <label
+                htmlFor="registrationNumber"
+                className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1"
+              >
+                Registration Number <span className="text-rose-500">*</span>
+              </label>
+              <input
+                id="registrationNumber"
+                name="registrationNumber"
+                type="text"
+                required
+                value={formData.registrationNumber}
+                onChange={handleChange}
+                placeholder="e.g. Reg-12345678"
+                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-mono font-medium text-slate-900 focus:outline-none focus:ring-1 focus:ring-emerald-700 focus:border-emerald-700 bg-white transition-all"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="admissionDate"
+                className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1"
+              >
+                Admission Date
+              </label>
+              <input
+                id="admissionDate"
+                name="admissionDate"
+                type="date"
+                value={formData.admissionDate}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-700 focus:border-emerald-700 bg-white transition-all"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="classId"
+                className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1"
+              >
+                Academic Class <span className="text-rose-500">*</span>
+              </label>
+              <select
+                id="classId"
+                name="classId"
+                required
+                value={formData.classId}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-700 focus:border-emerald-700 transition-all cursor-pointer"
+              >
+                <option value="">Select Academic Class...</option>
+                {masterData.classes.map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="sectionId"
+                className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1"
+              >
+                Section Allocation <span className="text-rose-500">*</span>
+              </label>
+              <select
+                id="sectionId"
+                name="sectionId"
+                required
+                value={formData.sectionId}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-700 focus:border-emerald-700 transition-all cursor-pointer"
+              >
+                <option value="">Select Section...</option>
+                {masterData.sections.map((s) => (
+                  <option key={s._id} value={s._id}>
+                    Section {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="campusId"
+                className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1"
+              >
+                Campus Location
+              </label>
+              <input
+                id="campusId"
+                name="campusId"
+                type="text"
+                value={formData.campusId}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-700 focus:border-emerald-700 bg-white transition-all"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="status"
+                className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1"
+              >
+                Enrollment Standing
+              </label>
+              <select
+                id="status"
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-700 focus:border-emerald-700 transition-all cursor-pointer"
+              >
+                <option value="Active">Active Standing</option>
+                <option value="Inactive">Inactive / Suspended</option>
+                <option value="PassedOut">Passed Out / Graduated</option>
+                <option value="Expelled">Expelled</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* CARD 3: PERSONAL & FAMILY DOSSIER */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6">
+          <div className="flex items-center gap-2.5 pb-4 mb-5 border-b border-slate-100">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center font-bold">
+              <UserIcon className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Personal &amp; Guardian Information</h3>
+              <p className="text-[11px] text-slate-500">Student identity, guardian contacts, and demographics</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
+            <div>
+              <label
+                htmlFor="fullName"
+                className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1"
+              >
+                Student Full Name <span className="text-rose-500">*</span>
+              </label>
+              <input
+                id="fullName"
+                name="fullName"
+                type="text"
+                required
+                value={formData.fullName}
+                onChange={handleChange}
+                placeholder="e.g. Muhammad Aizaz Khan"
+                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-1 focus:ring-emerald-700 focus:border-emerald-700 bg-white transition-all"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="fatherName"
+                className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1"
+              >
+                Father / Guardian Name <span className="text-rose-500">*</span>
+              </label>
+              <input
+                id="fatherName"
+                name="fatherName"
+                type="text"
+                required
+                value={formData.fatherName}
+                onChange={handleChange}
+                placeholder="e.g. Hassan Khan"
+                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-emerald-700 focus:border-emerald-700 bg-white transition-all"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="dob"
+                className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1"
+              >
+                Date of Birth <span className="text-rose-500">*</span>
+              </label>
+              <input
+                id="dob"
+                name="dob"
+                type="date"
+                required
+                value={formData.dob}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-700 focus:border-emerald-700 bg-white transition-all"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="gender"
+                className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1"
+              >
+                Gender <span className="text-rose-500">*</span>
+              </label>
+              <select
+                id="gender"
+                name="gender"
+                required
+                value={formData.gender}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-700 focus:border-emerald-700 transition-all cursor-pointer"
+              >
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="phoneNumber"
+                className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1"
+              >
+                Contact Phone Number
+              </label>
+              <input
+                id="phoneNumber"
+                name="phoneNumber"
+                type="tel"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                placeholder="0300-1234567"
+                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-mono text-slate-900 focus:outline-none focus:ring-1 focus:ring-emerald-700 focus:border-emerald-700 bg-white transition-all"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="bFormNumber"
+                className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1"
+              >
+                Government B-Form No.
+              </label>
+              <input
+                id="bFormNumber"
+                name="bFormNumber"
+                type="text"
+                maxLength={15}
+                value={formData.bFormNumber}
+                onChange={(e) => handleCnicChange("bFormNumber", e.target.value)}
+                placeholder="xxxxx-xxxxxxx-x"
+                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-mono text-slate-900 focus:outline-none focus:ring-1 focus:ring-emerald-700 focus:border-emerald-700 bg-white transition-all"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="fatherCnic"
+                className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1"
+              >
+                Father / Guardian CNIC
+              </label>
+              <input
+                id="fatherCnic"
+                name="fatherCnic"
+                type="text"
+                maxLength={15}
+                value={formData.fatherCnic}
+                onChange={(e) => handleCnicChange("fatherCnic", e.target.value)}
+                placeholder="xxxxx-xxxxxxx-x"
+                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-mono text-slate-900 focus:outline-none focus:ring-1 focus:ring-emerald-700 focus:border-emerald-700 bg-white transition-all"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label
+                  htmlFor="cast"
+                  className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1"
+                >
+                  Cast (Optional)
+                </label>
+                <input
+                  id="cast"
+                  name="cast"
+                  type="text"
+                  value={formData.cast}
+                  onChange={handleChange}
+                  placeholder="e.g. Rajput"
+                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-700 focus:border-emerald-700 bg-white transition-all"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="religion"
+                  className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1"
+                >
+                  Religion
+                </label>
+                <input
+                  id="religion"
+                  name="religion"
+                  type="text"
+                  value={formData.religion}
+                  onChange={handleChange}
+                  placeholder="Islam"
+                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-700 focus:border-emerald-700 bg-white transition-all"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* CARD 4: FINANCIAL STRUCTURE & TUITION LEDGER */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6">
+          <div className="flex items-center gap-2.5 pb-4 mb-5 border-b border-slate-100">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center font-bold">
+              <CreditCard className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Financial Structure</h3>
+              <p className="text-[11px] text-slate-500">Monthly tuition rate, scholarship discount, and admission clearance</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-xs">
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
+                Standard Class Tuition
+              </span>
+              <p className="text-xl font-bold font-mono text-slate-900">
+                Rs {classFee.toLocaleString()}
+              </p>
+              <span className="text-[10px] text-slate-400 mt-1 block">Set by class fee policy</span>
+            </div>
+
+            <div>
+              <label
+                htmlFor="discountAmount"
+                className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1"
+              >
+                Scholarship / Discount (PKR)
+              </label>
+              <input
+                id="discountAmount"
+                name="discountAmount"
+                type="number"
+                min="0"
+                value={formData.discountAmount}
+                onChange={handleChange}
+                placeholder="0"
+                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-mono font-medium text-slate-900 focus:outline-none focus:ring-1 focus:ring-emerald-700 focus:border-emerald-700 bg-white transition-all"
+              />
+              <span className="text-[10px] text-slate-400 mt-1 block">Institutional fee waiver</span>
+            </div>
+
+            <div className="bg-emerald-50/70 p-4 rounded-xl border border-emerald-200/80">
+              <span className="text-[10px] uppercase font-bold text-emerald-800 block mb-1">
+                Calculated Net Payable
+              </span>
+              <p className="text-xl font-bold font-mono text-emerald-950">
+                Rs {netPayable.toLocaleString()}
+              </p>
+              <span className="text-[10px] text-emerald-700 mt-1 block">Post-scholarship rate</span>
+            </div>
+          </div>
+
+          <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                name="isAdmissionPaid"
+                checked={formData.isAdmissionPaid}
+                onChange={handleChange}
+                className="w-4 h-4 text-emerald-700 rounded border-slate-300 focus:ring-emerald-700"
+              />
+              <div>
+                <span className="text-xs font-bold text-slate-800 block">
+                  Admission Fee Cleared
+                </span>
+                <span className="text-[11px] text-slate-500">
+                  Mark if registration / admission fee challan has been settled.
+                </span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        {/* BOTTOM ACTION BAR */}
+        <div className="flex items-center justify-end gap-3 pt-4">
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => router.push("/admin/students")}
+            className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            disabled={loading || uploadingPhoto}
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold shadow-xs transition-all cursor-pointer disabled:opacity-60"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Admitting Scholar...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                <span>Admit Scholar &amp; Save Record</span>
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
 }

@@ -50,6 +50,10 @@ const StudentSchema = new Schema({
         type: String,
         trim: true
     },
+    avatar: {
+        type: String,
+        default: ''
+    },
 
     // Academic Placement
     classId: {

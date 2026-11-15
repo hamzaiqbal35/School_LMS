@@ -4,18 +4,13 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import {
-  Users,
   BookOpen,
   Receipt,
   CalendarCheck,
   ArrowUpRight,
   GraduationCap,
   TrendingUp,
-  ShieldCheck,
-  Clock,
-  Sparkles,
-  Layers,
-  ArrowRight
+  Clock
 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";

@@ -6,7 +6,6 @@ import {
   Loader2,
   Lock,
   Unlock,
-  History,
   Calendar,
   UserCheck,
   UserX,
@@ -14,9 +13,7 @@ import {
   Users,
   GraduationCap,
   ChevronDown,
-  CalendarCheck,
-  ShieldCheck,
-  CheckCircle2
+  CalendarCheck
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";

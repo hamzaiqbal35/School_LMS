@@ -34,6 +34,7 @@ router.post('/students', studentController.createStudent);
 router.get('/students', studentController.getStudents);
 router.get('/students/:id', studentController.getStudentById);
 router.put('/students/:id', studentController.updateStudent);
+router.put('/students/:id/avatar', studentController.updateStudentAvatar);
 
 // Assignments
 router.post('/assignments', assignmentController.createAssignment);

@@ -14,10 +14,7 @@ import {
   Settings,
   X,
   Save,
-  CheckCircle2,
-  ChevronRight,
-  ShieldCheck,
-  AlertCircle
+  ShieldCheck
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";

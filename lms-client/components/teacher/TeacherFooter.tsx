@@ -18,8 +18,8 @@ export default function TeacherFooter() {
             </p>
           </div>
 
-          <div className="text-[11px] font-mono-code text-slate-400">
-            System v2.0 &bull; Continuous Timetable Sync
+          <div className="text-[11px] text-slate-400">
+            Oxford Grammar School
           </div>
         </div>
       </div>

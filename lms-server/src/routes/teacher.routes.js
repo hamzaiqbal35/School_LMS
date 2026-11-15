@@ -62,7 +62,7 @@ router.get('/students', async (req, res) => {
         // For strict security yes, but for now simple fetch is okay, or verify logic here.
 
         const students = await Student.find({ classId, sectionId, status: 'Active' })
-            .select('registrationNumber fullName fatherName')
+            .select('registrationNumber fullName fatherName avatar gender phoneNumber dob')
             .sort({ registrationNumber: 1 });
 
         res.json(students);

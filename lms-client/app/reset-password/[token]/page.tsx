@@ -9,6 +9,14 @@ import { toast } from "sonner";
 import api from "@/lib/api";
 import DotGrid from "@/components/reactbits/DotGrid";
 
+interface AxiosErrorLike {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
+
 type Params = Promise<{ token: string }>;
 
 export default function ResetPasswordPage({ params }: { params: Params }) {
@@ -45,9 +53,10 @@ export default function ResetPasswordPage({ params }: { params: Params }) {
       await api.put(`/auth/resetpassword/${token}`, { password });
       toast.success("Password updated successfully! Please sign in with your new password.", { id: toastId });
       router.push("/login");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Reset Password error:", error);
-      const message = (error as any).response?.data?.message || "Invalid or expired token.";
+      const err = error as AxiosErrorLike;
+      const message = err.response?.data?.message || "Invalid or expired token.";
       toast.error(message, { id: toastId });
     } finally {
       setIsLoading(false);

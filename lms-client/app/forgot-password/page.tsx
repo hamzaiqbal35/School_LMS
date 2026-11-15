@@ -4,10 +4,17 @@ import { useState } from "react";
 import { Mail, ArrowLeft, Loader2, ArrowRight, ShieldCheck, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import DotGrid from "@/components/reactbits/DotGrid";
+
+interface AxiosErrorLike {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -28,9 +35,10 @@ export default function ForgotPasswordPage() {
       await api.post("/auth/forgotpassword", { email });
       setIsSent(true);
       toast.success("Verification link transmitted to your email address.", { id: toastId });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Forgot Password error:", error);
-      const message = (error as any).response?.data?.message || "Failed to process password recovery.";
+      const err = error as AxiosErrorLike;
+      const message = err.response?.data?.message || "Failed to process password recovery.";
       toast.error(message, { id: toastId });
     } finally {
       setIsLoading(false);

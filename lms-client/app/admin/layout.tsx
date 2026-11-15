@@ -18,7 +18,6 @@ import {
     GraduationCap,
     ClipboardList,
     ArrowLeftRight,
-    ShieldCheck,
     ChevronRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -71,7 +70,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { href: "/admin/attendance", label: "Attendance", icon: CalendarCheck },
         { href: "/admin/substitution", label: "Substitutions", icon: ArrowLeftRight },
         { href: "/admin/fees", label: "Finance", icon: Receipt },
-        { href: "/admin/profile", label: "System Administrator", icon: ShieldCheck },
     ];
 
     const logoutHandler = async () => {
@@ -170,13 +168,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     })}
                 </nav>
 
-                {/* User Snapshot & Logout */}
+                {/* User Profile Card & Logout */}
                 <div className="p-3.5 border-t border-slate-800/80 bg-slate-950/60">
                     <Link
                         href="/admin/profile"
-                        className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-emerald-700/60 transition-all mb-2.5 group"
+                        onClick={() => setIsSidebarOpen(false)}
+                        className={cn(
+                            "flex items-center gap-3 p-2.5 rounded-xl transition-all mb-2.5 group border cursor-pointer",
+                            pathname === "/admin/profile"
+                                ? "bg-emerald-950/80 border-emerald-600/80 shadow-md shadow-emerald-950/40"
+                                : "bg-slate-900/90 border-slate-800 hover:bg-slate-900 hover:border-emerald-600/60"
+                        )}
+                        title="View & Edit Administrator Profile"
                     >
-                        <div className="w-9 h-9 rounded-full bg-emerald-800 text-white flex items-center justify-center font-bold text-xs shadow-xs overflow-hidden relative shrink-0 border border-emerald-500/40">
+                        <div className="w-9 h-9 rounded-full bg-emerald-800 text-white flex items-center justify-center font-bold text-xs shadow-xs overflow-hidden relative shrink-0 border border-emerald-500/40 group-hover:scale-105 transition-transform">
                             {user?.avatar ? (
                                 <Image src={user.avatar} alt={user.fullName || 'Admin User'} fill className="object-cover" sizes="36px" />
                             ) : (
@@ -187,8 +192,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             <p className="text-xs font-bold text-white truncate group-hover:text-emerald-300 transition-colors">
                                 {user?.fullName || 'Administrator'}
                             </p>
-                            <p className="text-[10px] text-emerald-400 font-mono-code truncate">
-                                System Administrator
+                            <p className="text-[10px] text-emerald-400 font-mono-code truncate flex items-center gap-1">
+                                <span>Administrator Profile</span>
+                                <ChevronRight className="w-2.5 h-2.5 opacity-60 group-hover:translate-x-0.5 transition-transform" />
                             </p>
                         </div>
                     </Link>
@@ -224,13 +230,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             <span className="text-[9px] text-emerald-700 font-semibold uppercase tracking-wider">Academic Portal</span>
                         </div>
                     </div>
-                    <button
-                        onClick={() => setIsSidebarOpen(true)}
-                        className="p-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl transition-colors"
-                        aria-label="Open navigation menu"
-                    >
-                        <Menu className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <Link
+                            href="/admin/profile"
+                            className="w-8 h-8 rounded-full bg-emerald-800 text-white flex items-center justify-center text-xs font-bold overflow-hidden relative border border-emerald-600/40"
+                            title="Profile"
+                        >
+                            {user?.avatar ? (
+                                <Image src={user.avatar} alt="Profile" fill className="object-cover" sizes="32px" />
+                            ) : (
+                                (user?.fullName || 'A').charAt(0)
+                            )}
+                        </Link>
+                        <button
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="p-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                            aria-label="Open navigation menu"
+                        >
+                            <Menu className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
 
                 <div className="p-4 sm:p-6 md:p-8 lg:p-10 flex-1 w-full relative z-10">

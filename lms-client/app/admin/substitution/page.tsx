@@ -13,12 +13,9 @@ import {
   ArrowRight,
   X,
   UserCheck,
-  ArrowLeftRight,
-  ShieldCheck,
-  BookOpen
+  ArrowLeftRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
 import { toast } from "sonner";
 
 interface TimeSlot {

@@ -1,15 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Eye, EyeOff, Mail, Lock, ArrowLeft, Loader2, ShieldCheck, Building2 } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import DotGrid from "@/components/reactbits/DotGrid";
+
+interface AxiosErrorLike {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -65,7 +72,7 @@ export default function LoginPage() {
       }
     } catch (error: unknown) {
       console.error("Login error:", error);
-      const err = error as any;
+      const err = error as AxiosErrorLike;
       const message = err.response?.data?.message || "Invalid email or password.";
       toast.error(message, { id: toastId });
     } finally {

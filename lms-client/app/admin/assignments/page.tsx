@@ -4,8 +4,6 @@ import { useState, useEffect } from "react";
 import api from "@/lib/api";
 import { formatTime12Hour } from "@/lib/utils";
 import {
-  AlertCircle,
-  CheckCircle,
   Loader2,
   Trash2,
   Calendar,
@@ -14,10 +12,7 @@ import {
   Check,
   Search,
   X,
-  ClipboardList,
-  GraduationCap,
-  ShieldCheck,
-  Layers
+  ClipboardList
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";

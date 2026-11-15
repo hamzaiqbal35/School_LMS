@@ -9,15 +9,11 @@ import {
   Save,
   User,
   Mail,
-  ShieldCheck,
   Lock,
   Eye,
   EyeOff,
-  Building2,
   KeyRound,
-  FileCheck2,
-  BadgeCheck,
-  Sparkles
+  BadgeCheck
 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -57,7 +53,7 @@ export default function ProfileView() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Helper: Client-side Image Compression before Cloudinary Upload
+  // Helper: Client-side Image Compression before Upload
   const compressImage = (file: File): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -94,7 +90,7 @@ export default function ProfileView() {
               if (blob) {
                 resolve(blob);
               } else {
-                reject(new Error("Canvas to Blob compression failed"));
+                reject(new Error("Canvas compression failed"));
               }
             },
             "image/jpeg",
@@ -117,7 +113,7 @@ export default function ProfileView() {
     }
 
     setIsUploading(true);
-    const toastId = toast.loading("Compressing and uploading official photograph...");
+    const toastId = toast.loading("Uploading photo...");
 
     try {
       const compressedBlob = await compressImage(file);
@@ -135,7 +131,7 @@ export default function ProfileView() {
       });
 
       await updateProfile({ avatar: res.data.url });
-      toast.success("Institutional avatar updated successfully.", { id: toastId });
+      toast.success("Profile photo updated successfully.", { id: toastId });
     } catch (error) {
       console.error(error);
       toast.error("Failed to upload image. Please try again.", { id: toastId });
@@ -171,7 +167,7 @@ export default function ProfileView() {
     }
 
     setIsLoading(true);
-    const toastId = toast.loading("Updating institutional credentials...");
+    const toastId = toast.loading("Saving changes...");
     const payload: UpdatePayload = {};
 
     if (formData.fullName !== user?.fullName) payload.fullName = formData.fullName;
@@ -179,7 +175,7 @@ export default function ProfileView() {
     // Email Change Logic
     if (formData.email !== user?.email) {
       if (!formData.currentPassword) {
-        toast.error("Current password is required to change institutional email.", {
+        toast.error("Current password is required to change your email address.", {
           id: toastId
         });
         setIsLoading(false);
@@ -192,14 +188,14 @@ export default function ProfileView() {
     if (formData.password) payload.password = formData.password;
 
     if (Object.keys(payload).length === 0) {
-      toast.info("No credential modifications detected.", { id: toastId });
+      toast.info("No changes detected.", { id: toastId });
       setIsLoading(false);
       return;
     }
 
     const success = await updateProfile(payload);
     if (success) {
-      toast.success("Profile credentials successfully verified & updated.", { id: toastId });
+      toast.success("Profile updated successfully.", { id: toastId });
       setFormData((prev) => ({
         ...prev,
         password: "",
@@ -213,38 +209,20 @@ export default function ProfileView() {
   const isAdmin = user?.role === "ADMIN";
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-12 font-sans">
-      {/* EXECUTIVE HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
-              {isAdmin ? "Superuser Environment" : "Certified Faculty Portal"}
-            </span>
-            <span className="text-xs text-slate-400">•</span>
-            <span className="text-xs text-slate-500 font-mono">OGS-ID: {user?._id?.slice(-6).toUpperCase() || "AUTH-01"}</span>
-          </div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
-            {isAdmin ? "System Administrator Profile" : "Faculty Account & Profile"}
-          </h1>
-          <p className="text-xs md:text-sm text-slate-500 mt-1">
-            Institutional credentials, cryptographic security parameters, and profile identity records.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="px-4 py-2 rounded-xl bg-slate-900 text-white flex items-center gap-2.5 text-xs font-semibold shadow-xs">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Audit-Locked Session</span>
-          </div>
-        </div>
+    <div className="space-y-6 max-w-5xl mx-auto pb-12 font-sans">
+      {/* PAGE HEADER */}
+      <div className="border-b border-slate-200 pb-5">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
+          Account Profile
+        </h1>
+        <p className="text-xs md:text-sm text-slate-500 mt-1">
+          Manage your personal details, email address, and account password.
+        </p>
       </div>
 
       <div className="grid lg:grid-cols-12 gap-6 items-start">
-        {/* LEFT COLUMN: OFFICIAL AVATAR & CREDENTIALS OVERVIEW (4 COLS) */}
+        {/* LEFT COLUMN: AVATAR & BASIC USER INFO (4 COLS) */}
         <div className="lg:col-span-4 space-y-6">
-          {/* AVATAR CARD */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 flex flex-col items-center text-center">
             <div className="relative group mb-4">
               <div className="w-32 h-32 rounded-2xl overflow-hidden border-4 border-slate-100 shadow-sm relative bg-slate-100 ring-2 ring-emerald-800/15">
@@ -258,15 +236,15 @@ export default function ProfileView() {
                     priority
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-slate-900 text-white text-3xl font-bold font-mono">
-                    {user?.fullName?.charAt(0) || "A"}
+                  <div className="w-full h-full flex items-center justify-center bg-slate-900 text-white text-3xl font-bold">
+                    {user?.fullName?.charAt(0) || "U"}
                   </div>
                 )}
 
                 {isUploading && (
                   <div className="absolute inset-0 bg-slate-950/70 flex flex-col items-center justify-center text-white">
                     <Loader2 className="w-6 h-6 animate-spin text-emerald-400 mb-1" />
-                    <span className="text-[10px] font-mono">Uploading...</span>
+                    <span className="text-[10px]">Uploading...</span>
                   </div>
                 )}
               </div>
@@ -276,7 +254,7 @@ export default function ProfileView() {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                title="Upload official photo"
+                title="Upload new photo"
                 className="absolute -bottom-2 -right-2 p-2.5 bg-emerald-800 text-white rounded-xl shadow-md border-2 border-white hover:bg-emerald-900 hover:scale-105 transition-all cursor-pointer"
               >
                 <Camera className="w-4 h-4" />
@@ -289,63 +267,47 @@ export default function ProfileView() {
                 className="hidden"
                 accept="image/*"
                 onChange={handleFileChange}
-                aria-label="Upload Official Avatar"
+                aria-label="Upload Avatar"
               />
             </div>
 
             <h2 className="text-lg font-bold text-slate-900 leading-tight">
-              {user?.fullName || "Administrative Officer"}
+              {user?.fullName || "User"}
             </h2>
-            <p className="text-xs text-slate-500 font-mono mt-0.5">{user?.email}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{user?.email}</p>
 
             <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-900 border border-emerald-200">
               <BadgeCheck className="w-3.5 h-3.5 text-emerald-700" />
-              <span>{isAdmin ? "Super Administrator" : "Certified Faculty"}</span>
+              <span>{isAdmin ? "Administrator" : "Teacher"}</span>
             </div>
 
-            {/* Verification Metadata Box */}
-            <div className="w-full mt-6 pt-5 border-t border-slate-100 text-left space-y-2.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-500">Security Clearance</span>
+            <div className="w-full mt-6 pt-5 border-t border-slate-100 text-left space-y-2.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500">Account Role</span>
                 <span className="font-semibold text-slate-800">
-                  {isAdmin ? "Tier 1 Root Access" : "Classroom Scope"}
+                  {isAdmin ? "System Administrator" : "Faculty Member"}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-500">Session Encryption</span>
-                <span className="font-mono text-emerald-800 font-semibold">TLS / JWT Auth</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-500">Document Storage</span>
-                <span className="font-semibold text-slate-800">Cloudinary Verified</span>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500">Status</span>
+                <span className="font-semibold text-emerald-700">Active</span>
               </div>
             </div>
-          </div>
-
-          {/* POLICY NOTE CARD */}
-          <div className="bg-slate-900 text-white rounded-2xl p-5 border border-slate-800 text-xs space-y-2.5">
-            <div className="flex items-center gap-2 text-emerald-400 font-semibold">
-              <Building2 className="w-4 h-4" />
-              <span>Institutional Governance Notice</span>
-            </div>
-            <p className="text-slate-300 leading-relaxed text-[11px]">
-              Credential modifications are recorded in the institutional audit ledger. Always safeguard your password and ensure official photograph adheres to uniform dress standards.
-            </p>
           </div>
         </div>
 
         {/* RIGHT COLUMN: IDENTITY & PASSWORD MANAGEMENT (8 COLS) */}
         <div className="lg:col-span-8 space-y-6">
           <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
-            {/* CARD 1: INSTITUTIONAL IDENTITY */}
+            {/* CARD 1: PERSONAL DETAILS */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 md:p-7">
               <div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-slate-100">
                 <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center font-bold">
                   <User className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">Institutional Identity</h3>
-                  <p className="text-xs text-slate-500">Official legal name and authorized communication channel.</p>
+                  <h3 className="text-sm font-bold text-slate-900">Personal Details</h3>
+                  <p className="text-xs text-slate-500">Your display name and official email address.</p>
                 </div>
               </div>
 
@@ -374,7 +336,7 @@ export default function ProfileView() {
                 {/* Email Address */}
                 <div className="space-y-1.5">
                   <label htmlFor="email" className="block text-xs font-semibold text-slate-700">
-                    Institutional Email Address
+                    Email Address
                   </label>
                   <div className="relative">
                     <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -396,18 +358,18 @@ export default function ProfileView() {
                   </div>
                   {!isAdmin && (
                     <p className="text-[10px] text-slate-400">
-                      Faculty email changes require administrative clearance.
+                      Email address changes require administrative assistance.
                     </p>
                   )}
                 </div>
               </div>
 
-              {/* Required Current Password for Email Change */}
+              {/* Current Password Prompt for Email Change */}
               {isAdmin && formData.email !== user?.email && (
                 <div className="mt-5 p-4 rounded-xl bg-amber-50/80 border border-amber-200 space-y-2">
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-900">
                     <Lock className="w-3.5 h-3.5 text-amber-700" />
-                    <span>Current Password Required For Email Modification</span>
+                    <span>Enter Current Password to Confirm Email Change</span>
                   </div>
                   <div className="relative">
                     <input
@@ -419,13 +381,13 @@ export default function ProfileView() {
                       onChange={(e) =>
                         setFormData({ ...formData, currentPassword: e.target.value })
                       }
-                      placeholder="Enter your current password to verify identity"
+                      placeholder="Enter your current password"
                       className="w-full pl-3.5 pr-10 py-2 rounded-lg bg-white border border-amber-300 text-slate-900 placeholder:text-slate-400 focus:border-amber-700 focus:ring-1 focus:ring-amber-700 outline-none text-xs"
                     />
                     <button
                       type="button"
                       onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"
                     >
                       {showCurrentPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
@@ -434,16 +396,16 @@ export default function ProfileView() {
               )}
             </div>
 
-            {/* CARD 2: PASSWORD & SECURITY PARAMETERS */}
+            {/* CARD 2: PASSWORD CHANGE */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 md:p-7">
               <div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-slate-100">
                 <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center font-bold">
                   <KeyRound className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">Password &amp; Security</h3>
+                  <h3 className="text-sm font-bold text-slate-900">Change Password</h3>
                   <p className="text-xs text-slate-500">
-                    Leave fields blank to maintain your current institutional password.
+                    Leave these fields blank if you do not wish to change your password.
                   </p>
                 </div>
               </div>
@@ -469,7 +431,7 @@ export default function ProfileView() {
                     <button
                       type="button"
                       onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"
                     >
                       {showNewPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
@@ -498,7 +460,7 @@ export default function ProfileView() {
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"
                     >
                       {showConfirmPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
@@ -508,11 +470,7 @@ export default function ProfileView() {
             </div>
 
             {/* ACTION BAR */}
-            <div className="flex items-center justify-between pt-2">
-              <span className="text-xs text-slate-500">
-                Last modified session: <strong className="text-slate-700">Enforced by JWT</strong>
-              </span>
-
+            <div className="flex items-center justify-end pt-2">
               <button
                 type="submit"
                 disabled={isLoading}

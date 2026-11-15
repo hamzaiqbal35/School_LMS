@@ -18,10 +18,7 @@ import {
   Phone,
   BookOpen,
   Filter,
-  GraduationCap,
-  ShieldCheck,
-  UserCheck,
-  Sparkles
+  GraduationCap
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
@@ -115,6 +112,8 @@ export default function TeachersPage() {
   // Modal State
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deactivatingTeacher, setDeactivatingTeacher] = useState<{ id: string; name: string } | null>(null);
+  const [isDeactivating, setIsDeactivating] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -168,15 +167,18 @@ export default function TeachersPage() {
     setShowModal(true);
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to deactivate faculty member "${name}"? This will terminate class assignments.`))
-      return;
+  const confirmDeactivation = async () => {
+    if (!deactivatingTeacher) return;
+    setIsDeactivating(true);
     try {
-      await api.delete(`/admin/teachers/${id}`);
-      toast.success(`Faculty profile for "${name}" deactivated.`);
+      await api.delete(`/admin/teachers/${deactivatingTeacher.id}`);
+      toast.success(`Faculty profile for "${deactivatingTeacher.name}" deactivated.`);
+      setDeactivatingTeacher(null);
       fetchTeachers();
     } catch {
       toast.error("Failed to deactivate faculty profile.");
+    } finally {
+      setIsDeactivating(false);
     }
   };
 
@@ -319,8 +321,8 @@ export default function TeachersPage() {
                     className="group bg-white rounded-2xl shadow-xs border border-slate-200 hover:shadow-md hover:border-emerald-700/50 transition-all duration-200 flex flex-col relative overflow-hidden"
                   >
                     {/* Top Institutional Crest Pattern Banner */}
-                    <div className="h-20 bg-slate-950 relative border-b border-slate-800 flex items-center justify-between px-4">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">
+                    <div className="h-18 bg-slate-950 relative border-b border-slate-800 flex items-center justify-end px-4 gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-950/80 border border-emerald-800/60 px-2.5 py-0.5 rounded-full">
                         Faculty Specialist
                       </span>
 
@@ -369,7 +371,7 @@ export default function TeachersPage() {
                                   type="button"
                                   onClick={() => {
                                     setOpenMenuId(null);
-                                    handleDelete(teacher._id, teacher.fullName);
+                                    setDeactivatingTeacher({ id: teacher._id, name: teacher.fullName });
                                   }}
                                   className="w-full flex items-center px-3.5 py-2 text-rose-600 hover:bg-rose-50 font-medium transition-colors cursor-pointer"
                                 >
@@ -716,6 +718,65 @@ export default function TeachersPage() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Beautiful Deactivation Confirmation Modal */}
+      <AnimatePresence>
+        {deactivatingTeacher && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-md w-full p-6 sm:p-7 relative overflow-hidden"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200/80 text-rose-600 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 leading-tight">
+                    Deactivate Faculty Member
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Revoke timetable assignments and access.
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-xs text-slate-600 leading-relaxed mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200/70">
+                Are you sure you want to deactivate <strong className="text-slate-900 font-semibold">{deactivatingTeacher.name}</strong>?
+                This will terminate active classroom period allocations and suspend their institutional portal credentials.
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={isDeactivating}
+                  onClick={() => setDeactivatingTeacher(null)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isDeactivating}
+                  onClick={confirmDeactivation}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-60"
+                >
+                  {isDeactivating ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Deactivating...</span>
+                    </>
+                  ) : (
+                    <span>Confirm Deactivation</span>
+                  )}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
